@@ -1,0 +1,32 @@
+{
+  "name": "mame-genius",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack-dev-server --open --config config/webpack.dev.js",
+    "build": "webpack --config config/webpack.prod.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yo1dog/mame-genius.git"
+  },
+  "author": "Mike \"yo1dog\" Moore",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yo1dog/mame-genius/issues"
+  },
+  "homepage": "https://github.com/yo1dog/mame-genius#readme",
+  "devDependencies": {
+    "clean-webpack-plugin": "^2.0.2",
+    "copy-webpack-plugin": "^5.0.3",
+    "webpack": "^4.32.2",
+    "webpack-cli": "^3.3.2",
+    "webpack-dev-server": "^3.4.1",
+    "webpack-merge": "^4.2.1"
+  },
+  "dependencies": {
+    "@yo1dog/cerror": "^1.0.0"
+  }
+}

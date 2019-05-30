@@ -1,0 +1,101 @@
+body {
+  font-family: Tahoma, sans-serif;
+  font-size: 10pt;
+}
+
+#machineNamesInput {
+  width: 300pt;
+  height: 200pt;
+}
+
+#machineResultTable th,
+#machineResultTable td {
+  padding-left : 4pt;
+  padding-right: 4pt;
+}
+
+.invalid-machine-name .machine-name,
+.invalid-machine-name .machine-desc {
+  color: red;
+  text-decoration: line-through;
+}
+
+.machine-details-row {
+  background-color: #EEE;
+}
+
+.icon {
+  font-family: monospace;
+  text-align: center;
+}
+
+.machine-row .machine-controls-status-icon,
+.machine-row .machine-emu-status-icon {
+  text-align: center;
+}
+.machine-row.controls-status-good .machine-controls-status-icon .icon::before,
+.machine-row.emu-status-good .machine-emu-status-icon .icon::before {
+  content: '✔️';
+}
+.machine-row.controls-status-ok .machine-controls-status-icon .icon::before,
+.machine-row.emu-status-imperfect .machine-emu-status-icon .icon::before {
+  content: '⚠️';
+}
+.machine-row.controls-status-bad .machine-controls-status-icon .icon::before,
+.machine-row.controls-status-missing .machine-controls-status-icon .icon::before,
+.machine-row.emu-status-preliminary .machine-emu-status-icon .icon::before {
+  content: '❌';
+}
+.machine-row.controls-status-unknown .machine-controls-status-icon .icon::before,
+.machine-row.emu-status-unknown .machine-emu-status-icon .icon::before,
+.machine-row.emu-status-not-found .machine-emu-status-icon .icon::before {
+  content: '⁉️';
+}
+
+.machine-row.controls-status-bad .machine-name,
+.machine-row.controls-status-bad .machine-desc,
+.machine-row.controls-status-bad .machine-controls-status,
+.machine-row.controls-status-missing .machine-name,
+.machine-row.controls-status-missing .machine-desc,
+.machine-row.controls-status-missing .machine-controls-status,
+.machine-row.controls-status-unknown .machine-name,
+.machine-row.controls-status-unknown .machine-desc,
+.machine-row.controls-status-unknown .machine-controls-status {
+  color:  red;
+}
+
+.machine-row.emu-status-preliminary .machine-name,
+.machine-row.emu-status-preliminary .machine-desc,
+.machine-row.emu-status-preliminary .machine-emu-status,
+.machine-row.emu-status-not-found .machine-name,
+.machine-row.emu-status-not-found .machine-desc,
+.machine-row.emu-status-not-found .machine-emu-status,
+.machine-row.emu-status-unknown .machine-name,
+.machine-row.emu-status-unknown .machine-desc,
+.machine-row.emu-status-unknown .machine-emu-status {
+  color:  red;
+}
+
+.machine-row .toggle-expand-button::after {
+  font-family: monospace;
+  margin-left: 4pt;
+  content: '−';
+}
+.machine-row .toggle-expand-button.hidden-state::after {
+  font-family: monospace;
+  margin-left: 4pt;
+  content: '+';
+}
+
+.machine-details-row pre {
+  margin-top: 4pt;
+  margin-bottom: 4pt;
+}
+
+button {
+  white-space: nowrap;
+}
+
+.hidden {
+  display: none;
+}
