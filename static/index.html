@@ -5,25 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>MAME Genius</title>
-  <link rel="stylesheet" href="styles.css" />
   <script src="main.js"></script>
 </head>
 <body>
-  <pre id="metaData"></pre><br />
-  <textarea id="machineNamesInput"></textarea><br />
-  <button id="machineNamesRefreshButton">Refresh</button><br />
+  <div class="metadata">
+    <textarea id="metadata__text" class="metadata__text" readonly="true"></textarea>
+  </div>
   <br />
-  <table id="machineResultTable">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Description</th>
-        <th colspan="2">Emulation</th>
-        <th colspan="2">Controls</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div id="machine-name-list-container"></div>
+  <br />
+  <div id="support-table-container"></div>
 </body>
 </html>

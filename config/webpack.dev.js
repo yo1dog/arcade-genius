@@ -8,5 +8,10 @@ module.exports = merge(common, {
   devServer: {
     contentBase: './dist',
     port: 8080
+  },
+  module: {
+    rules: [
+      {test: /\.less$/, use: ['style-loader', 'css-loader', 'less-loader']}
+    ]
   }
 });

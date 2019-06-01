@@ -9,6 +9,11 @@ module.exports = {
     new CleanWebpackPlugin(),
     new CopyPlugin([{from: 'static'}])
   ],
+  module: {
+    rules: [
+      {test: /\.html?$/, use: ['html-loader']}
+    ]
+  },
   output: {
     filename: 'main.js',
     path: path.resolve(__dirname, '..', 'dist')

@@ -1,0 +1,149 @@
+@badColor: red;
+
+.support-table {
+  border-collapse: collapse;
+  padding: 0.25em;
+  
+  th, td {
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    padding-top: 0.1em;
+    padding-bottom: 0.1em;
+  }
+  
+  thead {
+    text-align: left;
+  }
+}
+
+.support-table__row--odd {}
+.support-table__row--even {}
+
+.support-table__row__machine-name {
+  font-family: 'Courier New', Courier, monospace;
+}
+.support-table__row__desc {}
+.support-table__row__emu-status-icon,
+.support-table__row__controls-status-icon,
+.support-table__row__video-status-icon {
+  text-align: center
+}
+.support-table__row__emu-status {}
+.support-table__row__controls-status {}
+.support-table__row__video-status {}
+
+.support-table__row__icon-good,
+.support-table__row__icon-warn,
+.support-table__row__icon-error,
+.support-table__row__icon-unknown {
+  font-family: apple color emoji, segoe ui emoji, noto color emoji, android emoji, emojisymbols, emojione mozilla, twemoji mozilla, segoe ui symbol;
+  display: none;
+}
+
+.support-table__row--emu-status-good {
+  .support-table__row__emu-status-icon .support-table__row__icon-good {
+    display: inline;
+  }
+}
+.support-table__row--emu-status-imperfect {
+  .support-table__row__emu-status-icon .support-table__row__icon-warn {
+    display: inline;
+  }
+}
+.support-table__row--emu-status-preliminary,
+.support-table__row--emu-status-not-found {
+  .support-table__row__emu-status-icon .support-table__row__icon-error {
+    display: inline;
+  }
+  .support-table__row__emu-status {
+    color: @badColor;
+  }
+}
+.support-table__row--emu-status-unknown {
+  .support-table__row__emu-status-icon .support-table__row__icon-unknown {
+    display: inline;
+  }
+  .support-table__row__emu-status {
+    color: @badColor;
+  }
+}
+
+.support-table__row--controls-status-native,
+.support-table__row--controls-status-good {
+  .support-table__row__controls-status-icon .support-table__row__icon-good {
+    display: inline;
+  }
+}
+.support-table__row--controls-status-ok,
+.support-table__row--controls-status-unknown {
+  .support-table__row__controls-status-icon .support-table__row__icon-warn {
+    display: inline;
+  }
+}
+.support-table__row--controls-status-missing,
+.support-table__row--controls-status-bad {
+  .support-table__row__controls-status-icon .support-table__row__icon-error {
+    display: inline;
+  }
+  .support-table__row__controls-status {
+    color: @badColor;
+  }
+}
+
+.support-table__row--video-status-native,
+.support-table__row--video-status-good {
+  .support-table__row__video-status-icon .support-table__row__icon-good {
+    display: inline;
+  }
+}
+.support-table__row--video-status-ok,
+.support-table__row--video-status-unknown {
+  .support-table__row__video-status-icon .support-table__row__icon-warn {
+    display: inline;
+  }
+}
+.support-table__row--video-status-unsuported,
+.support-table__row--video-status-bad {
+  .support-table__row__video-status-icon .support-table__row__icon-error {
+    display: inline;
+  }
+  .support-table__row__video-status {
+    color: @badColor;
+  }
+}
+
+.support-table__row--invalid-machine-name {
+  .support-table__row__machine-name {
+    text-decoration: line-through;
+  }
+}
+
+.support-table__row--invalid-machine-name,
+.support-table__row--emu-status-preliminary,
+.support-table__row--emu-status-unknown,
+.support-table__row--controls-status-missing,
+.support-table__row--controls-status-bad {
+  .support-table__row__machine-name,
+  .support-table__row__desc {
+    color: @badColor;
+  }
+}
+
+.support-table__row__toggle-details-button__on-text,
+.support-table__row__toggle-details-button__off-text {
+  display: none;
+}
+.toggle-state-off .support-table__row__toggle-details-button__off-text {
+  display: inline;
+}
+.toggle-state-on .support-table__row__toggle-details-button__on-text {
+  display: inline;
+}
+
+.support-table__details-row {}
+.support-table__details-row__text {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  height: 10em;
+}
