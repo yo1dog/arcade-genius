@@ -1,7 +1,21 @@
 
 # mame-genius
 
-## Resources
+## Build
+
+```bash
+npm install
+(cd groovymame_0210_switchres; make prod)
+npm run-script build
+```
+
+## Run
+
+```bash
+npm start
+```
+
+## Data Files
 ### `mameList.filtered.partial.min.json`
 
 ```bash

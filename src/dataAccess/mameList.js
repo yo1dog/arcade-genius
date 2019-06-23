@@ -10,10 +10,10 @@
  * @property {string} [year]
  * @property {string} [manufacturer]
  * @property {string} cloneof
- * @property {Display[]} displays
- * @property {Driver} driver
+ * @property {MachineDisplay[]} displays
+ * @property {MachineDriver} driver
  * 
- * @typedef Display
+ * @typedef MachineDisplay
  * @property {string} [tag]
  * @property {'raster'|'vector'|'lcd'|'unknown'} type
  * @property {0|90|180|270} rotate
@@ -29,17 +29,17 @@
  * @property {number} [vbend]
  * @property {number} [vbstart]
  * 
- * @typedef Driver
- * @property {DriverStatus} status
- * @property {DriverStatus} emulation
- * @property {DriverStatus} color
- * @property {DriverStatus} sound
- * @property {DriverStatus} graphic
- * @property {DriverStatus} [drivercocktail]
- * @property {DriverStatus} [driverprotection]
- * @property {DriverStatus} savestate
+ * @typedef MachineDriver
+ * @property {MachineDriverStatus} status
+ * @property {MachineDriverStatus} emulation
+ * @property {MachineDriverStatus} color
+ * @property {MachineDriverStatus} sound
+ * @property {MachineDriverStatus} graphic
+ * @property {MachineDriverStatus} [drivercocktail]
+ * @property {MachineDriverStatus} [driverprotection]
+ * @property {MachineDriverStatus} savestate
  * 
- * @typedef {'good'|'imperfect'|'preliminary'} DriverStatus
+ * @typedef {'good'|'imperfect'|'preliminary'} MachineDriverStatus
  */
 
 import _mameList from '../../data/mameList.filtered.partial.min.json';

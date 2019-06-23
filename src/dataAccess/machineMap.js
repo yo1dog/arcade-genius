@@ -1,9 +1,9 @@
 import mameList from './mameList';
 
-/** @type {import('./mameList').Machine} */
-const mameListMap = {};
+/** @type {Object<string, import('./mameList').Machine>} */
+const machineMap = {};
 for (const machine of mameList.machines) {
-  mameListMap[machine.name] = machine;
+  machineMap[machine.name] = machine;
 }
 
-export default mameListMap;
+export default machineMap;

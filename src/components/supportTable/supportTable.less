@@ -1,4 +1,11 @@
 @badColor: red;
+@fixedWidthFontFamily: 'Courier New', Courier, monospace;
+
+.support-table__header-row__controls-status,
+.support-table__row__controls-status-icon,
+.support-table__row__controls-status {
+  display: none;
+}
 
 .support-table {
   border-collapse: collapse;
@@ -20,7 +27,7 @@
 .support-table__row--even {}
 
 .support-table__row__machine-name {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: @fixedWidthFontFamily;
 }
 .support-table__row__desc {}
 .support-table__row__emu-status-icon,
@@ -102,7 +109,7 @@
     display: inline;
   }
 }
-.support-table__row--video-status-unsuported,
+.support-table__row--video-status-unsupported,
 .support-table__row--video-status-bad {
   .support-table__row__video-status-icon .support-table__row__icon-error {
     display: inline;

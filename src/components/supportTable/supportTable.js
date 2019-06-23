@@ -3,6 +3,7 @@ import supportTableTemplate from './supportTable.html';
 import supportTableRowTemplate from './supportTableRow.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
 import clearNodeChildren from '../../helpers/clearNodeChildren';
+import {EventEmitter} from 'events';
 
 /**
  * @typedef {import('../../supportChecker').SupportResult} SupportResult
@@ -10,16 +11,30 @@ import clearNodeChildren from '../../helpers/clearNodeChildren';
  * @typedef {import('../../supportChecker').ControlsStatus} ControlsStatus
  */
 
-export default class MachineNameList {
+export default class MachineNameList extends EventEmitter {
   constructor() {
+    super();
+    
     /** @type {SupportResult[]} */
     this.supportResults = [];
     
     this.block = htmlToBlock(supportTableTemplate);
     this.bodyElem = this.block.getElementById('support-table__body');
+    this.refreshButtonElem = this.block.getElementById('support-table__refresh-button');
+    
+    this.refreshButtonElem.addEventListener('click', () => this.refresh());
   }
   
-  update() {
+  refresh() {
+    this.emit('refresh');
+  }
+  
+  /**
+   * @param {SupportResult[]} supportResults 
+   */
+  update(supportResults) {
+    this.supportResults = supportResults;
+    
     // clear rows
     clearNodeChildren(this.bodyElem);
     
@@ -28,6 +43,13 @@ export default class MachineNameList {
       const rowBlock = MachineNameList.createRowBlock(this.supportResults[i], i);
       this.bodyElem.appendChild(rowBlock);
     }
+  }
+  
+  enableRefresh() {
+    this.refreshButtonElem.disabled = false;
+  }
+  disableRefresh() {
+    this.refreshButtonElem.disabled = true;
   }
   
   /**
@@ -43,7 +65,11 @@ export default class MachineNameList {
     const {controlsStatusDesc, controlsStatusClass} = this.translateControlsStatus(supportResult.controlsStatus);
     const {videoStatusDesc, videoStatusClass} = this.translateVideoStatus(supportResult.videoStatus);
     
-    const detailsStr = machine? JSON.stringify({machine, controlsDatGame: supportResult.controlsDatGame}, null, 2) : '';
+    const detailsStr = machine? JSON.stringify({
+      modelineResult: supportResult.modelineResult,
+      machine,
+      controlsDatGame: supportResult.controlsDatGame
+    }, null, 2) : '';
     
     // create short description
     const shortDesc = machine? this.shortenDescription(machine.description) : 'machine not found';
@@ -158,19 +184,19 @@ export default class MachineNameList {
    */
   static translateVideoStatus(videoStatus) {
     const videoStatusDesc = {
-      native    : 'Native',
-      good      : 'Good',
-      ok        : 'OK',
-      bad       : 'Bad',
-      unsuported: 'Unsuported'
+      native     : 'Native',
+      good       : 'Good',
+      ok         : 'OK',
+      bad        : 'Bad',
+      unsupported: 'Unsupported'
     }[videoStatus] || videoStatus || 'Unknown';
     
     const videoStatusClass = {
-      native    : 'support-table__row--video-status-native',
-      good      : 'support-table__row--video-status-good',
-      ok        : 'support-table__row--video-status-ok',
-      bad       : 'support-table__row--video-status-bad',
-      unsuported: 'support-table__row--video-status-unsuported'
+      native     : 'support-table__row--video-status-native',
+      good       : 'support-table__row--video-status-good',
+      ok         : 'support-table__row--video-status-ok',
+      bad        : 'support-table__row--video-status-bad',
+      unsupported: 'support-table__row--video-status-unsupported'
     }[videoStatus] || 'support-table__row--video-status-unknown';
     
     return {

@@ -1,31 +1,22 @@
 import './machineNameList.less';
 import machineNameListTemplate from './machineNameList.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
-import {EventEmitter} from 'events';
 
 
-export default class MachineNameList extends EventEmitter {
+export default class MachineNameList {
   constructor() {
-    super();
-    /** @type {string[]} */
-    this.machineNameInputs = [];
-    
     this.block = htmlToBlock(machineNameListTemplate);
-    this.inputElem         = this.block.getElementById('machine-name-list__input');
-    this.refreshButtonElem = this.block.getElementById('machine-name-list__refresh');
+    this.inputElem = this.block.getElementById('machine-name-list__input');
+    this.demoListLinkElem = this.block.getElementById('machine-name-list__demo-list-link');
     
-    this.refreshButtonElem.addEventListener('click', () => this.refresh());
+    this.demoListLinkElem.addEventListener('click', e => {
+      e.preventDefault();
+      this.inputElem.value = getDefaultMachineNameInputsStr();
+    });
   }
   
   init() {
-    this.inputElem.value = this.loadInput();
-    this.refresh();
-  }
-  
-  refresh() {
-    this.machineNameInputs = this.getMachineNameInputs();
-    this.saveInput();
-    this.emit('refreshed');
+    this.inputElem.value = this.loadState() || getDefaultMachineNameInputsStr();
   }
   
   /**
@@ -53,14 +44,69 @@ export default class MachineNameList extends EventEmitter {
     );
   }
   
-  saveInput() {
+  saveState() {
     window.localStorage.setItem('machineNameListInput', this.inputElem.value);
   }
   
   /**
    * @returns {string}
    */
-  loadInput() {
+  loadState() {
     return window.localStorage.getItem('machineNameListInput') || '';
   }
+}
+
+function getDefaultMachineNameInputsStr() {
+  return `1941
+1942
+1943
+1944
+1945kiii
+88games
+area51
+arkanoid
+asteroid
+bosco
+btoads
+bubbles
+bublbob2
+bublbobl
+centiped
+defender
+digdug2
+digdug
+dkong
+dlair
+elevator
+frogger
+galaga
+galaxian
+gauntlet
+invaders
+joust
+llander
+milliped
+missile
+mk
+mpatrol
+mslug
+mspacman
+pacman
+paperboy
+phoenix
+policetr
+qbert
+rampage
+sbrkout
+shollow
+simpsons
+snowbros
+ssriders
+tapper
+tempest
+temptube
+timecris
+tmnt
+tron
+`;
 }

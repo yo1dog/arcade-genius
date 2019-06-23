@@ -11,7 +11,12 @@ module.exports = {
   ],
   module: {
     rules: [
-      {test: /\.html?$/, use: ['html-loader']}
+      {test: /\.html?$/, use: ['html-loader']},
+      {
+        test: /\.wasm$/,
+        type: 'javascript/auto',
+        loader: 'file-loader',
+      }
     ]
   },
   output: {
@@ -20,5 +25,8 @@ module.exports = {
   },
   performance: {
     hints: false
+  },
+  node: {
+    fs: 'empty'
   }
 };

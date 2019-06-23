@@ -7,10 +7,12 @@
     "node": "12.2.0",
     "npm": "6.9.0"
   },
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack-dev-server --open --config config/webpack.dev.js",
-    "build": "webpack --config config/webpack.prod.js"
+    "build": "webpack --config config/webpack.prod.js",
+    "build-dev": "webpack --config config/webpack.dev.js"
   },
   "repository": {
     "type": "git",
@@ -26,6 +28,7 @@
     "clean-webpack-plugin": "^2.0.2",
     "copy-webpack-plugin": "^5.0.3",
     "css-loader": "^2.1.1",
+    "file-loader": "^4.0.0",
     "html-loader": "^0.5.5",
     "less": "^3.9.0",
     "less-loader": "^5.0.0",
@@ -37,6 +40,7 @@
     "webpack-merge": "^4.2.1"
   },
   "dependencies": {
-    "@yo1dog/cerror": "^1.0.0"
+    "@yo1dog/cerror": "^1.0.0",
+    "sprintf-js": "^1.1.2"
   }
 }
