@@ -43,15 +43,48 @@ t_machine_output calc_modeline(json config, json machine) {
   
   try {
     screen_device screen = screen_device();
+    
+    const char *screen_type_str = machine_display["type"].get<std::string>().c_str();
+    screen_type_enum screen_type;
+    if (!strcmp(screen_type_str, "raster")) {
+      screen_type = SCREEN_TYPE_RASTER;
+    }
+    else if (!strcmp(screen_type_str, "vector")) {
+      screen_type = SCREEN_TYPE_VECTOR;
+    }
+    else if (!strcmp(screen_type_str, "lcd")) {
+      screen_type = SCREEN_TYPE_LCD;
+    }
+    else if (!strcmp(screen_type_str, "svg")) {
+      screen_type = SCREEN_TYPE_SVG;
+    }
+    else {
+      screen_type = SCREEN_TYPE_INVALID;
+    }
+    
+    screen.set_type(screen_type);
+    screen.set_refresh_hz(machine_display["refresh"].get<double>());
+    
+    if (screen.screen_type() != SCREEN_TYPE_VECTOR) {
+      screen.set_visarea(
+        0,
+        machine_display["width"].get<s32>()-1,
+        0,
+        machine_display["height"].get<s32>()-1
+      );
+    }
+    
+    /*
     screen.set_raw(
-      /*get_json_or_0<u32>(&machine_display["pixclock"]),*/ machine_display["pixclock"].get<u32>(),
-      /*get_json_or_0<u16>(&machine_display["htotal"  ]),*/ machine_display["htotal"  ].get<u16>(),
-      /*get_json_or_0<u16>(&machine_display["hbend"   ]),*/ machine_display["hbend"   ].get<u16>(),
-      /*get_json_or_0<u16>(&machine_display["hbstart" ]),*/ machine_display["hbstart" ].get<u16>(),
-      /*get_json_or_0<u16>(&machine_display["vtotal"  ]),*/ machine_display["vtotal"  ].get<u16>(),
-      /*get_json_or_0<u16>(&machine_display["vbend"   ]),*/ machine_display["vbend"   ].get<u16>(),
-      /*get_json_or_0<u16>(&machine_display["vbstart" ]) */ machine_display["vbstart" ].get<u16>()
+      machine_display["pixclock"].get<u32>(),
+      machine_display["htotal"  ].get<u16>(),
+      machine_display["hbend"   ].get<u16>(),
+      machine_display["hbstart" ].get<u16>(),
+      machine_display["vtotal"  ].get<u16>(),
+      machine_display["vbend"   ].get<u16>(),
+      machine_display["vbstart" ].get<u16>()
     );
+    */
     
     int machine_display_rotate = machine_display["rotate"].get<int>();
     bool machine_display_flipx  = machine_display["flipx"].get<bool>();

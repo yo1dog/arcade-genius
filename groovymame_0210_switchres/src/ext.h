@@ -16,11 +16,15 @@ void osd_printf_debug(const char *format, ...);
 void osd_printf_log(const char *format, ...);
 
 
+using s8 = int8_t;
+using u8 = uint8_t;
+using s16 = int16_t;
+using u16 = uint16_t;
+using s32 = int32_t;
+using u32 = uint32_t;
+using s64 = int64_t;
+using u64 = uint64_t;
 
-typedef uint32_t u32;
-typedef uint16_t u16;
-typedef uint64_t u64;
-typedef int64_t s64;
 typedef s64 attoseconds_t;
 
 #include "switchres.h"
@@ -177,25 +181,17 @@ const attoseconds_t HZ_TO_ATTOSECONDS(u32 x);
 const double ATTOSECONDS_TO_HZ(attoseconds_t x);
 
 class screen_device {
-  u32                     m_clock;                // current device clock, after scaling
+  screen_type_enum    m_type;
   attoseconds_t       m_refresh;                  // default refresh period
-	attoseconds_t       m_vblank;                   // duration of a VBLANK
-  int                 m_width;                    // current width (HTOTAL)
-	int                 m_height;                   // current height (VTOTAL)
   rectangle           m_visarea;
   
   public:
-    void set_raw(u32 pixclock, u16 htotal, u16 hbend, u16 hbstart, u16 vtotal, u16 vbend, u16 vbstart)
-    {
-      m_clock = pixclock;
-      m_refresh = HZ_TO_ATTOSECONDS(pixclock) * htotal * vtotal;
-      m_vblank = m_refresh / vtotal * (vtotal - (vbstart - vbend));
-      m_width = htotal;
-      m_height = vtotal;
-      memset(&m_visarea, 0, sizeof(struct rectangle));
-      m_visarea.set(hbend, hbstart - 1, vbend, vbstart - 1);
-    }
-    screen_type_enum screen_type() const { return SCREEN_TYPE_RASTER; }
+    void set_type(screen_type_enum type) { m_type = type; }
+    void set_refresh(attoseconds_t rate) { m_refresh = rate; }
+    template <typename T> void set_refresh_hz(T &&hz) { set_refresh(HZ_TO_ATTOSECONDS(std::forward<T>(hz))); }
+	  void set_visarea(s16 minx, s16 maxx, s16 miny, s16 maxy) { m_visarea.set(minx, maxx, miny, maxy); }
+    
+    screen_type_enum screen_type() const { return m_type; }
     const rectangle &visible_area() const { return m_visarea; }
     attoseconds_t refresh_attoseconds() const { return m_refresh; }
 };
