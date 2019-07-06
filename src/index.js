@@ -11,14 +11,11 @@ import * as modelineCalculator from './dataAccess/modelineCalculator';
 document.addEventListener('DOMContentLoaded', onLoad, false);
 
 async function onLoad() {
-  populateMetaData();
-  
   const loadingTimerId = startLoading();
-  
   await modelineCalculator.init();
-  await new Promise(resolve => window.setTimeout(resolve, 3000));
-  
   doneLoading(loadingTimerId);
+  
+  populateMetaData();
   
   const machineNameList = new MachineNameList();
   document.querySelector('.machine-name-list-container').appendChild(machineNameList.elem);
