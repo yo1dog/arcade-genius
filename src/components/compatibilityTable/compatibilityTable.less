@@ -1,0 +1,177 @@
+@badColor: red;
+@fixedWidthFontFamily: 'Courier New', Courier, monospace;
+
+.comp-table__header-row__controls-status,
+.comp-table__row__controls-status-icon,
+.comp-table__row__controls-status {
+  display: none;
+}
+
+.comp-table__table {
+  border-collapse: collapse;
+  padding: 0.25em;
+  
+  th, td {
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    padding-top: 0.1em;
+    padding-bottom: 0.1em;
+  }
+  
+  thead {
+    text-align: left;
+    vertical-align: bottom;
+  }
+}
+
+.comp-table__table--single-monitor-configuration {
+  .comp-table__monitor-configs-header-row {
+    display: none;
+  }
+}
+
+.comp-table__header-row__video-status,
+.comp-table__monitor-configs-header-row__title {
+  text-align: center;
+}
+
+.comp-table__row--odd {}
+.comp-table__row--even {}
+
+.comp-table__row__machine-name {
+  font-family: @fixedWidthFontFamily;
+}
+.comp-table__row__desc {}
+.comp-table__row__emu-status-icon,
+.comp-table__row__controls-status-icon,
+.comp-table__row__video-status-icon {
+  text-align: center
+}
+.comp-table__row__emu-status {}
+.comp-table__row__controls-status {}
+.comp-table__row__video-status {}
+
+.comp-table__row__icon-good,
+.comp-table__row__icon-warn,
+.comp-table__row__icon-error,
+.comp-table__row__icon-unknown {
+  font-family: apple color emoji, segoe ui emoji, noto color emoji, android emoji, emojisymbols, emojione mozilla, twemoji mozilla, segoe ui symbol;
+  display: none;
+}
+
+.comp-table__row--emu-status-good {
+  .comp-table__row__emu-status-icon .comp-table__row__icon-good {
+    display: inline;
+  }
+}
+.comp-table__row--emu-status-imperfect {
+  .comp-table__row__emu-status-icon .comp-table__row__icon-warn {
+    display: inline;
+  }
+}
+.comp-table__row--emu-status-preliminary,
+.comp-table__row--emu-status-not-found {
+  .comp-table__row__emu-status-icon .comp-table__row__icon-error {
+    display: inline;
+  }
+  .comp-table__row__emu-status {
+    color: @badColor;
+  }
+}
+.comp-table__row--emu-status-unknown {
+  .comp-table__row__emu-status-icon .comp-table__row__icon-unknown {
+    display: inline;
+  }
+  .comp-table__row__emu-status {
+    color: @badColor;
+  }
+}
+
+.comp-table__row--controls-status-native,
+.comp-table__row--controls-status-good {
+  .comp-table__row__controls-status-icon .comp-table__row__icon-good {
+    display: inline;
+  }
+}
+.comp-table__row--controls-status-ok,
+.comp-table__row--controls-status-unknown {
+  .comp-table__row__controls-status-icon .comp-table__row__icon-warn {
+    display: inline;
+  }
+}
+.comp-table__row--controls-status-unsupported,
+.comp-table__row--controls-status-bad {
+  .comp-table__row__controls-status-icon .comp-table__row__icon-error {
+    display: inline;
+  }
+  .comp-table__row__controls-status {
+    color: @badColor;
+  }
+}
+
+.comp-table__row--video-status-native,
+.comp-table__row--video-status-int-scale {
+  &.comp-table__row__video-status-icon,
+  &.comp-table__row__video-status {
+    .comp-table__row__icon-good {
+      display: inline;
+    }
+  }
+}
+.comp-table__row--video-status-vfreq-slightly-off,
+.comp-table__row--video-status-unknown {
+  &.comp-table__row__video-status-icon,
+  &.comp-table__row__video-status {
+    .comp-table__row__icon-warn {
+      display: inline;
+    }
+  }
+}
+.comp-table__row--video-status-unsupported,
+.comp-table__row--video-status-bad {
+  &.comp-table__row__video-status-icon,
+  &.comp-table__row__video-status {
+    .comp-table__row__icon-error {
+      display: inline;
+    }
+  }
+  .comp-table__row__video-status {
+    color: @badColor;
+  }
+}
+
+.comp-table__row--invalid-machine-name {
+  .comp-table__row__machine-name {
+    text-decoration: line-through;
+  }
+}
+
+.comp-table__row--invalid-machine-name,
+.comp-table__row--emu-status-preliminary,
+.comp-table__row--emu-status-unknown,
+.comp-table__row--controls-status-unsupported,
+.comp-table__row--controls-status-bad {
+  .comp-table__row__machine-name,
+  .comp-table__row__desc {
+    color: @badColor;
+  }
+}
+
+.comp-table__row__toggle-details-button__on-text,
+.comp-table__row__toggle-details-button__off-text {
+  display: none;
+}
+.toggle-state-off .comp-table__row__toggle-details-button__off-text {
+  display: inline;
+}
+.toggle-state-on .comp-table__row__toggle-details-button__on-text {
+  display: inline;
+}
+
+.comp-table__details-row {}
+.comp-table__details-row__text {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  height: 10em;
+}

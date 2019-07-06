@@ -8,14 +8,41 @@
   <script src="main.js"></script>
 </head>
 <body>
-  <div class="metadata">
-    <textarea id="metadata__text" class="metadata__text" readonly="true"></textarea>
+  <h1>MAME Genius</h1>
+  
+  <div class="loading-indicator">
+    Loading<span class="loading-indicator__ellipsis">...</span><br />
+    <br />
+    <noscript>
+      JavaScript is required. Please enable it.<br />
+      <br />
+    </noscript>
   </div>
-  <br />
-  <div id="monitor-configurator-container"></div>
-  <br />
-  <div id="machine-name-list-container"></div>
-  <br />
-  <div id="support-table-container"></div>
+  
+  <section class="content hidden">
+    <h2>ROM Names</h2>
+    <div class="machine-name-list-container"></div>
+    <br />
+    <hr />
+    
+    <h2>CRT Monitor Configuration</h2>
+    <div class="monitor-configurator-group-container"></div>
+    <br />
+    <hr />
+    
+    <h2>Compatibility</h2>
+    <div class="comp-table-container"></div>
+    <br />
+    <hr />
+    
+    <div class="metadata">
+      <textarea class="metadata__text" readonly="true"></textarea>
+    </div>
+    <br />
+  </section>
+  
+  <footer>
+    by Mike "yo1dog" Moore - <a href="https://yo1.dog" target="_blank">yo1.dog</a>
+  </footer>
 </body>
 </html>

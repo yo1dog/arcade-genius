@@ -5,9 +5,9 @@ import htmlToBlock from '../../helpers/htmlToBlock';
 
 export default class MachineNameList {
   constructor() {
-    this.block = htmlToBlock(machineNameListTemplate);
-    this.inputElem = this.block.getElementById('machine-name-list__input');
-    this.demoListLinkElem = this.block.getElementById('machine-name-list__demo-list-link');
+    this.elem = htmlToBlock(machineNameListTemplate).firstElementChild;
+    this.inputElem = this.elem.querySelector('.machine-name-list__input');
+    this.demoListLinkElem = this.elem.querySelector('.machine-name-list__demo-list-link');
     
     this.demoListLinkElem.addEventListener('click', e => {
       e.preventDefault();

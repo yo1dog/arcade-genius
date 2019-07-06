@@ -6,10 +6,15 @@ import htmlToBlock from '../../helpers/htmlToBlock';
 
 
 export default class MonitorConfigurator {
-  constructor() {
-    this.block = htmlToBlock(monitorConfiguratorTemplate);
-    this.presetInputElem      = this.block.getElementById('monitor-configurator__preset-input');
-    this.orientationInputElem = this.block.getElementById('monitor-configurator__orientation-input');
+  /**
+   * @param {string} id 
+   */
+  constructor(id) {
+    this.id = id;
+    
+    this.elem = htmlToBlock(monitorConfiguratorTemplate).firstElementChild;
+    this.presetInputElem      = this.elem.querySelector('.monitor-configurator__preset-input');
+    this.orientationInputElem = this.elem.querySelector('.monitor-configurator__orientation-input');
   }
   
   init() {
@@ -33,8 +38,15 @@ export default class MonitorConfigurator {
     };
   }
   
+  /**
+   * @returns {string}
+   */
+  getLocalStorageKey() {
+    return `monitorConfiguratorModelineConfig-${this.id}`;
+  }
+  
   saveState() {
-    window.localStorage.setItem('monitorConfiguratorModelineConfig', JSON.stringify(this.getModelineConfig()));
+    window.localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(this.getModelineConfig()));
   }
   
   /**
@@ -42,8 +54,12 @@ export default class MonitorConfigurator {
    */
   loadState() {
     try {
-      return JSON.parse(window.localStorage.getItem('monitorConfiguratorModelineConfig'));
+      return JSON.parse(window.localStorage.getItem(this.getLocalStorageKey()));
     } catch(err) {/*noop*/}
     return null;
+  }
+  
+  clearState() {
+    window.localStorage.removeItem(this.getLocalStorageKey());
   }
 }

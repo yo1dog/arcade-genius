@@ -130,7 +130,9 @@ export async function calcModelineBulk(_config, _machines) {
   const config = createModelineConfig(_config);
   
   /** @type {Machine[]} */
-  const machines = Array.isArray(_machines)? _machines.slice(0) : [_machines];
+  const machines = (
+    Array.isArray(_machines)? _machines.slice(0) : [_machines]
+  ).filter(x => x);
   
   // create a map of machine inputs
   // this ensures there are no duplicates and also ensures results can be mapped
