@@ -1,4 +1,5 @@
 import './index.less';
+import npmPackage from '../package.json';
 import mameList from './dataAccess/mameList';
 import controlsDat from './dataAccess/controlsDat';
 import MonitorConfiguratorGroup from './components/monitorConfiguratorGroup/monitorConfiguratorGroup';
@@ -65,7 +66,10 @@ async function onLoad() {
 }
 
 function populateMetaData() {
-   const metaData = {
+  const metaData = {
+    mameGenius: {
+      version: npmPackage.version
+    },
     mameList: {...mameList},
     controlsDat: {...controlsDat.meta}
   };
