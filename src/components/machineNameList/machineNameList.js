@@ -1,6 +1,7 @@
 import './machineNameList.less';
 import machineNameListTemplate from './machineNameList.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
+import defaultMachineNameInputs from './defaultMachineNameInputs.json';
 
 
 export default class MachineNameList {
@@ -57,56 +58,5 @@ export default class MachineNameList {
 }
 
 function getDefaultMachineNameInputsStr() {
-  return `1941
-1942
-1943
-1944
-1945kiii
-88games
-area51
-arkanoid
-asteroid
-bosco
-btoads
-bubbles
-bublbob2
-bublbobl
-centiped
-defender
-digdug2
-digdug
-dkong
-dlair
-elevator
-frogger
-galaga
-galaxian
-gauntlet
-invaders
-joust
-llander
-milliped
-missile
-mk
-mpatrol
-mslug
-mspacman
-pacman
-paperboy
-phoenix
-policetr
-qbert
-rampage
-sbrkout
-shollow
-simpsons
-snowbros
-ssriders
-tapper
-tempest
-temptube
-timecris
-tmnt
-tron
-`;
+  return defaultMachineNameInputs.join('\n');
 }
