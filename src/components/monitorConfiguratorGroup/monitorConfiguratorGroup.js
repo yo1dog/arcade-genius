@@ -123,7 +123,7 @@ export default class MonitorConfiguratorGroup {
    * @returns {string}
    */
   getLocalStorageKey() {
-    return 'monitorConfiguratorGroupIds';
+    return 'monitorConfiguratorGroupItemIds';
   }
   
   saveState() {
@@ -139,12 +139,12 @@ export default class MonitorConfiguratorGroup {
    * @returns {string[]}
    */
   loadState() {
-    let configuratorIds = [];
+    let configuratorIds = null;
     try {
       configuratorIds = JSON.parse(window.localStorage.getItem(this.getLocalStorageKey()));
     } catch(err) {/*noop*/}
     
-    return configuratorIds;
+    return configuratorIds || [];
   }
 }
 
