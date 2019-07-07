@@ -4,6 +4,7 @@ import monitorConfiguratorGroupItemTemplate from './monitorConfiguratorGroupItem
 import htmlToBlock from '../../helpers/htmlToBlock';
 import MonitorConfigurator from '../monitorConfigurator/monitorConfigurator';
 import {EventEmitter} from 'events';
+import * as state from '../../dataAccess/state';
 
 /**
  * @typedef {import('../../dataAccess/modelineCalculator').ModelineConfig} ModelineConfig
@@ -122,13 +123,13 @@ export default class MonitorConfiguratorGroup {
   /**
    * @returns {string}
    */
-  getLocalStorageKey() {
+  getStateKey() {
     return 'monitorConfiguratorGroupItemIds';
   }
   
   saveState() {
     const configuratorIds = this.items.map(x => x.configurator.id);
-    window.localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(configuratorIds));
+    state.set(this.getStateKey(), configuratorIds);
     
     for (const item of this.items) {
       item.configurator.saveState();
@@ -141,7 +142,7 @@ export default class MonitorConfiguratorGroup {
   loadState() {
     let configuratorIds = null;
     try {
-      configuratorIds = JSON.parse(window.localStorage.getItem(this.getLocalStorageKey()));
+      configuratorIds = state.get(this.getStateKey());
     } catch(err) {/*noop*/}
     
     return configuratorIds || [];

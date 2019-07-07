@@ -1,6 +1,7 @@
 import './monitorConfigurator.less';
 import monitorConfiguratorTemplate from './monitorConfigurator.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
+import * as state from '../../dataAccess/state';
 
 /** @typedef {import('../../dataAccess/modelineCalculator').ModelineConfig} ModelineConfig */
 
@@ -41,25 +42,22 @@ export default class MonitorConfigurator {
   /**
    * @returns {string}
    */
-  getLocalStorageKey() {
+  getStateKey() {
     return `monitorConfiguratorModelineConfig-${this.id}`;
   }
   
   saveState() {
-    window.localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(this.getModelineConfig()));
+    state.set(this.getStateKey(), this.getModelineConfig());
   }
   
   /**
    * @returns {ModelineConfig}
    */
   loadState() {
-    try {
-      return JSON.parse(window.localStorage.getItem(this.getLocalStorageKey()));
-    } catch(err) {/*noop*/}
-    return null;
+    return state.get(this.getStateKey());
   }
   
   clearState() {
-    window.localStorage.removeItem(this.getLocalStorageKey());
+    state.remove(this.getStateKey());
   }
 }

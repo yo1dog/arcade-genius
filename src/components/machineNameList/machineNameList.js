@@ -2,6 +2,7 @@ import './machineNameList.less';
 import machineNameListTemplate from './machineNameList.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
 import defaultMachineNameInputs from './defaultMachineNameInputs.json';
+import * as state from '../../dataAccess/state';
 
 
 export default class MachineNameList {
@@ -45,15 +46,22 @@ export default class MachineNameList {
     );
   }
   
+  /**
+   * @returns {string}
+   */
+  getStateKey() {
+    return 'machineNameListInput';
+  }
+  
   saveState() {
-    window.localStorage.setItem('machineNameListInput', this.inputElem.value);
+    state.set(this.getStateKey(), this.inputElem.value);
   }
   
   /**
    * @returns {string}
    */
   loadState() {
-    return window.localStorage.getItem('machineNameListInput') || '';
+    return state.get(this.getStateKey()) || '';
   }
 }
 
