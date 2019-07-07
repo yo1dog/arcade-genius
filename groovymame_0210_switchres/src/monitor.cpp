@@ -45,8 +45,13 @@ int monitor_fill_range(monitor_range *range, const char *specs_line)
 			&new_range.interlaced_lines_min, &new_range.interlaced_lines_max);
 
 		if (e != 16) {
-			osd_printf_error("SwitchRes: Error trying to fill monitor range with\n  %s\n", specs_line);
+      /*
+      osd_printf_error("SwitchRes: Error trying to fill monitor range with\n  %s\n", specs_line);
 			return -1;
+      */
+      char message[512] = {'\x00'};
+      sprintf(message, "SwitchRes: Error trying to fill monitor range with\n  %s\n", specs_line);
+			throw std::invalid_argument(message);
 		}
 
 		new_range.vfront_porch /= 1000;
@@ -56,8 +61,13 @@ int monitor_fill_range(monitor_range *range, const char *specs_line)
 
 		if (monitor_evaluate_range(&new_range))
 		{
-			osd_printf_error("SwitchRes: Error in monitor range (ignoring): %s\n", specs_line);
-			return -1;
+      /*
+      osd_printf_error("SwitchRes: Error in monitor range (ignoring): %s\n", specs_line);
+      return -1;
+      */
+      char message[512] = {'\x00'};
+      sprintf(message, "SwitchRes: Error in monitor range (ignoring): %s\n", specs_line);
+			throw std::invalid_argument(message);
 		}
 		else
 		{
