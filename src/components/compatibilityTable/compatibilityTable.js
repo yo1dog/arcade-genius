@@ -100,7 +100,14 @@ export default class CompatibilityTable extends EventEmitter {
     const {controlsStatusDesc, controlsStatusClass} = this.translateControlsStatus(machineComp.controlsComp.status);
     
     const detailsStr = machine? JSON.stringify({
-      modelineResults: machineComp.videoComps.map(videoComp => videoComp.modelineResult),
+      modelineResults: (
+        machineComp.videoComps.reduce(
+          (obj, videoComp, i) => Object.assign(obj, {
+            [monitorConfigTitles[i]]: videoComp.modelineResult
+          }),
+          {}
+        )
+      ),
       machine,
       controlsDatGame: machineComp.controlsComp.controlsDatGame
     }, null, 2) : '';
