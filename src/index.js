@@ -12,6 +12,8 @@ import * as modelineCalculator from './dataAccess/modelineCalculator';
 document.addEventListener('DOMContentLoaded', onLoad, false);
 
 async function onLoad() {
+  document.querySelector('.title-version-tag__number').innerText = `v${npmPackage.version}`;
+  
   const loadingTimerId = startLoading();
   await modelineCalculator.init();
   doneLoading(loadingTimerId);
