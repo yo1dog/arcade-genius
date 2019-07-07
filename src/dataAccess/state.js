@@ -1,7 +1,19 @@
+const LOCAL_STATE_CUR_VERSION_NUM = 2;
+const LOCAL_STATE_MIN_VERSION_NUM = 2;
+const LOCAL_STATE_VERSION_NUM_KEY = '__stateVersionNum';
+
+const localStateVersionNum = parseInt(window.localStorage.getItem(LOCAL_STATE_VERSION_NUM_KEY), 10);
+if (isNaN(localStateVersionNum) || localStateVersionNum < LOCAL_STATE_MIN_VERSION_NUM) {
+  window.localStorage.clear();
+}
+
+window.localStorage.setItem(LOCAL_STATE_VERSION_NUM_KEY, LOCAL_STATE_CUR_VERSION_NUM);
+
+const state = {};
+
 const searchParams = new URLSearchParams(location.search);
 const urlStateSearchParamKey = 'state';
 
-const state = {};
 
 let initURLState = {};
 try {
