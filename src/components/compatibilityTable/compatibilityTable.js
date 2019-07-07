@@ -99,18 +99,29 @@ export default class CompatibilityTable extends EventEmitter {
     const {emuStatusDesc, emuStatusClass} = this.translateEmulationStatus(machineComp.emuComp.status);
     const {controlsStatusDesc, controlsStatusClass} = this.translateControlsStatus(machineComp.controlsComp.status);
     
-    const detailsStr = machine? JSON.stringify({
-      modelineResults: (
-        machineComp.videoComps.reduce(
-          (obj, videoComp, i) => Object.assign(obj, {
-            [monitorConfigTitles[i]]: videoComp.modelineResult
-          }),
-          {}
+    const detailsStr = (
+      !machine? `Machine not found: ${machineComp.machineNameInput}` :
+      monitorConfigTitles.map((monitorConfigTitle, i) =>
+        (monitorConfigTitles.length > 1? `${monitorConfigTitle}:\n` : '') +
+        (
+          machineComp.videoComps[i].modelineResult.err? `${machineComp.videoComps[i].modelineResult.err}\n` :
+          `${machineComp.videoComps[i].modelineResult.description}\n` +
+          `${machineComp.videoComps[i].modelineResult.details}\n`
         )
-      ),
-      machine,
-      controlsDatGame: machineComp.controlsComp.controlsDatGame
-    }, null, 2) : '';
+      ).join('') + '\n' +
+      JSON.stringify({
+        modelineResults: (
+          machineComp.videoComps.reduce(
+            (obj, videoComp, i) => Object.assign(obj, {
+              [monitorConfigTitles[i]]: videoComp.modelineResult
+            }),
+            {}
+          )
+        ),
+        machine,
+        controlsDatGame: machineComp.controlsComp.controlsDatGame
+      }, null, 2)
+    );
     
     // create short description
     const shortDesc = machine? this.shortenDescription(machine.description) : 'machine not found';
