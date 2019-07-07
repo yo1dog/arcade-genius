@@ -1,10 +1,11 @@
 <div class="monitor-configurator">
   <table>
     <tr>
-      <td>Monitor Preset:</td>
+      <td>Preset:</td>
       <td>
         <select class="monitor-configurator__preset-input">
           <!--<option>custom</option>-->
+          <option value="custom">custom</option>
           <option value="pal">pal</option>
           <option value="ntsc">ntsc</option>
           <option value="generic_15">generic_15</option>
@@ -37,14 +38,28 @@
         </select>
       </td>
     </tr>
+    <tr class="monitor-configurator__ranges-row hidden">
+      <td>Ranges:</td>
+      <td>
+        <textarea class="monitor-configurator__ranges-input"></textarea>
+      </td>
+    </tr>
     <tr>
-      <td>Monitor Orientation:</td>
+      <td>Orientation:</td>
       <td>
         <select class="monitor-configurator__orientation-input">
           <option value="horizontal">horizontal</option>
           <option value="vertical">vertical</option>
         </select>
       </td>
+    </tr>
+    <tr>
+      <td>Allow Interlaced:</td>
+      <td><input type="checkbox" class="monitor-configurator__allow-interlaced-checkbox" checked /></td>
+    </tr>
+    <tr>
+      <td>Allow Doublescan:</td>
+      <td><input type="checkbox" class="monitor-configurator__allow-doublescan-checkbox" checked /></td>
     </tr>
   </table>
    
