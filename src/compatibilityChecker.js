@@ -172,9 +172,9 @@ function getVideoStatus(modelineResult) {
   if (
     modelineResult.modeline.interlace ||
     modelineResult.resStretch ||
-    modelineResult.vfreqOff ||
+    modelineResult.vfreqOff /*||
     modelineResult.xDiff !== 0 ||
-    modelineResult.yDiff !== 0
+    modelineResult.yDiff !== 0*/
   ) {
     return 'bad';
   }
