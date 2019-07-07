@@ -99,29 +99,7 @@ export default class CompatibilityTable extends EventEmitter {
     const {emuStatusDesc, emuStatusClass} = this.translateEmulationStatus(machineComp.emuComp.status);
     const {controlsStatusDesc, controlsStatusClass} = this.translateControlsStatus(machineComp.controlsComp.status);
     
-    const detailsStr = (
-      !machine? `Machine not found: ${machineComp.machineNameInput}` :
-      monitorConfigTitles.map((monitorConfigTitle, i) =>
-        (monitorConfigTitles.length > 1? `${monitorConfigTitle}:\n` : '') +
-        (
-          machineComp.videoComps[i].modelineResult.err? `${machineComp.videoComps[i].modelineResult.err}\n` :
-          `${machineComp.videoComps[i].modelineResult.description}\n` +
-          `${machineComp.videoComps[i].modelineResult.details}\n`
-        )
-      ).join('') + '\n' +
-      JSON.stringify({
-        modelineResults: (
-          machineComp.videoComps.reduce(
-            (obj, videoComp, i) => Object.assign(obj, {
-              [monitorConfigTitles[i]]: videoComp.modelineResult
-            }),
-            {}
-          )
-        ),
-        machine,
-        controlsDatGame: machineComp.controlsComp.controlsDatGame
-      }, null, 2)
-    );
+    const detailsStr = CompatibilityTable.getDetailsStr(machineComp, monitorConfigTitles);
     
     // create short description
     const shortDesc = machine? this.shortenDescription(machine.description) : 'machine not found';
@@ -198,6 +176,60 @@ export default class CompatibilityTable extends EventEmitter {
     });
     
     return rowBlock;
+  }
+  
+  /**
+   * @param {MachineCompatibility} machineComp 
+   * @param {string[]} monitorConfigTitles
+   * @returns {string}
+   */
+  static getDetailsStr(machineComp, monitorConfigTitles) {
+    if (!machineComp.machine) {
+      return `Machine not found: ${machineComp.machineNameInput}`;
+    }
+    
+    let detailsStr = '';
+    for (let i = 0; i < monitorConfigTitles.length; ++i) {
+      const monitorConfigTitle = monitorConfigTitles[i];
+      const videoComp = machineComp.videoComps[i];
+      
+      if (monitorConfigTitles.length > 1) {
+        detailsStr += `${monitorConfigTitle}:\n`;
+      }
+      
+      if (!videoComp || !videoComp.modelineResult) {
+        detailsStr += '--\n';
+      }
+      else if (videoComp.modelineResult.err) {
+        detailsStr += `${videoComp.modelineResult.err}\n`;
+      }
+      else {
+        detailsStr += `${videoComp.modelineResult.description}\n`;
+        detailsStr += `${videoComp.modelineResult.details}\n`;
+      }
+    }
+    
+    const detailsObj = {};
+    if (monitorConfigTitles.length > 1) {
+      detailsObj.modelineResultMap = {};
+      
+      for (let i = 0; i < monitorConfigTitles.length; ++i) {
+        const monitorConfigTitle = monitorConfigTitles[i];
+        const videoComp = machineComp.videoComps[i];
+        
+        detailsObj.modelineResultMap[monitorConfigTitle] = (videoComp && videoComp.modelineResult) || null;
+      }
+    }
+    else {
+      const videoComp = machineComp.videoComps[0];
+      detailsObj.modelineResult = (videoComp && videoComp.modelineResult) || null;
+    }
+    
+    detailsObj.machine = machineComp.machine || null;
+    detailsObj.controlsDatGame = machineComp.controlsComp.controlsDatGame || null;
+    
+    detailsStr += `\n${JSON.stringify(detailsObj, null, 2)}`;
+    return detailsStr;
   }
   
   /**
