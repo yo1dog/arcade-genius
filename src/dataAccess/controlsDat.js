@@ -45,7 +45,8 @@
  * @property {string} [posLabel]
  */
 
-import _restructuredControls from '../../data/controls.filtered.partial.min.json';
+//import _restructuredControls from '../../data/controls.filtered.partial.min.json';
+const _restructuredControls = {meta:{version:'0.0.0'},gameMap:{}};
 
 /** @type {ControlsDat} */
 const restructuredControls = _restructuredControls;
