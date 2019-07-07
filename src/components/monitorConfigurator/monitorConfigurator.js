@@ -1,6 +1,7 @@
 import './monitorConfigurator.less';
 import monitorConfiguratorTemplate from './monitorConfigurator.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
+import coalesceUndefined from '../../helpers/coalesceUndefined';
 import * as state from '../../dataAccess/state';
 
 /** @typedef {import('../../dataAccess/modelineCalculator').ModelineConfig} ModelineConfig */
@@ -31,9 +32,9 @@ export default class MonitorConfigurator {
     if (modelineConfig) {
       this.presetInputElem            .value   = modelineConfig.preset;
       this.orientationInputElem       .value   = modelineConfig.orientation;
-      this.rangesInputElem            .value   = modelineConfig.ranges.join('\n');
-      this.allowInterlacedCheckboxElem.checked = modelineConfig.allowInterlaced;
-      this.allowDoublescanCheckboxElem.checked = modelineConfig.allowDoublescan;
+      this.rangesInputElem            .value   = (modelineConfig.ranges || []).join('\n');
+      this.allowInterlacedCheckboxElem.checked = coalesceUndefined(modelineConfig.allowInterlaced, false);
+      this.allowDoublescanCheckboxElem.checked = coalesceUndefined(modelineConfig.allowDoublescan, true);
     }
     this.updateRangesVisibility();
   }
