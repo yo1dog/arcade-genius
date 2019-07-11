@@ -3,6 +3,7 @@ import npmPackage from '../package.json';
 import mameList from './dataAccess/mameList';
 import controlsDat from './dataAccess/controlsDat';
 import MonitorConfiguratorGroup from './components/monitorConfiguratorGroup/monitorConfiguratorGroup';
+import ControlsConfigurator from './components/controlsConfigurator/controlsConfigurator';
 import MachineNameList from './components/machineNameList/machineNameList';
 import CompatibilityTable from './components/compatibilityTable/compatibilityTable';
 import * as compChecker from './compatibilityChecker';
@@ -26,12 +27,16 @@ async function onLoad() {
   const monitorConfiguratorGroup = new MonitorConfiguratorGroup();
   document.querySelector('.monitor-configurator-group-container').appendChild(monitorConfiguratorGroup.elem);
   
+  const controlsConfigurator = new ControlsConfigurator('__single');
+  document.querySelector('.controls-configurator-container').appendChild(controlsConfigurator.elem);
+  
   const compTable = new CompatibilityTable();
   document.querySelector('.comp-table-container').appendChild(compTable.elem);
   
   let refreshIsPending = false;
   compTable.on('refresh', async () => {
     monitorConfiguratorGroup.saveState();
+    controlsConfigurator.saveState();
     machineNameList.saveState();
     
     if (refreshIsPending) return;
@@ -63,6 +68,7 @@ async function onLoad() {
   });
   
   monitorConfiguratorGroup.init();
+  controlsConfigurator.init();
   machineNameList.init();
   compTable.refresh();
 }
