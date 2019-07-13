@@ -1,6 +1,6 @@
-import './controlsConfigurator.less';
-import controlsConfiguratorTemplate from './controlsConfigurator.html';
-import controlsConfiguratorControlRowTemplate from './controlsConfiguratorControlRow.html';
+import './controlPanelConfigurator.less';
+import controlPanelConfiguratorTemplate from './controlPanelConfigurator.html';
+import controlPanelConfiguratorControlRowTemplate from './controlPanelConfiguratorControlRow.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
 import * as state from '../../dataAccess/state';
 import controlDefMap from '../../dataAccess/controlsDefMap';
@@ -9,7 +9,7 @@ import clearNodeChildren from '../../helpers/clearNodeChildren';
 /** @typedef {import('../../dataAccess/controlsDefMap').ControlDef} ControlDef */
 
 /**
- * @typedef ControlsConfig
+ * @typedef ControlPanelConfig
  * @property {number} p1NumButtons
  * @property {number} p2NumButtons
  * @property {number} p3NumButtons
@@ -22,22 +22,22 @@ import clearNodeChildren from '../../helpers/clearNodeChildren';
  */
 
 
-export default class ControlsConfigurator {
+export default class ControlPanelConfigurator {
   /**
    * @param {string} id 
    */
   constructor(id) {
     this.id = id;
     
-    this.elem = htmlToBlock(controlsConfiguratorTemplate).firstElementChild;
-    this.p1NumButtonsInputElem     = this.elem.querySelector('.controls-configurator__num-buttons-input--p1');
-    this.p2NumButtonsInputElem     = this.elem.querySelector('.controls-configurator__num-buttons-input--p2');
-    this.p3NumButtonsInputElem     = this.elem.querySelector('.controls-configurator__num-buttons-input--p3');
-    this.p4NumButtonsInputElem     = this.elem.querySelector('.controls-configurator__num-buttons-input--p4');
-    this.controlTableElem          = this.elem.querySelector('.controls-configurator__control-table');
-    this.addControlTypeSelectElem  = this.elem.querySelector('.controls-configurator__add-control-type-select');
-    this.addControlButtonElem      = this.elem.querySelector('.controls-configurator__add-control-button');
-    this.addControlDescriptionElem = this.elem.querySelector('.controls-configurator__add-control-description');
+    this.elem = htmlToBlock(controlPanelConfiguratorTemplate).firstElementChild;
+    this.p1NumButtonsInputElem     = this.elem.querySelector('.control-panel-configurator__num-buttons-input--p1');
+    this.p2NumButtonsInputElem     = this.elem.querySelector('.control-panel-configurator__num-buttons-input--p2');
+    this.p3NumButtonsInputElem     = this.elem.querySelector('.control-panel-configurator__num-buttons-input--p3');
+    this.p4NumButtonsInputElem     = this.elem.querySelector('.control-panel-configurator__num-buttons-input--p4');
+    this.controlTableElem          = this.elem.querySelector('.control-panel-configurator__control-table');
+    this.addControlTypeSelectElem  = this.elem.querySelector('.control-panel-configurator__add-control-type-select');
+    this.addControlButtonElem      = this.elem.querySelector('.control-panel-configurator__add-control-button');
+    this.addControlDescriptionElem = this.elem.querySelector('.control-panel-configurator__add-control-description');
     
     /** @type {Object<string, ControlRowDef>} */
     this.controlTypeRowDefMap = {};
@@ -127,10 +127,10 @@ export default class ControlsConfigurator {
       return this.controlTypeRowDefMap[controlDef.type];
     }
     
-    const rowElem = htmlToBlock(controlsConfiguratorControlRowTemplate).firstElementChild;
-    const nameElem         = rowElem.querySelector('.controls-configurator__control-name');
-    const countInputElem   = rowElem.querySelector('.controls-configurator__control-count-input');
-    const removeButtonElem = rowElem.querySelector('.controls-configurator__control-remove-button');
+    const rowElem = htmlToBlock(controlPanelConfiguratorControlRowTemplate).firstElementChild;
+    const nameElem         = rowElem.querySelector('.control-panel-configurator__control-name');
+    const countInputElem   = rowElem.querySelector('.control-panel-configurator__control-count-input');
+    const removeButtonElem = rowElem.querySelector('.control-panel-configurator__control-remove-button');
     
     nameElem.innerText = controlDef.name;
     removeButtonElem.addEventListener('click', () => {
@@ -194,14 +194,14 @@ export default class ControlsConfigurator {
   }
   
   init() {
-    const controlsConfig = this.loadState();
-    if (controlsConfig) {
-      this.p1NumButtonsInputElem.value = controlsConfig.p1NumButtons || 0;
-      this.p2NumButtonsInputElem.value = controlsConfig.p2NumButtons || 0;
-      this.p3NumButtonsInputElem.value = controlsConfig.p3NumButtons || 0;
-      this.p4NumButtonsInputElem.value = controlsConfig.p4NumButtons || 0;
+    const controlPanelConfig = this.loadState();
+    if (controlPanelConfig) {
+      this.p1NumButtonsInputElem.value = controlPanelConfig.p1NumButtons || 0;
+      this.p2NumButtonsInputElem.value = controlPanelConfig.p2NumButtons || 0;
+      this.p3NumButtonsInputElem.value = controlPanelConfig.p3NumButtons || 0;
+      this.p4NumButtonsInputElem.value = controlPanelConfig.p4NumButtons || 0;
       
-      for (const [controlType, count] of Object.entries(controlsConfig.controlTypeCountMap)) {
+      for (const [controlType, count] of Object.entries(controlPanelConfig.controlTypeCountMap)) {
         const controlDef = controlDefMap[controlType];
         if (!controlDef) continue;
         
@@ -211,11 +211,11 @@ export default class ControlsConfigurator {
   }
   
   /**
-   * @returns {ControlsConfig}
+   * @returns {ControlPanelConfig}
    */
-  getControlsConfig() {
-    /** @type {ControlsConfig} */
-    const controlsConfig = {
+  getControlPanelConfig() {
+    /** @type {ControlPanelConfig} */
+    const controlPanelConfig = {
       p1NumButtons: parseInt(this.p1NumButtonsInputElem.value, 10) || 0,
       p2NumButtons: parseInt(this.p2NumButtonsInputElem.value, 10) || 0,
       p3NumButtons: parseInt(this.p3NumButtonsInputElem.value, 10) || 0,
@@ -227,25 +227,25 @@ export default class ControlsConfigurator {
       const controlDef = controlDefMap[controlType];
       if (!controlDef) continue;
       
-      controlsConfig.controlTypeCountMap[controlType] = this.getControlCount(controlDef);
+      controlPanelConfig.controlTypeCountMap[controlType] = this.getControlCount(controlDef);
     }
     
-    return controlsConfig;
+    return controlPanelConfig;
   }
   
   /**
    * @returns {string}
    */
   getStateKey() {
-    return `controlsConfiguratorModelineConfig-${this.id}`;
+    return `controlPanelConfiguratorModelineConfig-${this.id}`;
   }
   
   saveState() {
-    state.set(this.getStateKey(), this.getControlsConfig());
+    state.set(this.getStateKey(), this.getControlPanelConfig());
   }
   
   /**
-   * @returns {ControlsConfig}
+   * @returns {ControlPanelConfig}
    */
   loadState() {
     return state.get(this.getStateKey());
