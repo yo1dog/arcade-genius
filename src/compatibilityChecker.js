@@ -7,6 +7,8 @@ import * as modelineCaculator from './dataAccess/modelineCalculator';
  * @typedef {import('./dataAccess/mameList').MachineDriverStatus} MachineDriverStatus
  * 
  * @typedef {import('./dataAccess/controlsDat').ControlsDatGame} ControlsDatGame
+ * @typedef {import('./dataAccess/controlsDat').ControlConfiguration} ControlConfiguration
+ * @typedef {import('./components/controlPanelConfigurator/controlPanelConfigurator').ControlPanelConfig} ControlPanelConfig
  * 
  * @typedef {import('./dataAccess/modelineCalculator').ModelineConfig} ModelineConfig
  * @typedef {import('./dataAccess/modelineCalculator').ModelineResult} ModelineResult
@@ -224,6 +226,94 @@ export function checkControls(machine) {
     status: getControlsStatus(controlsDatGame),
   };
 }
+
+///**
+// * @param {ControlConfiguration} controlConfig 
+// * @param {ControlPanelConfig} controlPanelConfig 
+// */
+//function getControlConfigCompatibility(controlConfig, controlPanelConfig) {
+//  /** @type {Object<string, number>} */
+//  const missingControlTypeCountMap = {};
+//  
+//  /** @type {ControlPanelConfig} */
+//  const usedControlPanelConfig = {
+//    ...controlPanelConfig,
+//    controlTypeCountMap: {
+//      ...controlPanelConfig.controlTypeCountMap
+//    }
+//  };
+//  
+//  // TODO: check controlConfig.menuButtons
+//  // TODO: check controlConfig.requiresCocktailCabinet
+//  
+//  const requiredControlSets = controlConfig.controlSets.filter(x => x.isRequired);
+//  for (const controlSet of requiredControlSets) {
+//    const playerIndex = Math.min(...controlSet.supportedPlayerNums) - 1;
+//    const controlPanelButtonCount = controlPanelConfig.playerButtonCounts[playerIndex];
+//    
+//    // check if the control panel has enough buttons
+//    if (controlSet.controlPanelButtons.length > controlPanelButtonCount) {
+//      
+//    }
+//  }
+//  
+//  controlConfig.controlSets.every(gameControlSet => {
+//    // find a cab control set that matches the game control set (and has not yet been used)
+//    const matchedCabControlSet = Array.from(unsuedCabControlSetsSet).find(cabControlSet =>
+//      matchCabControlSet(cabControlSet, gameControlSet, controlDefMap)
+//    );
+//    
+//    if (matchedCabControlSet) {
+//      unsuedCabControlSetsSet.delete(matchedCabControlSet);
+//      return true;
+//    }
+//    
+//    return !gameControlSet.isRequired;
+//  });
+//}
+//
+//function matchCabControlSet(cabControlSet, gameControlSet, controlDefMap) {
+//  // check if control sets are on the same side 
+//  if (cabControlSet.isOnOppositeScreenSide !== gameControlSet.isOnOppositeScreenSide) {
+//    return false;
+//  }
+//  
+//  const unusedControlTypeCounts = Object.assign({}, cabControlSet.controlTypeCounts);
+//  
+//  // for each control...
+//  for (let i = 0; i < gameControlSet.controls.length; ++i) {
+//    const control = gameControlSet.controls[i];
+//    const controlDef = controlDefMap[control.type];
+//    
+//    let useableControlTypes;
+//    if (controlDef) {
+//      useableControlTypes = [controlDef.type].concat(
+//        (controlDef.fallbacks || [])
+//        .filter(fallback => fallback.level === 'good')
+//        .map(fallback => fallback.controlType)
+//      );
+//    }
+//    else {
+//      useableControlTypes = [control.type];
+//    }
+//    
+//    const unusedControlType = useableControlTypes.find(controlType => unusedControlTypeCounts[controlType] > 0);
+//    if (!unusedControlType) {
+//      return false;
+//    }
+//    
+//    --unusedControlTypeCounts[unusedControlType];
+//  }
+//  
+//  // ensure enough buttons are supported
+//  const cabNumButtons = cabControlSet.numButtons;
+//  const gameNumButtons = gameControlSet.controlPanelButtons.length;
+//  if (cabNumButtons < gameNumButtons) {
+//    return false;
+//  }
+//  
+//  return true;
+//}
 
 /**
  * @param {ControlsDatGame} controlsDatGame 

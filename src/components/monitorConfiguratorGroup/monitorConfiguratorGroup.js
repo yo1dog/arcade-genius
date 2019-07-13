@@ -5,6 +5,7 @@ import htmlToBlock from '../../helpers/htmlToBlock';
 import MonitorConfigurator from '../monitorConfigurator/monitorConfigurator';
 import {EventEmitter} from 'events';
 import * as state from '../../dataAccess/state';
+import createUUID from '../../helpers/createUUID';
 
 /**
  * @typedef {import('../../dataAccess/modelineCalculator').ModelineConfig} ModelineConfig
@@ -46,7 +47,7 @@ export default class MonitorConfiguratorGroup {
     const itemIndex = this.items.length;
     const itemTitle = this.createTitleFromIndex(itemIndex);
     
-    const configurator = new MonitorConfigurator(configuratorId || createConfiguratorId());
+    const configurator = new MonitorConfigurator(configuratorId || createUUID());
     configurator.init();
     
     const item = new MonitorConfiguratorGroupItem(itemTitle, configurator);
@@ -147,11 +148,6 @@ export default class MonitorConfiguratorGroup {
     
     return configuratorIds || [];
   }
-}
-
-let __configuratorIdInc = 0;
-function createConfiguratorId() {
-  return `${Date.now()}-${__configuratorIdInc++}`;
 }
 
 class MonitorConfiguratorGroupItem extends EventEmitter {

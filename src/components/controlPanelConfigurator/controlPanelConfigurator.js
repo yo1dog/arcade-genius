@@ -1,24 +1,43 @@
 import './controlPanelConfigurator.less';
-import controlPanelConfiguratorTemplate from './controlPanelConfigurator.html';
-import controlPanelConfiguratorControlRowTemplate from './controlPanelConfiguratorControlRow.html';
+import cpConfiguratorTemplate from './controlPanelConfigurator.html';
+import cpConfiguratorButtonClusterTemplate from './controlPanelConfiguratorButtonCluster.html';
+import cpConfiguratorControlSetTemplate from './controlPanelConfiguratorControlSet.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
 import * as state from '../../dataAccess/state';
-import controlDefMap from '../../dataAccess/controlsDefMap';
+import controlDefMap from '../../dataAccess/controlDefMap';
 import clearNodeChildren from '../../helpers/clearNodeChildren';
+import createUUID from '../../helpers/createUUID';
 
-/** @typedef {import('../../dataAccess/controlsDefMap').ControlDef} ControlDef */
+/** @typedef {import('../../dataAccess/controlDefMap').ControlDef} ControlDef */
 
 /**
  * @typedef ControlPanelConfig
- * @property {number} p1NumButtons
- * @property {number} p2NumButtons
- * @property {number} p3NumButtons
- * @property {number} p4NumButtons
- * @property {Object<string, number>} controlTypeCountMap
+ * @property {ControlPanelButtonCluster[]} buttonClusters
+ * @property {ControlPanelControlSet[]} controlSets
  * 
- * @typedef ControlRowDef
+ * @typedef ControlPanelButtonCluster
+ * @property {string} id
+ * @property {string} name
+ * @property {number} numButtons
+ * 
+ * @typedef ControlPanelControlSet
+ * @property {string} id
+ * @property {string} name
+ * @property {ControlDef} controlDef
+ * @property {ControlPanelButtonCluster} buttonCluster
+ * 
+ * @typedef ButtonClusterRowDef
+ * @property {string} buttonClusterId
  * @property {HTMLTableRowElement} rowElem
+ * @property {HTMLInputElement} nameInputElem
  * @property {HTMLInputElement} countInputElem
+ * 
+ * @typedef ControlSetRowDef
+ * @property {string} controlSetId
+ * @property {ControlDef} controlDef
+ * @property {HTMLTableRowElement} rowElem
+ * @property {HTMLInputElement} nameInputElem
+ * @property {HTMLSelectElement} buttonClusterSelectElem
  */
 
 
@@ -29,38 +48,235 @@ export default class ControlPanelConfigurator {
   constructor(id) {
     this.id = id;
     
-    this.elem = htmlToBlock(controlPanelConfiguratorTemplate).firstElementChild;
-    this.p1NumButtonsInputElem     = this.elem.querySelector('.control-panel-configurator__num-buttons-input--p1');
-    this.p2NumButtonsInputElem     = this.elem.querySelector('.control-panel-configurator__num-buttons-input--p2');
-    this.p3NumButtonsInputElem     = this.elem.querySelector('.control-panel-configurator__num-buttons-input--p3');
-    this.p4NumButtonsInputElem     = this.elem.querySelector('.control-panel-configurator__num-buttons-input--p4');
-    this.controlTableElem          = this.elem.querySelector('.control-panel-configurator__control-table');
-    this.addControlTypeSelectElem  = this.elem.querySelector('.control-panel-configurator__add-control-type-select');
-    this.addControlButtonElem      = this.elem.querySelector('.control-panel-configurator__add-control-button');
-    this.addControlDescriptionElem = this.elem.querySelector('.control-panel-configurator__add-control-description');
+    this.elem = htmlToBlock(cpConfiguratorTemplate).firstElementChild;
+    this.buttonClusterTableBodyElem    = this.elem.querySelector('.control-panel-configurator__button-cluster-table__body');
+    this.addButtonClusterTableBodyElem = this.elem.querySelector('.control-panel-configurator__add-button-cluster-button');
     
-    /** @type {Object<string, ControlRowDef>} */
-    this.controlTypeRowDefMap = {};
+    this.controlSetTableBodyElem = this.elem.querySelector('.control-panel-configurator__control-set-table__body');
+    this.controlTypeSelectElem   = this.elem.querySelector('.control-panel-configurator__control-type-select');
+    this.addControlSetButtonElem = this.elem.querySelector('.control-panel-configurator__add-control-set-button');
+    this.controlDescriptionElem  = this.elem.querySelector('.control-panel-configurator__control-description');
+    
+    /** @type {ButtonClusterRowDef[]} */
+    this.buttonClusterRowDefs = [];
+    /** @type {ControlSetRowDef[]} */
+    this.controlSetRowDefs = [];
+    
+    this.addButtonClusterTableBodyElem.addEventListener('click', () => {
+      this.addButtonClusterRow();
+      this.updateAllButtonClusterSelectElems();
+    });
     
     this.populateControlTypeSelect();
     
-    this.addControlTypeSelectElem.addEventListener('change', () => {
-      const controlType = this.addControlTypeSelectElem.value;
+    this.controlTypeSelectElem.addEventListener('change', () => {
+      const controlType = this.controlTypeSelectElem.value;
       const controlDef = controlDefMap[controlType];
       
       this.setControlDescription(controlDef);
     });
     
-    this.addControlButtonElem.addEventListener('click', () => {
-      const controlType = this.addControlTypeSelectElem.value;
-      const controlDef = controlDefMap[controlType];
-      
-      if (!controlDef) {
+    this.addControlSetButtonElem.addEventListener('click', () => {
+      const controlType = this.controlTypeSelectElem.value;
+      if (!controlType) {
         return;
       }
       
-      this.addControl(controlDef);
+      const controlDef = controlDefMap[controlType];
+      this.addControlSetRow({controlDef});
     });
+  }
+  
+  /**
+   * @param {object} [options] 
+   * @param {string} [options.buttonClusterId] 
+   * @param {string} [options.name] 
+   * @param {number} [options.numButtons] 
+   * @returns {ButtonClusterRowDef}
+   */
+  addButtonClusterRow({buttonClusterId = null, name = null, numButtons = null} = {}) {
+    buttonClusterId = buttonClusterId || createUUID();
+    
+    const rowElem = htmlToBlock(cpConfiguratorButtonClusterTemplate).firstElementChild;
+    const nameInputElem    = rowElem.querySelector('.control-panel-configurator__button-cluster__name-input');
+    const countInputElem   = rowElem.querySelector('.control-panel-configurator__button-cluster__count-input');
+    const removeButtonElem = rowElem.querySelector('.control-panel-configurator__button-cluster__remove-button');
+    
+    rowElem.setAttribute('data-button-cluster-id', buttonClusterId);
+    nameInputElem.value = name || this.getAutoButtonClusterName();
+    countInputElem.value = numButtons || 1;
+    
+    nameInputElem.addEventListener('change', () => {
+      this.updateAllButtonClusterSelectElems();
+    });
+    removeButtonElem.addEventListener('click', () => {
+      this.removeButtonClusterRow(buttonClusterId);
+      this.updateAllButtonClusterSelectElems();
+    });
+    
+    this.buttonClusterTableBodyElem.appendChild(rowElem);
+    
+    /** @type {ButtonClusterRowDef} */
+    const buttonClusterRowDef = {
+      buttonClusterId,
+      rowElem,
+      nameInputElem,
+      countInputElem
+    };
+    this.buttonClusterRowDefs.push(buttonClusterRowDef);
+    
+    return buttonClusterRowDef;
+  }
+  
+  removeButtonClusterRow(buttonClusterId) {
+    const index = this.buttonClusterRowDefs.findIndex(x => x.buttonClusterId === buttonClusterId);
+    if (index === -1) return;
+    
+    const buttonClusterRowDef = this.buttonClusterRowDefs[index];
+    
+    buttonClusterRowDef.rowElem.remove();
+    
+    this.buttonClusterRowDefs.splice(index, 1);
+  }
+  
+  /**
+   * @returns {string}
+   */
+  getAutoButtonClusterName() {
+    const autoNameBase = 'Buttons';
+    const regexp = new RegExp(`^\\s*${autoNameBase}\\s+(\\d+)\\s*$`);
+    let maxAutoNameNumSuffix = 0;
+    
+    for (const buttonClusterRowRef of this.buttonClusterRowDefs) {
+      const result = regexp.exec(buttonClusterRowRef.nameInputElem.value);
+      if (!result) continue;
+      
+      const autoNameNumSuffix = parseInt(result[1], 10);
+      if (autoNameNumSuffix > maxAutoNameNumSuffix) {
+        maxAutoNameNumSuffix = autoNameNumSuffix;
+      }
+    }
+    
+    return `${autoNameBase} ${maxAutoNameNumSuffix + 1}`;
+  }
+  
+  /**
+   * @param {object} options 
+   * @param {ControlDef} options.controlDef 
+   * @param {string} [options.controlSetId] 
+   * @param {string} [options.name] 
+   * @param {string} [options.buttonClusterId] 
+   * @returns {ButtonClusterRowDef}
+   */
+  addControlSetRow({controlDef, controlSetId = null, name = null, buttonClusterId = null}) {
+    controlSetId = controlSetId || createUUID();
+    
+    const rowElem = htmlToBlock(cpConfiguratorControlSetTemplate).firstElementChild;
+    const nameInputElem           = rowElem.querySelector('.control-panel-configurator__control-set__name-input');
+    const controlNameElem         = rowElem.querySelector('.control-panel-configurator__control-set__control-name');
+    const buttonClusterSelectElem = rowElem.querySelector('.control-panel-configurator__control-set__button-cluster-select');
+    const removeButtonElem        = rowElem.querySelector('.control-panel-configurator__control-set__remove-button');
+    
+    rowElem.setAttribute('data-control-set-id', controlSetId);
+    nameInputElem.value = name || this.getAutoControlSetName(controlDef);
+    controlNameElem.innerText = controlDef.name;
+    this.updateButtonClusterSelectElem(buttonClusterSelectElem);
+    
+    if (buttonClusterId) {
+      // ensure button cluster ID exists
+      if (this.buttonClusterRowDefs.findIndex(x => x.buttonClusterId === buttonClusterId) !== -1) {
+        buttonClusterSelectElem.value = buttonClusterId;
+      }
+    }
+    
+    removeButtonElem.addEventListener('click', () => {
+      this.removeControlSetRow(controlSetId);
+    });
+    
+    this.controlSetTableBodyElem.appendChild(rowElem);
+    
+    /** @type {ControlSetRowDef} */
+    const controlSetRowDef = {
+      controlSetId,
+      controlDef,
+      rowElem,
+      nameInputElem,
+      buttonClusterSelectElem
+    };
+    this.controlSetRowDefs.push(controlSetRowDef);
+    
+    return controlSetRowDef;
+  }
+  
+  /**
+   * @param {string} controlSetId
+   */
+  removeControlSetRow(controlSetId) {
+    const index = this.controlSetRowDefs.findIndex(x => x.controlSetId === controlSetId);
+    if (index === -1) return;
+    
+    const controlSetRowDef = this.controlSetRowDefs[index];
+    
+    controlSetRowDef.rowElem.remove();
+    
+    this.controlSetRowDefs.splice(index, 1);
+  }
+  
+  /**
+   * @param {ControlDef} controlDef 
+   * @returns {string}
+   */
+  getAutoControlSetName(controlDef) {
+    const autoNameBase = controlDef.name;
+    const regexp = new RegExp(`^\\s*${autoNameBase}(\\s+(\\d+))?\\s*$`);
+    let maxAutoNameNumSuffix = 0;
+    
+    for (const controlSetRowRef of this.controlSetRowDefs) {
+      const result = regexp.exec(controlSetRowRef.nameInputElem.value);
+      if (!result) continue;
+      
+      const autoNameNumSuffix = result[2]? parseInt(result[2], 10) : 1;
+      if (autoNameNumSuffix > maxAutoNameNumSuffix) {
+        maxAutoNameNumSuffix = autoNameNumSuffix;
+      }
+    }
+    
+    return `${autoNameBase} ${maxAutoNameNumSuffix + 1}`;
+  }
+  
+  updateAllButtonClusterSelectElems() {
+    for (const controlSetRowDef of this.controlSetRowDefs) {
+      this.updateButtonClusterSelectElem(controlSetRowDef.buttonClusterSelectElem);
+    }
+  }
+  
+  /**
+   * @param {HTMLSelectElement} selectElem 
+   */
+  updateButtonClusterSelectElem(selectElem) {
+    const prevValue = selectElem.value;
+    let prevValueExists = false;
+    
+    clearNodeChildren(selectElem);
+    
+    const noneOptionElem = document.createElement('option');
+    noneOptionElem.value = '';
+    noneOptionElem.innerText = 'None';
+    selectElem.appendChild(noneOptionElem);
+    
+    for (const buttonClusterRowDef of this.buttonClusterRowDefs) {
+      const optionElem = document.createElement('option');
+      optionElem.value = buttonClusterRowDef.buttonClusterId;
+      optionElem.innerText = buttonClusterRowDef.nameInputElem.value.trim() || '<unnamed>';
+      
+      selectElem.appendChild(optionElem);
+      
+      if (optionElem.value === prevValue) {
+        prevValueExists = true;
+      }
+    }
+    
+    selectElem.value = prevValueExists? prevValue : '';
   }
   
   populateControlTypeSelect() {
@@ -78,7 +294,7 @@ export default class ControlPanelConfigurator {
         optgroupElem.appendChild(optionElem);
       }
       
-      this.addControlTypeSelectElem.appendChild(optgroupElem);
+      this.controlTypeSelectElem.appendChild(optgroupElem);
     }
   }
   
@@ -86,7 +302,7 @@ export default class ControlPanelConfigurator {
    * @param {ControlDef} controlDef 
    */
   setControlDescription(controlDef) {
-    clearNodeChildren(this.addControlDescriptionElem);
+    clearNodeChildren(this.controlDescriptionElem);
     
     if (!controlDef) {
       return;
@@ -100,7 +316,7 @@ export default class ControlPanelConfigurator {
     let index = 0;
     
     while ((match = regexp.exec(desc))) {
-      this.addControlDescriptionElem.appendChild(document.createTextNode(
+      this.controlDescriptionElem.appendChild(document.createTextNode(
         desc.substring(index, match.index)
       ));
       
@@ -108,105 +324,50 @@ export default class ControlPanelConfigurator {
       aElem.href = match[0];
       aElem.innerText = match[0];
       
-      this.addControlDescriptionElem.appendChild(aElem);
+      this.controlDescriptionElem.appendChild(aElem);
       
       index = match.index + match[0].length;
     }
     
-    this.addControlDescriptionElem.appendChild(document.createTextNode(
+    this.controlDescriptionElem.appendChild(document.createTextNode(
       desc.substring(index)
     ));
   }
   
-  /**
-   * @param {ControlDef} controlDef
-   * @returns {ControlRowDef}
-   */
-  upsertControlRowElem(controlDef) {
-    if (this.controlTypeRowDefMap[controlDef.type]) {
-      return this.controlTypeRowDefMap[controlDef.type];
-    }
-    
-    const rowElem = htmlToBlock(controlPanelConfiguratorControlRowTemplate).firstElementChild;
-    const nameElem         = rowElem.querySelector('.control-panel-configurator__control-name');
-    const countInputElem   = rowElem.querySelector('.control-panel-configurator__control-count-input');
-    const removeButtonElem = rowElem.querySelector('.control-panel-configurator__control-remove-button');
-    
-    nameElem.innerText = controlDef.name;
-    removeButtonElem.addEventListener('click', () => {
-      this.removeControlRowElem(controlDef);
-    });
-    
-    this.controlTableElem.appendChild(rowElem);
-    
-    /** @type {ControlRowDef} */
-    const controlRowDef = {
-      rowElem,
-      countInputElem
-    };
-    this.controlTypeRowDefMap[controlDef.type] = controlRowDef;
-    
-    return controlRowDef;
-  }
-  
-  /**
-   * @param {ControlDef} controlDef
-   */
-  removeControlRowElem(controlDef) {
-    const controlRowDef = this.controlTypeRowDefMap[controlDef.type];
-    if (!controlRowDef) return;
-    
-    controlRowDef.rowElem.remove();
-    delete this.controlTypeRowDefMap[controlDef.type];
-  }
-  
-  /**
-   * @param {ControlDef} controlDef 
-   * @param {number} count 
-   * @returns {number}
-   */
-  setControlCount(controlDef, count) {
-    const controlRowDef = this.upsertControlRowElem(controlDef);
-    controlRowDef.countInputElem.value = count;
-    return count;
-  }
-  
-  /**
-   * @param {ControlDef} controlDef 
-   * @returns {number}
-   */
-  getControlCount(controlDef) {
-    const controlRowDef = this.controlTypeRowDefMap[controlDef.type];
-    if (!controlRowDef) {
-      return 0;
-    }
-    
-    return parseInt(controlRowDef.countInputElem.value, 10) || 0;
-  }
-  
-  /**
-   * @param {ControlDef} controlDef 
-   * @returns {number}
-   */
-  addControl(controlDef) {
-    const count = this.getControlCount(controlDef);
-    return this.setControlCount(controlDef, count + 1);
-  }
   
   init() {
-    const controlPanelConfig = this.loadState();
-    if (controlPanelConfig) {
-      this.p1NumButtonsInputElem.value = controlPanelConfig.p1NumButtons || 0;
-      this.p2NumButtonsInputElem.value = controlPanelConfig.p2NumButtons || 0;
-      this.p3NumButtonsInputElem.value = controlPanelConfig.p3NumButtons || 0;
-      this.p4NumButtonsInputElem.value = controlPanelConfig.p4NumButtons || 0;
-      
-      for (const [controlType, count] of Object.entries(controlPanelConfig.controlTypeCountMap)) {
-        const controlDef = controlDefMap[controlType];
-        if (!controlDef) continue;
-        
-        this.setControlCount(controlDef, count);
+    const cpConfig = this.loadState();
+    
+    if (cpConfig) {
+      for (const buttonCluster of cpConfig.buttonClusters || []) {
+        this.addButtonClusterRow({
+          buttonClusterId: buttonCluster.id,
+          name           : buttonCluster.name,
+          numButtons     : buttonCluster.numButtons
+        });
       }
+      
+      for (const controlSet of cpConfig.controlSets || []) {
+        this.addControlSetRow({
+          controlSetId   : controlSet.id,
+          controlDef     : controlSet.controlDef,
+          name           : controlSet.name,
+          buttonClusterId: controlSet.buttonCluster? controlSet.buttonCluster.id : null
+        });
+      }
+    }
+    
+    if (this.buttonClusterRowDefs.length === 0) {
+      this.addButtonClusterRow({numButtons: 3});
+    }
+    
+    this.updateAllButtonClusterSelectElems();
+    
+    if (this.controlSetRowDefs.length === 0) {
+      this.addControlSetRow({
+        controlDef: controlDefMap['joy-8way'],
+        buttonClusterId: this.buttonClusterRowDefs[0].buttonClusterId
+      });
     }
   }
   
@@ -214,41 +375,87 @@ export default class ControlPanelConfigurator {
    * @returns {ControlPanelConfig}
    */
   getControlPanelConfig() {
+    /** @type {ControlPanelButtonCluster[]} */
+    const buttonClusters = this.buttonClusterRowDefs.map(buttonClusterRowDef => ({
+      id  : buttonClusterRowDef.buttonClusterId,
+      name: buttonClusterRowDef.nameInputElem.value.trim(),
+      numButtons: parseInt(buttonClusterRowDef.countInputElem.value, 10) || 0
+    }));
+    
+    const controlSets = this.controlSetRowDefs.map(controlSetRowDef => ({
+      id        : controlSetRowDef.controlSetId,
+      name      : controlSetRowDef.nameInputElem.value.trim(),
+      controlDef: controlSetRowDef.controlDef,
+      buttonCluster: buttonClusters.find(x => x.id === controlSetRowDef.buttonClusterSelectElem.value) || null
+    }));
+    
     /** @type {ControlPanelConfig} */
-    const controlPanelConfig = {
-      p1NumButtons: parseInt(this.p1NumButtonsInputElem.value, 10) || 0,
-      p2NumButtons: parseInt(this.p2NumButtonsInputElem.value, 10) || 0,
-      p3NumButtons: parseInt(this.p3NumButtonsInputElem.value, 10) || 0,
-      p4NumButtons: parseInt(this.p4NumButtonsInputElem.value, 10) || 0,
-      controlTypeCountMap: {}
+    return {
+      buttonClusters,
+      controlSets
     };
-    
-    for (const controlType in this.controlTypeRowDefMap) {
-      const controlDef = controlDefMap[controlType];
-      if (!controlDef) continue;
-      
-      controlPanelConfig.controlTypeCountMap[controlType] = this.getControlCount(controlDef);
-    }
-    
-    return controlPanelConfig;
   }
   
   /**
    * @returns {string}
    */
   getStateKey() {
-    return `controlPanelConfiguratorModelineConfig-${this.id}`;
+    return `controlPanelConfigurator-${this.id}`;
   }
   
   saveState() {
-    state.set(this.getStateKey(), this.getControlPanelConfig());
+    const cpConfig = this.getControlPanelConfig();
+    
+    // serialize config
+    const sCPConfig = {
+      sButtonClusters: cpConfig.buttonClusters.map(buttonCluster => ({
+        id        : buttonCluster.id,
+        name      : buttonCluster.name,
+        numButtons: buttonCluster.numButtons
+      })),
+      sControlSets: cpConfig.controlSets.map(controlSet => ({
+        id             : controlSet.id,
+        controlType    : controlSet.controlDef.type,
+        name           : controlSet.name,
+        buttonClusterId: controlSet.buttonCluster? controlSet.buttonCluster.id : null
+      }))
+    };
+    
+    state.set(this.getStateKey(), sCPConfig);
   }
   
   /**
    * @returns {ControlPanelConfig}
    */
   loadState() {
-    return state.get(this.getStateKey());
+    // de-serialize config
+    const sCPConfig = state.get(this.getStateKey());
+    if (!sCPConfig) return null;
+    
+    /** @type {ControlPanelButtonCluster[]} */
+    const buttonClusters = sCPConfig.sButtonClusters.map(sButtonCluster => ({
+      id        : sButtonCluster.id,
+      name      : sButtonCluster.name,
+      numButtons: sButtonCluster.numButtons
+    }));
+    
+    /** @type {ControlPanelControlSet[]} */
+    const controlSets = (
+      sCPConfig.sControlSets
+      .map(sControlSet => ({
+        id           : sControlSet.id,
+        controlDef   : controlDefMap[sControlSet.controlType],
+        name         : sControlSet.name,
+        buttonCluster: buttonClusters.find(x => x.id === sControlSet.buttonClusterId)
+      }))
+      .filter(x => x.controlDef)
+    );
+    
+    /** @type {ControlPanelConfig} */
+    return {
+      buttonClusters,
+      controlSets
+    };
   }
   
   clearState() {

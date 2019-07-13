@@ -1,26 +1,35 @@
 <div class="control-panel-configurator">
-  Player Buttons<br />
-  <table class="control-panel-configurator__button-table">
-    <tr>
-      <td>P1</td>
-      <td>P2</td>
-      <td>P3</td>
-      <td>P4</td>
-    </tr>
-    <tr>
-      <td><input class="control-panel-configurator__num-buttons-input control-panel-configurator__num-buttons-input--p1" type="number" step="1" min="0" max="9" value="0" size="1" /></td>
-      <td><input class="control-panel-configurator__num-buttons-input control-panel-configurator__num-buttons-input--p2" type="number" step="1" min="0" max="9" value="0" size="1" /></td>
-      <td><input class="control-panel-configurator__num-buttons-input control-panel-configurator__num-buttons-input--p3" type="number" step="1" min="0" max="9" value="0" size="1" /></td>
-      <td><input class="control-panel-configurator__num-buttons-input control-panel-configurator__num-buttons-input--p4" type="number" step="1" min="0" max="9" value="0" size="1" /></td>
-    </tr>
+  Button Clusters
+  <table class="control-panel-configurator__button-cluster-table">
+    <thead>
+      <tr>
+        <th>Name</td>
+        <th>Count</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody class="control-panel-configurator__button-cluster-table__body">
+    </tbody>
   </table>
+  <button class="control-panel-configurator__add-button-cluster-button">Add</button><br />
+  <br />
   
-  <table class="control-panel-configurator__control-table">
+  Controls
+  <table class="control-panel-configurator__control-set-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Button Cluster</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody class="control-panel-configurator__control-set-table__body">
+    </tbody>
   </table>
-  
-  <select class="control-panel-configurator__add-control-type-select">
+  <select class="control-panel-configurator__control-type-select">
     <option value="" selected disabled hidden>Select Control</option>
   </select>
-  <button class="control-panel-configurator__add-control-button">Add</button>
-  <p class="control-panel-configurator__add-control-description"></p>
+  <button class="control-panel-configurator__add-control-set-button">Add</button>
+  <p class="control-panel-configurator__control-description"></p>
 </div>
