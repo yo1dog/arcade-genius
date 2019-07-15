@@ -1,0 +1,162 @@
+{
+  "mslug": {
+    "name": "mslug",
+    "description": "Metal Slug - Super Vehicle-001",
+    "numPlayers": 2,
+    "alternatesTurns": false,
+    "controlConfigurations": [
+      {
+        "targetCabinetType": "upright",
+        "requiresCocktailCabinet": false,
+        "playerControlSetIndexes": [
+          0,
+          1
+        ],
+        "controlSets": [
+          {
+            "supportedPlayerNums": [
+              1
+            ],
+            "isRequired": true,
+            "isOnOppositeScreenSide": false,
+            "controls": [
+              {
+                "type": "joy-8way",
+                "descriptor": null,
+                "outputToInputMap": {
+                  "up": {
+                    "isAnalog": false,
+                    "mameInputPort": "P1_JOYSTICK_UP",
+                    "label": "Up"
+                  },
+                  "down": {
+                    "isAnalog": false,
+                    "mameInputPort": "P1_JOYSTICK_DOWN",
+                    "label": "Down"
+                  },
+                  "left": {
+                    "isAnalog": false,
+                    "mameInputPort": "P1_JOYSTICK_LEFT",
+                    "label": "Left"
+                  },
+                  "right": {
+                    "isAnalog": false,
+                    "mameInputPort": "P1_JOYSTICK_RIGHT",
+                    "label": "Right"
+                  }
+                },
+                "buttons": []
+              }
+            ],
+            "controlPanelButtons": [
+              {
+                "descriptor": null,
+                "input": {
+                  "isAnalog": false,
+                  "mameInputPort": "P1_BUTTON1",
+                  "label": "Shoot/Vulcan gun"
+                }
+              },
+              {
+                "descriptor": null,
+                "input": {
+                  "isAnalog": false,
+                  "mameInputPort": "P1_BUTTON2",
+                  "label": "Jump"
+                }
+              },
+              {
+                "descriptor": null,
+                "input": {
+                  "isAnalog": false,
+                  "mameInputPort": "P1_BUTTON3",
+                  "label": "Gernade/Cannon"
+                }
+              }
+            ]
+          },
+          {
+            "supportedPlayerNums": [
+              2
+            ],
+            "isRequired": false,
+            "isOnOppositeScreenSide": false,
+            "controls": [
+              {
+                "type": "joy-8way",
+                "descriptor": null,
+                "outputToInputMap": {
+                  "up": {
+                    "isAnalog": false,
+                    "mameInputPort": "P1_JOYSTICK_UP",
+                    "label": "Up"
+                  },
+                  "down": {
+                    "isAnalog": false,
+                    "mameInputPort": "P1_JOYSTICK_DOWN",
+                    "label": "Down"
+                  },
+                  "left": {
+                    "isAnalog": false,
+                    "mameInputPort": "P1_JOYSTICK_LEFT",
+                    "label": "Left"
+                  },
+                  "right": {
+                    "isAnalog": false,
+                    "mameInputPort": "P1_JOYSTICK_RIGHT",
+                    "label": "Right"
+                  }
+                },
+                "buttons": []
+              }
+            ],
+            "controlPanelButtons": [
+              {
+                "descriptor": null,
+                "input": {
+                  "isAnalog": false,
+                  "mameInputPort": "P1_BUTTON1",
+                  "label": "Shoot/Vulcan gun"
+                }
+              },
+              {
+                "descriptor": null,
+                "input": {
+                  "isAnalog": false,
+                  "mameInputPort": "P1_BUTTON2",
+                  "label": "Jump"
+                }
+              },
+              {
+                "descriptor": null,
+                "input": {
+                  "isAnalog": false,
+                  "mameInputPort": "P1_BUTTON3",
+                  "label": "Gernade/Cannon"
+                }
+              }
+            ]
+          }
+        ],
+        "menuButtons": [
+          {
+            "descriptor": "start-1",
+            "input": {
+              "isAnalog": false,
+              "mameInputPort": "P1_START",
+              "label": "Player 1 Start"
+            }
+          },
+          {
+            "descriptor": "start-2",
+            "input": {
+              "isAnalog": false,
+              "mameInputPort": "P2_START",
+              "label": "Player 2 Start"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

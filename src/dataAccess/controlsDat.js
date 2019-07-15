@@ -46,9 +46,10 @@
  */
 
 import _restructuredControls from '../../data/controls.filtered.partial.min.json';
-//const _restructuredControls = {meta:{version:'0.0.0'},gameMap:{}};
+import gameMapOverride from './controlsDatGameMapOverride.json';
 
 /** @type {ControlsDat} */
 const restructuredControls = _restructuredControls;
+Object.assign(restructuredControls.gameMap, gameMapOverride);
 
 export default restructuredControls;
