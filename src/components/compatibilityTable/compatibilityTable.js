@@ -4,13 +4,15 @@ import compTableRowTemplate from './compatibilityTableRow.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
 import clearNodeChildren from '../../helpers/clearNodeChildren';
 import {EventEmitter} from 'events';
+import {
+  EmulationCompatibilityStatusEnum,
+  VideoCompatibilityStatusEnum,
+  ControlsCompatibilityStatusEnum
+} from '../../compatibilityChecker';
 
 /**
- * @typedef {import('../../dataAccess/mameList').Machine} Machine
  * @typedef {import('../../compatibilityChecker').MachineCompatibility} MachineCompatibility
- * @typedef {import('../../compatibilityChecker').EmulationCompatibilityStatus} EmulationCompatibilityStatus
- * @typedef {import('../../compatibilityChecker').ControlsCompatibilityStatus} ControlsCompatibilityStatus
- * @typedef {import('../../compatibilityChecker').VideoCompatibilityStatus} VideoCompatibilityStatus
+ * @typedef {import('../../dataAccess/mameList').Machine} Machine
  */
 
 export default class CompatibilityTable extends EventEmitter {
@@ -99,6 +101,9 @@ export default class CompatibilityTable extends EventEmitter {
     const {emuStatusDesc, emuStatusClass} = this.translateEmulationStatus(machineComp.emuComp.status);
     const {controlsStatusDesc, controlsStatusClass} = this.translateControlsStatus(machineComp.controlsComp.status);
     
+    const bestVideoStatus = Math.max(...machineComp.videoComps.map(x => x.status));
+    const {videoStatusClass} = this.translateVideoStatus(bestVideoStatus);
+    
     const detailsStr = CompatibilityTable.getDetailsStr(machineComp, monitorConfigTitles);
     
     // create short description
@@ -107,11 +112,12 @@ export default class CompatibilityTable extends EventEmitter {
     // create block
     const rowBlock = htmlToBlock(compTableRowTemplate);
     
-    rowBlock.querySelector('.comp-table__row')
-    .classList.add(
+    const rowElem = rowBlock.querySelector('.comp-table__row');
+    rowElem.classList.add(
       evenOddClass,
       emuStatusClass,
       controlsStatusClass,
+      videoStatusClass,
       !machine? 'comp-table__row--invalid-machine-name' : null
     );
     
@@ -165,6 +171,8 @@ export default class CompatibilityTable extends EventEmitter {
     const detailsRowElem = rowBlock.querySelector('.comp-table__details-row');
     detailsRowElem.classList.add(evenOddClass);
     
+    detailsRowElem.querySelector('td').colSpan = 7 + (2 * monitorConfigTitles.length);
+    
     rowBlock.querySelector('.comp-table__details-row__text')
     .value = detailsStr || '';
     
@@ -209,7 +217,45 @@ export default class CompatibilityTable extends EventEmitter {
       }
     }
     
-    const detailsObj = {};
+    const detailsObj = {
+      controlsComp: {
+        status: ControlsCompatibilityStatusEnum.translate(machineComp.controlsComp.status),
+        controlSetComps: !machineComp.controlsComp.controlConfigComp? [] : machineComp.controlsComp.controlConfigComp.controlSetComps.map(controlSetComp => ({
+          status: ControlsCompatibilityStatusEnum.translate(controlSetComp.status),
+          gameControlSet: {
+            supportedPlayerNums: controlSetComp.gameControlSet.supportedPlayerNums.join(','),
+            isOnOppositeScreenSide: controlSetComp.gameControlSet.isOnOppositeScreenSide,
+            isRequired: controlSetComp.gameControlSet.isRequired
+          },
+          controlComps: controlSetComp.controlComps.map(controlComp => ({
+            controlStatus: ControlsCompatibilityStatusEnum.translate(controlComp.controlStatus),
+            buttonsStatus: ControlsCompatibilityStatusEnum.translate(controlComp.buttonsStatus),
+            status: ControlsCompatibilityStatusEnum.translate(controlComp.status),
+            gameControl: {
+              type: controlComp.gameControl.type,
+              buttons: controlComp.gameControl.buttons.map(gameButton => 
+                gameButton.input.label || gameButton.input.posLabel || gameButton.input.negLabel || gameButton.input.mameInputPort
+              )
+            },
+            cpControl: !controlComp.cpControl? null : {
+              type: controlComp.cpControl.controlDef.type,
+              numButtons: controlComp.cpControl.numButtons
+            }
+          })),
+          buttonsComp: !controlSetComp.buttonsComp? null : {
+            status: ControlsCompatibilityStatusEnum.translate(controlSetComp.buttonsComp.status),
+            gameButtons: controlSetComp.buttonsComp.gameButtons.map(gameButton => 
+              gameButton.input.label || gameButton.input.posLabel || gameButton.input.negLabel || gameButton.input.mameInputPort
+            ),
+            cpButtonCluster: !controlSetComp.buttonsComp.cpButtonCluster? null : {
+              name: controlSetComp.buttonsComp.cpButtonCluster.name,
+              numButtons: controlSetComp.buttonsComp.cpButtonCluster.numButtons
+            }
+          }
+        }))
+      }
+    };
+    
     if (monitorConfigTitles.length > 1) {
       detailsObj.modelineResultMap = {};
       
@@ -233,18 +279,19 @@ export default class CompatibilityTable extends EventEmitter {
   }
   
   /**
-   * @param {EmulationCompatibilityStatus} emuStatus 
+   * @param {number} emuStatus 
    */
   static translateEmulationStatus(emuStatus) {
     const emuStatusDesc = {
-      'good'       : 'Good',
-      'imperfect'  : 'Imperfect',
-      'preliminary': 'Preliminary',
-    }[emuStatus] || emuStatus || 'Unknown';
+      [EmulationCompatibilityStatusEnum.GOOD       ]: 'Good',
+      [EmulationCompatibilityStatusEnum.IMPERFECT  ]: 'Imperfect',
+      [EmulationCompatibilityStatusEnum.PRELIMINARY]: 'Preliminary',
+    }[emuStatus] || 'Unknown';
+    
     const emuStatusClass = {
-      'good'       : 'comp-table__row--emu-status-good',
-      'imperfect'  : 'comp-table__row--emu-status-imperfect',
-      'preliminary': 'comp-table__row--emu-status-preliminary',
+      [EmulationCompatibilityStatusEnum.GOOD       ]: 'comp-table__row--emu-status-good',
+      [EmulationCompatibilityStatusEnum.IMPERFECT  ]: 'comp-table__row--emu-status-imperfect',
+      [EmulationCompatibilityStatusEnum.PRELIMINARY]: 'comp-table__row--emu-status-preliminary',
     }[emuStatus]  || 'comp-table__row--emu-status-unknown';
     
     return {
@@ -254,23 +301,23 @@ export default class CompatibilityTable extends EventEmitter {
   }
   
   /**
-   * @param {ControlsCompatibilityStatus} controlsStatus 
+   * @param {number} controlsStatus 
    */
   static translateControlsStatus(controlsStatus) {
     const controlsStatusDesc = {
-      'native'     : 'Native',
-      'good'       : 'Good',
-      'ok'         : 'OK',
-      'bad'        : 'Bad',
-      'unsupported': 'Unsupported'
-    }[controlsStatus] || controlsStatus || 'Unknown';
+      [ControlsCompatibilityStatusEnum.NATIVE     ]: 'Native',
+      [ControlsCompatibilityStatusEnum.GOOD       ]: 'Good',
+      [ControlsCompatibilityStatusEnum.OK         ]: 'OK',
+      [ControlsCompatibilityStatusEnum.BAD        ]: 'Bad',
+      [ControlsCompatibilityStatusEnum.UNSUPPORTED]: 'Unsupported'
+    }[controlsStatus] || 'Unknown';
     
     const controlsStatusClass = {
-      'native'         : 'comp-table__row--controls-status-native',
-      'good'           : 'comp-table__row--controls-status-good',
-      'ok'             : 'comp-table__row--controls-status-ok',
-      'bad'            : 'comp-table__row--controls-status-bad',
-      'unsupported'    : 'comp-table__row--controls-status-unsupported'
+      [ControlsCompatibilityStatusEnum.NATIVE     ]: 'comp-table__row--controls-status-native',
+      [ControlsCompatibilityStatusEnum.GOOD       ]: 'comp-table__row--controls-status-good',
+      [ControlsCompatibilityStatusEnum.OK         ]: 'comp-table__row--controls-status-ok',
+      [ControlsCompatibilityStatusEnum.BAD        ]: 'comp-table__row--controls-status-bad',
+      [ControlsCompatibilityStatusEnum.UNSUPPORTED]: 'comp-table__row--controls-status-unsupported'
     }[controlsStatus] || 'comp-table__row--controls-status-unknown';
     
     return {
@@ -280,23 +327,23 @@ export default class CompatibilityTable extends EventEmitter {
   }
   
   /**
-   * @param {VideoCompatibilityStatus} videoStatus 
+   * @param {number} videoStatus 
    */
   static translateVideoStatus(videoStatus) {
     const videoStatusDesc = {
-      'native'            : 'Native',
-      'int-scale'         : 'Scaled',
-      'vfreq-slightly-off': 'VFreq',
-      'bad'               : 'Bad',
-      'unsupported'       : 'Unsupported'
-    }[videoStatus] || videoStatus || 'Unknown';
+      [VideoCompatibilityStatusEnum.NATIVE            ]: 'Native',
+      [VideoCompatibilityStatusEnum.INT_SCALE         ]: 'Scaled',
+      [VideoCompatibilityStatusEnum.VFREQ_SLIGHTLY_OFF]: 'VFreq',
+      [VideoCompatibilityStatusEnum.BAD               ]: 'Bad',
+      [VideoCompatibilityStatusEnum.UNSUPPORTED       ]: 'Unsupported'
+    }[videoStatus] || 'Unknown';
     
     const videoStatusClass = {
-      'native'            : 'comp-table__row--video-status-native',
-      'int-scale'         : 'comp-table__row--video-status-int-scale',
-      'vfreq-slightly-off': 'comp-table__row--video-status-vfreq-slightly-off',
-      'bad'               : 'comp-table__row--video-status-bad',
-      'unsupported'       : 'comp-table__row--video-status-unsupported'
+      [VideoCompatibilityStatusEnum.NATIVE            ]: 'comp-table__row--video-status-native',
+      [VideoCompatibilityStatusEnum.INT_SCALE         ]: 'comp-table__row--video-status-int-scale',
+      [VideoCompatibilityStatusEnum.VFREQ_SLIGHTLY_OFF]: 'comp-table__row--video-status-vfreq-slightly-off',
+      [VideoCompatibilityStatusEnum.BAD               ]: 'comp-table__row--video-status-bad',
+      [VideoCompatibilityStatusEnum.UNSUPPORTED       ]: 'comp-table__row--video-status-unsupported'
     }[videoStatus] || 'comp-table__row--video-status-unknown';
     
     return {

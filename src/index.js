@@ -55,8 +55,11 @@ async function onLoad() {
         modelineConfigs    [i] = monitorConfiguratorGroup.items[i].configurator.getModelineConfig();
       }
       
+      // get the control panel config
+      const cpConfig = controlPanelConfigurator.getControlPanelConfig();
+      
       // check the compatibility of each machine name input
-      const machineComps = await compChecker.checkMachineBulk(machineNameInputs, modelineConfigs);
+      const machineComps = await compChecker.checkMachineBulk(machineNameInputs, modelineConfigs, cpConfig);
       
       // update the compatibility table
       compTable.update(machineComps, monitorConfigTitles);

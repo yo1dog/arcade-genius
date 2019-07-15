@@ -1,14 +1,21 @@
 import machineMap from './dataAccess/machineMap';
 import controlsDat from './dataAccess/controlsDat';
 import * as modelineCaculator from './dataAccess/modelineCalculator';
+import controlDefMap from './dataAccess/controlDefMap';
 
 /**
  * @typedef {import('./dataAccess/mameList').Machine} Machine
  * @typedef {import('./dataAccess/mameList').MachineDriverStatus} MachineDriverStatus
  * 
  * @typedef {import('./dataAccess/controlsDat').ControlsDatGame} ControlsDatGame
- * @typedef {import('./dataAccess/controlsDat').ControlConfiguration} ControlConfiguration
+ * @typedef {import('./dataAccess/controlsDat').GameControlConfiguration} GameControlConfiguration
+ * @typedef {import('./dataAccess/controlsDat').GameControlSet} GameControlSet
+ * @typedef {import('./dataAccess/controlsDat').GameControl} GameControl
+ * @typedef {import('./dataAccess/controlsDat').GameButton} GameButton
  * @typedef {import('./components/controlPanelConfigurator/controlPanelConfigurator').ControlPanelConfig} ControlPanelConfig
+ * @typedef {import('./components/controlPanelConfigurator/controlPanelConfigurator').ControlPanelButtonCluster} ControlPanelButtonCluster
+ * @typedef {import('./components/controlPanelConfigurator/controlPanelConfigurator').ControlPanelControlSet} ControlPanelControlSet
+ * @typedef {import('./components/controlPanelConfigurator/controlPanelConfigurator').ControlPanelControl} ControlPanelControl
  * 
  * @typedef {import('./dataAccess/modelineCalculator').ModelineConfig} ModelineConfig
  * @typedef {import('./dataAccess/modelineCalculator').ModelineResult} ModelineResult
@@ -39,9 +46,10 @@ export function getMachineByInput(machineNameInput) {
 /**
  * @param {string[]} machineNameInputs 
  * @param {ModelineConfig[]} modelineConfigs 
+ * @param {ControlPanelConfig} cpConfig 
  * @returns {MachineCompatibility[]}
  */
-export async function checkMachineBulk(machineNameInputs, modelineConfigs) {
+export async function checkMachineBulk(machineNameInputs, modelineConfigs, cpConfig) {
   const machines = machineNameInputs.map(machineNameInput =>
     getMachineByInput(machineNameInput)
   );
@@ -65,7 +73,7 @@ export async function checkMachineBulk(machineNameInputs, modelineConfigs) {
       machine,
       videoComps,
       emuComp: checkEmulation(machine),
-      controlsComp: checkControls(machine)
+      controlsComp: checkControls(machine, cpConfig)
     };
   });
 }
@@ -73,10 +81,11 @@ export async function checkMachineBulk(machineNameInputs, modelineConfigs) {
 /**
  * @param {string} machineNameInput 
  * @param {ModelineConfig[]} modelineConfigs 
+ * @param {ControlPanelConfig} cpConfig 
  * @returns {MachineCompatibility}
  */
-export async function checkMachine(machineNameInput, modelineConfigs) {
-  return await checkMachineBulk([machineNameInput], modelineConfigs)[0];
+export async function checkMachine(machineNameInput, modelineConfigs, cpConfig) {
+  return await checkMachineBulk([machineNameInput], modelineConfigs, cpConfig)[0];
 }
 
 
@@ -84,12 +93,23 @@ export async function checkMachine(machineNameInput, modelineConfigs) {
 // Emulation
 // ----------------------------------
 
+export const EmulationCompatibilityStatusEnum = {
+  UNKNOWN    : -1,
+  PRELIMINARY:  0,
+  IMPERFECT  :  1,
+  GOOD       :  2,
+  
+  /** @param {number} val */
+  translate(val) {
+    const entry = Object.entries(EmulationCompatibilityStatusEnum).find(e => e[1] === val);
+    return entry? entry[0] : val;
+  }
+};
+
 /**
  * @typedef EmulationCompatibility
  * @property {Machine} machine
- * @property {EmulationCompatibilityStatus} status
- * 
- * @typedef {MachineDriverStatus} EmulationCompatibilityStatus
+ * @property {number} status
  */
 
 /**
@@ -105,10 +125,17 @@ export function checkEmulation(machine) {
 
 /**
  * @param {Machine} machine 
- * @returns {EmulationCompatibilityStatus}
+ * @returns {number}
  */
 function getEmulationStatus(machine) {
-  return machine? machine.driver.status : null;
+  if (!machine) return null;
+  
+  switch (machine.driver.status) {
+    case 'preliminary': return EmulationCompatibilityStatusEnum.PRELIMINARY;
+    case 'imperfect'  : return EmulationCompatibilityStatusEnum.IMPERFECT;
+    case 'good'       : return EmulationCompatibilityStatusEnum.GOOD;
+    default           : return EmulationCompatibilityStatusEnum.UNKNOWN;
+  }
 }
 
 
@@ -116,14 +143,27 @@ function getEmulationStatus(machine) {
 // Video
 // ----------------------------------
 
+export const VideoCompatibilityStatusEnum = {
+  UNKNOWN           : -1,
+  UNSUPPORTED       :  0,
+  BAD               :  1,
+  VFREQ_SLIGHTLY_OFF:  2,
+  INT_SCALE         :  3,
+  NATIVE            :  4,
+  
+  /** @param {number} val */
+  translate(val) {
+    const entry = Object.entries(VideoCompatibilityStatusEnum).find(e => e[1] === val);
+    return entry? entry[0] : val;
+  }
+};
+
 /**
  * @typedef VideoCompatibility
  * @property {Machine} machine
  * @property {ModelineConfig} modelineConfig
  * @property {ModelineResult} modelineResult
- * @property {VideoCompatibilityStatus} status
- * 
- * @typedef {'native'|'int-scale'|'vfreq-slightly-off'|'bad'|'unsupported'} VideoCompatibilityStatus
+ * @property {number} status
  */
 
 /**
@@ -160,7 +200,7 @@ export async function checkVideoBulk(machines, modelineConfig) {
 
 /**
  * @param {ModelineResult} modelineResult 
- * @returns {VideoCompatibilityStatus}
+ * @returns {number}
  */
 function getVideoStatus(modelineResult) {
   if (!modelineResult || modelineResult.err) {
@@ -168,7 +208,7 @@ function getVideoStatus(modelineResult) {
   }
   
   if (!modelineResult.inRange) {
-    return 'unsupported';
+    return VideoCompatibilityStatusEnum.UNSUPPORTED;
   }
   
   if (
@@ -178,21 +218,21 @@ function getVideoStatus(modelineResult) {
     modelineResult.xDiff !== 0 ||
     modelineResult.yDiff !== 0*/
   ) {
-    return 'bad';
+    return VideoCompatibilityStatusEnum.BAD;
   }
     
   if (modelineResult.vDiff !== 0) {
-    return 'vfreq-slightly-off';
+    return VideoCompatibilityStatusEnum.VFREQ_SLIGHTLY_OFF;
   }
   
   if (
     modelineResult.xScale !== 1 ||
     modelineResult.yScale !== 1
   ) {
-    return 'int-scale';
+    return VideoCompatibilityStatusEnum.INT_SCALE;
   }
   
-  return 'native';
+  return VideoCompatibilityStatusEnum.NATIVE;
 }
 
 
@@ -200,125 +240,319 @@ function getVideoStatus(modelineResult) {
 // Controls
 // ----------------------------------
 
+export const ControlsCompatibilityStatusEnum = {
+  UNKNOWN    : -1,
+  UNSUPPORTED:  0,
+  BAD        :  1,
+  OK         :  2,
+  GOOD       :  3,
+  NATIVE     :  4,
+  
+  /** @param {number} val */
+  translate(val) {
+    const entry = Object.entries(ControlsCompatibilityStatusEnum).find(e => e[1] === val);
+    return entry? entry[0] : val;
+  }
+};
+
 /**
  * @typedef ControlsCompatibility
  * @property {Machine} machine
  * @property {ControlsDatGame} controlsDatGame
- * @property {ControlsCompatibilityStatus} status
+ * @property {ControlConfigurationCompatibility} controlConfigComp
+ * @property {number} status
  * 
- * @typedef {'native'|'good'|'ok'|'bad'|'unsupported'} ControlsCompatibilityStatus
+ * @typedef ControlConfigurationCompatibility
+ * @property {GameControlConfiguration} gameControlConfig
+ * @property {ControlSetCompatibility[]} controlSetComps
+ * @property {number} status
+ * 
+ * @typedef ControlSetCompatibility
+ * @property {GameControlSet} gameControlSet
+ * @property {ControlCompatibility[]} controlComps
+ * @property {ButtonsCompatibility} buttonsComp
+ * @property {number} status
+ * 
+ * @typedef ControlCompatibility
+ * @property {GameControl} gameControl
+ * @property {ControlPanelControl} cpControl
+ * @property {number} controlStatus
+ * @property {number} buttonsStatus
+ * @property {number} status
+ * 
+ * @typedef ButtonsCompatibility
+ * @property {GameButton[]} gameButtons
+ * @property {ControlPanelButtonCluster} cpButtonCluster
+ * @property {number} status
  */
 
 /**
  * @param {Machine} machine
+ * @param {ControlPanelConfig} cpConfig
  * @returns {ControlsCompatibility} 
  */
-export function checkControls(machine) {
+export function checkControls(machine, cpConfig) {
   // get controls.dat game
   const controlsDatGame = machine && (
     controlsDat.gameMap[machine.name] ||
     controlsDat.gameMap[machine.cloneof]
   );
   
+  // find the most compatible game control configuration
+  /** @type {ControlConfigurationCompatibility} */
+  let bestControlConfigComp = null;
+  if (controlsDatGame) {
+    for (const gameControlConfig of controlsDatGame.controlConfigurations) {
+      const controlConfigComp = getControlConfigCompatibility(cpConfig, gameControlConfig);
+      
+      if (
+        !bestControlConfigComp ||
+        controlConfigComp.status > bestControlConfigComp.status
+      ) {
+        bestControlConfigComp = controlConfigComp;
+      }
+    }
+  }
+  
+  const status = bestControlConfigComp? bestControlConfigComp.status : ControlsCompatibilityStatusEnum.UNKNOWN;
+  
   return {
     machine,
     controlsDatGame,
-    status: getControlsStatus(controlsDatGame),
+    controlConfigComp: bestControlConfigComp,
+    status,
   };
 }
 
-///**
-// * @param {ControlConfiguration} controlConfig 
-// * @param {ControlPanelConfig} controlPanelConfig 
-// */
-//function getControlConfigCompatibility(controlConfig, controlPanelConfig) {
-//  /** @type {Object<string, number>} */
-//  const missingControlTypeCountMap = {};
-//  
-//  /** @type {ControlPanelConfig} */
-//  const usedControlPanelConfig = {
-//    ...controlPanelConfig,
-//    controlTypeCountMap: {
-//      ...controlPanelConfig.controlTypeCountMap
-//    }
-//  };
-//  
-//  // TODO: check controlConfig.menuButtons
-//  // TODO: check controlConfig.requiresCocktailCabinet
-//  
-//  const requiredControlSets = controlConfig.controlSets.filter(x => x.isRequired);
-//  for (const controlSet of requiredControlSets) {
-//    const playerIndex = Math.min(...controlSet.supportedPlayerNums) - 1;
-//    const controlPanelButtonCount = controlPanelConfig.playerButtonCounts[playerIndex];
-//    
-//    // check if the control panel has enough buttons
-//    if (controlSet.controlPanelButtons.length > controlPanelButtonCount) {
-//      
-//    }
-//  }
-//  
-//  controlConfig.controlSets.every(gameControlSet => {
-//    // find a cab control set that matches the game control set (and has not yet been used)
-//    const matchedCabControlSet = Array.from(unsuedCabControlSetsSet).find(cabControlSet =>
-//      matchCabControlSet(cabControlSet, gameControlSet, controlDefMap)
-//    );
-//    
-//    if (matchedCabControlSet) {
-//      unsuedCabControlSetsSet.delete(matchedCabControlSet);
-//      return true;
-//    }
-//    
-//    return !gameControlSet.isRequired;
-//  });
-//}
-//
-//function matchCabControlSet(cabControlSet, gameControlSet, controlDefMap) {
-//  // check if control sets are on the same side 
-//  if (cabControlSet.isOnOppositeScreenSide !== gameControlSet.isOnOppositeScreenSide) {
-//    return false;
-//  }
-//  
-//  const unusedControlTypeCounts = Object.assign({}, cabControlSet.controlTypeCounts);
-//  
-//  // for each control...
-//  for (let i = 0; i < gameControlSet.controls.length; ++i) {
-//    const control = gameControlSet.controls[i];
-//    const controlDef = controlDefMap[control.type];
-//    
-//    let useableControlTypes;
-//    if (controlDef) {
-//      useableControlTypes = [controlDef.type].concat(
-//        (controlDef.fallbacks || [])
-//        .filter(fallback => fallback.level === 'good')
-//        .map(fallback => fallback.controlType)
-//      );
-//    }
-//    else {
-//      useableControlTypes = [control.type];
-//    }
-//    
-//    const unusedControlType = useableControlTypes.find(controlType => unusedControlTypeCounts[controlType] > 0);
-//    if (!unusedControlType) {
-//      return false;
-//    }
-//    
-//    --unusedControlTypeCounts[unusedControlType];
-//  }
-//  
-//  // ensure enough buttons are supported
-//  const cabNumButtons = cabControlSet.numButtons;
-//  const gameNumButtons = gameControlSet.controlPanelButtons.length;
-//  if (cabNumButtons < gameNumButtons) {
-//    return false;
-//  }
-//  
-//  return true;
-//}
+/**
+ * @param {ControlPanelConfig} cpConfig 
+ * @param {GameControlConfiguration} gameControlConfig 
+ * @returns {ControlConfigurationCompatibility}
+ */
+function getControlConfigCompatibility(cpConfig, gameControlConfig) {
+  /** @type {ControlPanelControl[]} */
+  const cpAvailControls = cpConfig.controls.slice(0);
+  /** @type {ControlPanelButtonCluster[]} */
+  const cpAvailButtonClusters = cpConfig.buttonClusters.slice(0);
+  
+  // find the most compatible control panel control set for each game control set
+  /** @type {ControlSetCompatibility[]} */
+  const controlSetComps = gameControlConfig.controlSets.map(gameControlSet => {
+    /** @type {ControlSetCompatibility} */
+    let bestControlSetComp = {
+      gameControlSet,
+      controlComps: [],
+      buttonsComp: null,
+      status: ControlsCompatibilityStatusEnum.UNKNOWN
+    };
+    
+    for (const cpControlSet of cpConfig.controlSets) {
+      const controlSetComp = getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButtonClusters, gameControlSet);
+      if (controlSetComp.status > bestControlSetComp.status) {
+        bestControlSetComp = controlSetComp;
+      }
+    }
+    
+    // remove used control panel controls so they can't be used again
+    if (bestControlSetComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
+      for (const controlComp of bestControlSetComp.controlComps) {
+        if (controlComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
+          removeVal(cpAvailControls, controlComp.cpControl);
+        }
+      }
+      
+      if (
+        bestControlSetComp.buttonsComp &&
+        bestControlSetComp.buttonsComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED
+      ) {
+        removeVal(cpAvailButtonClusters, bestControlSetComp.buttonsComp.cpButtonCluster);
+      }
+    }
+    
+    return bestControlSetComp;
+  });
+  
+  // get the worst compatibility of the required control sets
+  const worstCompStatus = Math.min(
+    ...controlSetComps
+    .filter(x => x.gameControlSet.isRequired)
+    .map(x => x.status)
+  );
+  
+  // TODO: check gameControlConfig.menuButtons
+  const status = worstCompStatus;
+  
+  return {
+    gameControlConfig,
+    controlSetComps,
+    status
+  };
+}
 
 /**
- * @param {ControlsDatGame} controlsDatGame 
- * @returns {ControlsCompatibilityStatus}
+ * @param {ControlPanelControlSet} cpControlSet 
+ * @param {ControlPanelControl[]} cpAvailControls 
+ * @param {ControlPanelButtonCluster[]} cpAvailButtonClusters 
+ * @param {GameControlSet} gameControlSet 
+ * @returns {ControlSetCompatibility}
  */
-function getControlsStatus(controlsDatGame) {
-  return null;
+function getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButtonClusters, gameControlSet) {
+  // get the control panel controls in the control set that are available
+  /** @type {ControlPanelControl[]} */
+  const cpControlSetAvailControls = cpControlSet.controls.filter(control =>
+    cpAvailControls.includes(control) &&
+    control.isOnOppositeScreenSide === gameControlSet.isOnOppositeScreenSide
+  );
+  
+  // find the most compatible control panel control for each game control
+  /** @type {ControlCompatibility[]} */
+  const controlComps = gameControlSet.controls.map(gameControl => {
+    /** @type {ControlCompatibility} */
+    let bestControlComp = {
+      gameControl,
+      cpControl: null,
+      status: ControlsCompatibilityStatusEnum.UNSUPPORTED
+    };
+    
+    for (const cpControl of cpControlSetAvailControls) {
+      const controlComp = getControlCompatibility(cpControl, gameControl);
+      if (controlComp.status > bestControlComp.status) {
+        bestControlComp = controlComp;
+      }
+    }
+    
+    // remove used control panel controls so they can't be used again
+    if (bestControlComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
+      removeVal(cpControlSetAvailControls, bestControlComp.cpControl);
+    }
+    
+    return bestControlComp;
+  });
+  
+  // get buttons compatability
+  const buttonsComp = getButtonsComptability(
+    cpControlSet.buttonCluster,
+    cpAvailButtonClusters,
+    gameControlSet.controlPanelButtons
+  );
+  
+  // get the worst compatibility of the controls and buttons
+  const worstCompStatus = Math.min(
+    ...controlComps.map(x => x.status),
+    ...buttonsComp? [buttonsComp.status] : []
+  );
+  
+  const status = worstCompStatus;
+  
+  return {
+    gameControlSet,
+    controlComps,
+    buttonsComp,
+    status
+  };
+}
+
+/**
+ * @param {ControlPanelControl} cpControl 
+ * @param {GameControl} gameControl 
+ * @returns {ControlCompatibility}
+ */
+function getControlCompatibility(cpControl, gameControl) {
+  const controlStatus = getControlCompatibilityControlStatus(cpControl, gameControl);
+  const buttonsStatus = getControlCompatibilityButtonsStatus(cpControl, gameControl);
+  
+  const status = Math.min(controlStatus, buttonsStatus);
+  
+  return {
+    gameControl,
+    cpControl,
+    controlStatus,
+    buttonsStatus,
+    status
+  };
+}
+
+/**
+ * @param {ControlPanelControl} cpControl 
+ * @param {GameControl} gameControl 
+ * @returns {number}
+ */
+function getControlCompatibilityControlStatus(cpControl, gameControl) {
+  const cpControlDef = cpControl.controlDef;
+  const gameControlDef = controlDefMap[gameControl.type];
+  
+  if (cpControlDef.type === gameControl.type) {
+    return ControlsCompatibilityStatusEnum.NATIVE;
+  }
+  
+  const controlFallback = (gameControlDef.fallbacks || []).find(x => x.controlType === cpControlDef.type);
+  if (!controlFallback) {
+    return ControlsCompatibilityStatusEnum.UNSUPPORTED;
+  }
+  
+  switch (controlFallback.level) {
+    case 'good': return ControlsCompatibilityStatusEnum.GOOD;
+    case 'ok'  : return ControlsCompatibilityStatusEnum.OK;
+    case 'bad' : return ControlsCompatibilityStatusEnum.BAD;
+    default    : return ControlsCompatibilityStatusEnum.UNKNOWN;
+  }
+}
+
+/**
+ * @param {ControlPanelControl} cpControl 
+ * @param {GameControl} gameControl 
+ * @returns {number}
+ */
+function getControlCompatibilityButtonsStatus(cpControl, gameControl) {
+  const isSupported = (
+    cpControl.numButtons >= gameControl.buttons.length
+  );
+  
+  return (
+    isSupported
+    ? ControlsCompatibilityStatusEnum.NATIVE
+    : ControlsCompatibilityStatusEnum.UNSUPPORTED
+  );
+}
+
+/**
+ * @param {ControlPanelButtonCluster} cpButtonCluster 
+ * @param {ControlPanelButtonCluster[]} cpAvailButtonClusters 
+ * @param {GameButton[]} gameButtons 
+ * @returns {ButtonsCompatibility}
+ */
+function getButtonsComptability(cpButtonCluster, cpAvailButtonClusters, gameButtons) {
+  if (gameButtons.length === 0) {
+    return null;
+  }
+  
+  const isSupported = (
+    cpAvailButtonClusters.includes(cpButtonCluster) &&
+    cpButtonCluster.numButtons >= gameButtons.length
+  );
+  
+  const status = (
+    isSupported
+    ? ControlsCompatibilityStatusEnum.NATIVE
+    : ControlsCompatibilityStatusEnum.UNSUPPORTED
+  );
+  
+  return {
+    gameButtons,
+    cpButtonCluster,
+    status
+  };
+}
+
+/**
+ * @param {any[]} arr 
+ * @param {any} val 
+ * @returns {any[]}
+ */
+function removeVal(arr, val) {
+  const index = arr.indexOf(val);
+  if (index > -1) {
+    arr.splice(index, 1);
+  }
+  return arr;
 }

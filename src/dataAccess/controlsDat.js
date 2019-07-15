@@ -11,33 +11,33 @@
  * @property {string} name
  * @property {number} numPlayers
  * @property {boolean} alternatesTurns
- * @property {ControlConfiguration[]} controlConfigurations
+ * @property {GameControlConfiguration[]} controlConfigurations
  * 
- * @typedef ControlConfiguration
+ * @typedef GameControlConfiguration
  * @property {'upright'|'cocktail'} targetCabinetType
  * @property {boolean} requiresCocktailCabinet
  * @property {number[]} playerControlSetIndexes
- * @property {ControlSet[]} controlSets
- * @property {Button[]} menuButtons
+ * @property {GameControlSet[]} controlSets
+ * @property {GameButton[]} menuButtons
  * 
- * @typedef ControlSet
+ * @typedef GameControlSet
  * @property {number[]} supportedPlayerNums
  * @property {boolean} isRequired
  * @property {boolean} isOnOppositeScreenSide
- * @property {Control[]} controls
- * @property {Button[]} controlPanelButtons
+ * @property {GameControl[]} controls
+ * @property {GameButton[]} controlPanelButtons
  * 
- * @typedef Control
+ * @typedef GameControl
  * @property {string} type
  * @property {string} [descriptor]
- * @property {Object<string, Input>} outputToInputMap
- * @property {Button[]} buttons
+ * @property {Object<string, GameInput>} outputToInputMap
+ * @property {GameButton[]} buttons
  * 
- * @typedef Button
+ * @typedef GameButton
  * @property {string} [descriptor]
- * @property {Input} input
+ * @property {GameInput} input
  * 
- * @typedef Input
+ * @typedef GameInput
  * @property {boolean} isAnalog
  * @property {string} mameInputPort
  * @property {string} [label]
@@ -45,8 +45,8 @@
  * @property {string} [posLabel]
  */
 
-//import _restructuredControls from '../../data/controls.filtered.partial.min.json';
-const _restructuredControls = {meta:{version:'0.0.0'},gameMap:{}};
+import _restructuredControls from '../../data/controls.filtered.partial.min.json';
+//const _restructuredControls = {meta:{version:'0.0.0'},gameMap:{}};
 
 /** @type {ControlsDat} */
 const restructuredControls = _restructuredControls;

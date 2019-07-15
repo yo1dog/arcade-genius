@@ -1,5 +1,5 @@
-const LOCAL_STATE_CUR_VERSION_NUM = 2;
-const LOCAL_STATE_MIN_VERSION_NUM = 2;
+const LOCAL_STATE_CUR_VERSION_NUM = 3;
+const LOCAL_STATE_MIN_VERSION_NUM = 3;
 const LOCAL_STATE_VERSION_NUM_KEY = '__stateVersionNum';
 
 const localStateVersionNum = parseInt(window.localStorage.getItem(LOCAL_STATE_VERSION_NUM_KEY), 10);

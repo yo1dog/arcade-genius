@@ -12,6 +12,7 @@ import createUUID from '../../helpers/createUUID';
 
 /**
  * @typedef ControlPanelConfig
+ * @property {ControlPanelControl[]} controls
  * @property {ControlPanelButtonCluster[]} buttonClusters
  * @property {ControlPanelControlSet[]} controlSets
  * 
@@ -23,8 +24,13 @@ import createUUID from '../../helpers/createUUID';
  * @typedef ControlPanelControlSet
  * @property {string} id
  * @property {string} name
- * @property {ControlDef} controlDef
+ * @property {ControlPanelControl[]} controls
  * @property {ControlPanelButtonCluster} buttonCluster
+ * 
+ * @typedef ControlPanelControl
+ * @property {ControlDef} controlDef
+ * @property {number} numButtons
+ * @property {boolean} isOnOppositeScreenSide
  * 
  * @typedef ButtonClusterRowDef
  * @property {string} buttonClusterId
@@ -37,6 +43,7 @@ import createUUID from '../../helpers/createUUID';
  * @property {ControlDef} controlDef
  * @property {HTMLTableRowElement} rowElem
  * @property {HTMLInputElement} nameInputElem
+ * @property {HTMLInputElement} controlButtonsCountInputElem
  * @property {HTMLSelectElement} buttonClusterSelectElem
  */
 
@@ -168,20 +175,51 @@ export default class ControlPanelConfigurator {
    * @param {string} [options.buttonClusterId] 
    * @returns {ButtonClusterRowDef}
    */
-  addControlSetRow({controlDef, controlSetId = null, name = null, buttonClusterId = null}) {
+  addControlSetRow({controlDef, controlSetId = null, name = null, numControlButtons = null, buttonClusterId = null}) {
     controlSetId = controlSetId || createUUID();
     
     const rowElem = htmlToBlock(cpConfiguratorControlSetTemplate).firstElementChild;
-    const nameInputElem           = rowElem.querySelector('.control-panel-configurator__control-set__name-input');
-    const controlNameElem         = rowElem.querySelector('.control-panel-configurator__control-set__control-name');
-    const buttonClusterSelectElem = rowElem.querySelector('.control-panel-configurator__control-set__button-cluster-select');
-    const removeButtonElem        = rowElem.querySelector('.control-panel-configurator__control-set__remove-button');
+    const nameInputElem                = rowElem.querySelector('.control-panel-configurator__control-set__name-input');
+    const controlNameElem              = rowElem.querySelector('.control-panel-configurator__control-set__control-name');
+    const controlButtonsDescElem       = rowElem.querySelector('.control-panel-configurator__control-set__control-buttons-desc');
+    const controlButtonsCountElem      = rowElem.querySelector('.control-panel-configurator__control-set__control-buttons-desc__count');
+    const controlButtonsCountInputElem = rowElem.querySelector('.control-panel-configurator__control-set__control-buttons-desc__count-input');
+    const buttonClusterSelectElem      = rowElem.querySelector('.control-panel-configurator__control-set__button-cluster-select');
+    const removeButtonElem             = rowElem.querySelector('.control-panel-configurator__control-set__remove-button');
     
     rowElem.setAttribute('data-control-set-id', controlSetId);
     nameInputElem.value = name || this.getAutoControlSetName(controlDef);
     controlNameElem.innerText = controlDef.name;
-    this.updateButtonClusterSelectElem(buttonClusterSelectElem);
     
+    const {
+      defaultNumControlButtons,
+      canEditNumControlButtons
+    } = this.getControlButtonsDescOptions(controlDef);
+    
+    numControlButtons = typeof numControlButtons === 'number'? numControlButtons : defaultNumControlButtons;
+    controlButtonsCountElem.innerText = numControlButtons;
+    controlButtonsCountInputElem.value = numControlButtons;
+    
+    if (numControlButtons > 0 || canEditNumControlButtons) {
+      controlButtonsDescElem.classList.remove('hidden');
+      
+      if (canEditNumControlButtons) {
+        controlButtonsCountInputElem.classList.remove('hidden');
+        controlButtonsCountInputElem.addEventListener('change', () => {
+          this.updateControlButtonsDescription(
+            controlButtonsDescElem,
+            parseInt(controlButtonsCountInputElem.value, 10) || 0
+          );
+        });
+      }
+      else {
+        controlButtonsCountElem.classList.remove('hidden');
+      }
+    }
+    
+    this.updateControlButtonsDescription(controlButtonsDescElem, numControlButtons);
+    
+    this.updateButtonClusterSelectElem(buttonClusterSelectElem);
     if (buttonClusterId) {
       // ensure button cluster ID exists
       if (this.buttonClusterRowDefs.findIndex(x => x.buttonClusterId === buttonClusterId) !== -1) {
@@ -201,6 +239,7 @@ export default class ControlPanelConfigurator {
       controlDef,
       rowElem,
       nameInputElem,
+      controlButtonsCountInputElem,
       buttonClusterSelectElem
     };
     this.controlSetRowDefs.push(controlSetRowDef);
@@ -242,6 +281,75 @@ export default class ControlPanelConfigurator {
     }
     
     return `${autoNameBase} ${maxAutoNameNumSuffix + 1}`;
+  }
+  
+  /**
+   * @param {ControlDef} controlDef 
+   * @returns {{defaultNumControlButtons: number, canEditNumControlButtons: boolean}}
+   */
+  getControlButtonsDescOptions(controlDef) {
+    switch (controlDef.type) {
+      case 'joy-2way-vertical-trigger':
+      case 'joy-4way-trigger':
+      case 'joy-8way-trigger':
+        return {
+          defaultNumControlButtons: 1,
+          canEditNumControlButtons: true
+        };
+      
+      case 'joy-8way-topfire':
+        return {
+          defaultNumControlButtons: 1,
+          canEditNumControlButtons: false
+        };
+      
+      case 'joy-analog-flightstick':
+        return {
+          defaultNumControlButtons: 3,
+          canEditNumControlButtons: true
+        };
+      
+      case 'joy-analog-yoke':
+      case 'throttle': 
+        return {
+          defaultNumControlButtons: 2,
+          canEditNumControlButtons: true
+        };
+      
+      case 'steeringwheel-360':
+      case 'steeringwheel-270':
+      case 'shifter-highlow': 
+      case 'shifter-updown':
+      case 'shifter-4gear':
+        return {
+          defaultNumControlButtons: 0,
+          canEditNumControlButtons: true
+        };
+      
+      case 'lightgun':
+      case 'lightgun-analog':
+        return {
+          defaultNumControlButtons: 1,
+          canEditNumControlButtons: true
+        };
+      
+      default:
+        return {
+          defaultNumControlButtons: 0,
+          canEditNumControlButtons: false
+        };
+    }
+  }
+  
+  /**
+   * @param {HTMLElement} controlButtonsDescElem 
+   * @param {number} numControlButtons 
+   */
+  updateControlButtonsDescription(controlButtonsDescElem, numControlButtons) {
+    const isSingular = numControlButtons === 1;
+    
+    controlButtonsDescElem.classList.toggle('control-panel-configurator__control-set__control-buttons-desc--singular', isSingular);
+    controlButtonsDescElem.classList.toggle('control-panel-configurator__control-set__control-buttons-desc--plural', !isSingular);
   }
   
   updateAllButtonClusterSelectElems() {
@@ -336,10 +444,10 @@ export default class ControlPanelConfigurator {
   
   
   init() {
-    const cpConfig = this.loadState();
+    const cpConfigState = this.loadState();
     
-    if (cpConfig) {
-      for (const buttonCluster of cpConfig.buttonClusters || []) {
+    if (cpConfigState) {
+      for (const buttonCluster of cpConfigState.buttonClusters || []) {
         this.addButtonClusterRow({
           buttonClusterId: buttonCluster.id,
           name           : buttonCluster.name,
@@ -347,12 +455,13 @@ export default class ControlPanelConfigurator {
         });
       }
       
-      for (const controlSet of cpConfig.controlSets || []) {
+      for (const controlSet of cpConfigState.controlSets || []) {
         this.addControlSetRow({
-          controlSetId   : controlSet.id,
-          controlDef     : controlSet.controlDef,
-          name           : controlSet.name,
-          buttonClusterId: controlSet.buttonCluster? controlSet.buttonCluster.id : null
+          controlSetId     : controlSet.id,
+          name             : controlSet.name,
+          controlDef       : controlSet.controls[0].controlDef,
+          numControlButtons: controlSet.controls[0].numButtons,
+          buttonClusterId  : controlSet.buttonCluster? controlSet.buttonCluster.id : null
         });
       }
     }
@@ -382,15 +491,34 @@ export default class ControlPanelConfigurator {
       numButtons: parseInt(buttonClusterRowDef.countInputElem.value, 10) || 0
     }));
     
+    /** @type {ControlPanelControlSet[]} */
     const controlSets = this.controlSetRowDefs.map(controlSetRowDef => ({
-      id        : controlSetRowDef.controlSetId,
-      name      : controlSetRowDef.nameInputElem.value.trim(),
-      controlDef: controlSetRowDef.controlDef,
+      id  : controlSetRowDef.controlSetId,
+      name: controlSetRowDef.nameInputElem.value.trim(),
+      controls: [{
+        controlDef: controlSetRowDef.controlDef,
+        numButtons: parseInt(controlSetRowDef.controlButtonsCountInputElem.value, 10) || 0,
+        isOnOppositeScreenSide: false
+      }],
       buttonCluster: buttonClusters.find(x => x.id === controlSetRowDef.buttonClusterSelectElem.value) || null
     }));
     
+    // assume each control set row defines physical controls
+    // 
+    // this may seem backwards as you would assume you define the physical
+    // controls first and then create control sets based on those. However,
+    // we do it this way to keep the UI simple
+    
+    /** @type {ControlPanelControl[]} */
+    const controls = (
+      controlSets
+      .map(x => x.controls)
+      .reduce((p, c) => p.concat(c), [])
+    );
+    
     /** @type {ControlPanelConfig} */
     return {
+      controls,
       buttonClusters,
       controlSets
     };
@@ -406,56 +534,56 @@ export default class ControlPanelConfigurator {
   saveState() {
     const cpConfig = this.getControlPanelConfig();
     
-    // serialize config
-    const sCPConfig = {
-      sButtonClusters: cpConfig.buttonClusters.map(buttonCluster => ({
-        id        : buttonCluster.id,
-        name      : buttonCluster.name,
-        numButtons: buttonCluster.numButtons
-      })),
+    // serialize
+    const sCPConfigState = {
+      buttonClusters: cpConfig.buttonClusters,
       sControlSets: cpConfig.controlSets.map(controlSet => ({
-        id             : controlSet.id,
-        controlType    : controlSet.controlDef.type,
-        name           : controlSet.name,
+        id       : controlSet.id,
+        name     : controlSet.name,
+        sControls: controlSet.controls.map(control => ({
+          type                  : control.controlDef.type,
+          numButtons            : control.numButtons,
+          isOnOppositeScreenSide: control.isOnOppositeScreenSide
+        })),
         buttonClusterId: controlSet.buttonCluster? controlSet.buttonCluster.id : null
-      }))
+      })),
     };
     
-    state.set(this.getStateKey(), sCPConfig);
+    state.set(this.getStateKey(), sCPConfigState);
   }
   
-  /**
-   * @returns {ControlPanelConfig}
-   */
   loadState() {
-    // de-serialize config
-    const sCPConfig = state.get(this.getStateKey());
-    if (!sCPConfig) return null;
+    // de-serialize
+    const sCPConfigState = state.get(this.getStateKey());
+    if (!sCPConfigState) return null;
     
     /** @type {ControlPanelButtonCluster[]} */
-    const buttonClusters = sCPConfig.sButtonClusters.map(sButtonCluster => ({
-      id        : sButtonCluster.id,
-      name      : sButtonCluster.name,
-      numButtons: sButtonCluster.numButtons
-    }));
+    const buttonClusters = sCPConfigState.buttonClusters;
     
     /** @type {ControlPanelControlSet[]} */
     const controlSets = (
-      sCPConfig.sControlSets
+      sCPConfigState.sControlSets
       .map(sControlSet => ({
-        id           : sControlSet.id,
-        controlDef   : controlDefMap[sControlSet.controlType],
-        name         : sControlSet.name,
+        id      : sControlSet.id,
+        name    : sControlSet.name,
+        controls: sControlSet.sControls.map(sControl => ({
+          controlDef            : controlDefMap[sControl.type],
+          numButtons            : sControl.numButtons,
+          isOnOppositeScreenSide: sControl.isOnOppositeScreenSide
+        })),
         buttonCluster: buttonClusters.find(x => x.id === sControlSet.buttonClusterId)
       }))
-      .filter(x => x.controlDef)
+      .filter(controlSet =>
+        controlSet.controls[0] &&
+        controlSet.controls[0].controlDef
+      )
     );
     
-    /** @type {ControlPanelConfig} */
-    return {
+    const cpConfigState = {
       buttonClusters,
       controlSets
     };
+    return cpConfigState;
   }
   
   clearState() {
