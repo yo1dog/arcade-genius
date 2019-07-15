@@ -39,7 +39,6 @@
     "webpack-merge": "^4.2.1"
   },
   "dependencies": {
-    "@yo1dog/cerror": "^1.0.0",
-    "sprintf-js": "^1.1.2"
+    "@yo1dog/cerror": "^1.0.0"
   }
 }
