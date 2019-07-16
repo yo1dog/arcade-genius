@@ -12,6 +12,7 @@ module.exports = {
   module: {
     rules: [
       {test: /\.html?$/, use: ['html-loader']},
+      {test: /\.svg?$/, loader: 'svg-url-loader'},
       {
         test: /\.wasm$/,
         type: 'javascript/auto',

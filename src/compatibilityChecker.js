@@ -2,6 +2,7 @@ import machineMap from './dataAccess/machineMap';
 import controlsDat from './dataAccess/controlsDat';
 import * as modelineCaculator from './dataAccess/modelineCalculator';
 import controlDefMap from './dataAccess/controlDefMap';
+import coalesceUndefined from './helpers/coalesceUndefined';
 
 /**
  * @typedef {import('./dataAccess/mameList').Machine} Machine
@@ -21,6 +22,99 @@ import controlDefMap from './dataAccess/controlDefMap';
  * @typedef {import('./dataAccess/modelineCalculator').ModelineResult} ModelineResult
  */
 
+export const MachineCompatibilityStatusEnum = {
+  UNKNOWN    : -1,
+  UNSUPPORTED:  0,
+  BAD        :  1,
+  OK         :  2,
+  GOOD       :  3,
+  NATIVE     :  4,
+  
+  /** @param {number} val */
+  translate(val) {
+    const entry = Object.entries(MachineCompatibilityStatusEnum).find(e => e[1] === val);
+    return entry? entry[0] : val;
+  }
+};
+
+export const EmulationCompatibilityStatusEnum = {
+  UNKNOWN    : -1,
+  PRELIMINARY:  0,
+  IMPERFECT  :  1,
+  GOOD       :  2,
+  
+  /** @param {number} val */
+  translate(val) {
+    const entry = Object.entries(EmulationCompatibilityStatusEnum).find(e => e[1] === val);
+    return entry? entry[0] : val;
+  }
+};
+
+export const VideoCompatibilityStatusEnum = {
+  UNKNOWN           : -1,
+  UNSUPPORTED       :  0,
+  BAD               :  1,
+  VFREQ_SLIGHTLY_OFF:  2,
+  INT_SCALE         :  3,
+  NATIVE            :  4,
+  
+  /** @param {number} val */
+  translate(val) {
+    const entry = Object.entries(VideoCompatibilityStatusEnum).find(e => e[1] === val);
+    return entry? entry[0] : val;
+  }
+};
+
+export const ControlsCompatibilityStatusEnum = {
+  UNKNOWN    : -1,
+  UNSUPPORTED:  0,
+  BAD        :  1,
+  OK         :  2,
+  GOOD       :  3,
+  NATIVE     :  4,
+  
+  /** @param {number} val */
+  translate(val) {
+    const entry = Object.entries(ControlsCompatibilityStatusEnum).find(e => e[1] === val);
+    return entry? entry[0] : val;
+  }
+};
+
+const emuMachineCompatibilityStatusMap = {
+  [EmulationCompatibilityStatusEnum.UNKNOWN    ]: MachineCompatibilityStatusEnum.UNKNOWN,
+  [EmulationCompatibilityStatusEnum.PRELIMINARY]: MachineCompatibilityStatusEnum.BAD,
+  [EmulationCompatibilityStatusEnum.IMPERFECT  ]: MachineCompatibilityStatusEnum.OK,
+  [EmulationCompatibilityStatusEnum.GOOD       ]: MachineCompatibilityStatusEnum.NATIVE,
+};
+/** @param {number} emuCompatibilityStatus */
+export function emuToMachineCompatibilityStatus(emuCompatibilityStatus) {
+  return coalesceUndefined(emuMachineCompatibilityStatusMap[emuCompatibilityStatus], MachineCompatibilityStatusEnum.UNKNOWN);
+}
+const controlsMachineCompatibilityStatusMap = {
+  [ControlsCompatibilityStatusEnum.UNKNOWN    ]: MachineCompatibilityStatusEnum.UNKNOWN,
+  [ControlsCompatibilityStatusEnum.UNSUPPORTED]: MachineCompatibilityStatusEnum.UNSUPPORTED,
+  [ControlsCompatibilityStatusEnum.BAD        ]: MachineCompatibilityStatusEnum.BAD,
+  [ControlsCompatibilityStatusEnum.OK         ]: MachineCompatibilityStatusEnum.OK,
+  [ControlsCompatibilityStatusEnum.GOOD       ]: MachineCompatibilityStatusEnum.GOOD,
+  [ControlsCompatibilityStatusEnum.NATIVE     ]: MachineCompatibilityStatusEnum.NATIVE,
+};
+/** @param {number} controlsCompatibilityStatus */
+export function controlsToMachineCompatibilityStatus(controlsCompatibilityStatus) {
+  return coalesceUndefined(controlsMachineCompatibilityStatusMap[controlsCompatibilityStatus], MachineCompatibilityStatusEnum.UNKNOWN);
+}
+const videoMachineCompatibilityStatusMap = {
+  [VideoCompatibilityStatusEnum.UNKNOWN           ]: MachineCompatibilityStatusEnum.UNKNOWN,
+  [VideoCompatibilityStatusEnum.UNSUPPORTED       ]: MachineCompatibilityStatusEnum.UNSUPPORTED,
+  [VideoCompatibilityStatusEnum.BAD               ]: MachineCompatibilityStatusEnum.BAD,
+  [VideoCompatibilityStatusEnum.VFREQ_SLIGHTLY_OFF]: MachineCompatibilityStatusEnum.OK,
+  [VideoCompatibilityStatusEnum.INT_SCALE         ]: MachineCompatibilityStatusEnum.GOOD,
+  [VideoCompatibilityStatusEnum.NATIVE            ]: MachineCompatibilityStatusEnum.NATIVE,
+};
+/** @param {number} videoCompatibilityStatus */
+export function videoToMachineCompatibilityStatus(videoCompatibilityStatus) {
+  return coalesceUndefined(videoMachineCompatibilityStatusMap[videoCompatibilityStatus], MachineCompatibilityStatusEnum.UNKNOWN);
+}
+
 
 // ----------------------------------
 // Machine
@@ -33,6 +127,8 @@ import controlDefMap from './dataAccess/controlDefMap';
  * @property {VideoCompatibility[]} videoComps
  * @property {EmulationCompatibility} emuComp
  * @property {ControlsCompatibility} controlsComp
+ * @property {number} status
+ * @property {number} knownStatus
  */
 
 /**
@@ -55,6 +151,7 @@ export async function checkMachineBulk(machineNameInputs, modelineConfigs, cpCon
   );
   
   // check video compatibility in bulk
+  /** @type {VideoCompatibility[][]} */
   const modelineConfigsVideoComps = [];
   for (let i = 0; i < modelineConfigs.length; ++i) {
     modelineConfigsVideoComps[i] = await checkVideoBulk(machines, modelineConfigs[i]);
@@ -63,17 +160,38 @@ export async function checkMachineBulk(machineNameInputs, modelineConfigs, cpCon
   return machines.map((machine, i) => {
     const machineNameInput = machineNameInputs[i];
     
+    /** @type {VideoCompatibility[]} */
     const videoComps = [];
     for (let j = 0; j < modelineConfigs.length; ++j) {
       videoComps[j] = modelineConfigsVideoComps[j][i];
     }
     
+    // check emulation compatibility
+    const emuComp = checkEmulation(machine);
+    
+    // check controls compatibility
+    const controlsComp = checkControls(machine, cpConfig);
+    
+    // machine overall compatibility is worst of all compatibilities
+    const bestVideoMachineStatus = Math.max(...videoComps.map(x => x.machineStatus));
+    const statuses = [
+      emuComp.machineStatus,
+      controlsComp.machineStatus,
+      bestVideoMachineStatus
+    ];
+    const knownStatuses = statuses.filter(x => x !== MachineCompatibilityStatusEnum.UNKNOWN);
+    
+    const status = Math.min(...statuses);
+    const knownStatus = knownStatuses.length > 0? Math.min(...knownStatuses) : MachineCompatibilityStatusEnum.UNKNOWN;
+    
     return {
       machineNameInput,
       machine,
       videoComps,
-      emuComp: checkEmulation(machine),
-      controlsComp: checkControls(machine, cpConfig)
+      emuComp,
+      controlsComp,
+      status,
+      knownStatus
     };
   });
 }
@@ -93,23 +211,11 @@ export async function checkMachine(machineNameInput, modelineConfigs, cpConfig) 
 // Emulation
 // ----------------------------------
 
-export const EmulationCompatibilityStatusEnum = {
-  UNKNOWN    : -1,
-  PRELIMINARY:  0,
-  IMPERFECT  :  1,
-  GOOD       :  2,
-  
-  /** @param {number} val */
-  translate(val) {
-    const entry = Object.entries(EmulationCompatibilityStatusEnum).find(e => e[1] === val);
-    return entry? entry[0] : val;
-  }
-};
-
 /**
  * @typedef EmulationCompatibility
  * @property {Machine} machine
  * @property {number} status
+ * @property {number} machineStatus
  */
 
 /**
@@ -117,9 +223,13 @@ export const EmulationCompatibilityStatusEnum = {
  * @returns {EmulationCompatibility}
  */
 export function checkEmulation(machine) {
+  const status = getEmulationStatus(machine);
+  const machineStatus = emuToMachineCompatibilityStatus(status);
+  
   return {
     machine,
-    status: getEmulationStatus(machine)
+    status,
+    machineStatus
   };
 }
 
@@ -143,27 +253,13 @@ function getEmulationStatus(machine) {
 // Video
 // ----------------------------------
 
-export const VideoCompatibilityStatusEnum = {
-  UNKNOWN           : -1,
-  UNSUPPORTED       :  0,
-  BAD               :  1,
-  VFREQ_SLIGHTLY_OFF:  2,
-  INT_SCALE         :  3,
-  NATIVE            :  4,
-  
-  /** @param {number} val */
-  translate(val) {
-    const entry = Object.entries(VideoCompatibilityStatusEnum).find(e => e[1] === val);
-    return entry? entry[0] : val;
-  }
-};
-
 /**
  * @typedef VideoCompatibility
  * @property {Machine} machine
  * @property {ModelineConfig} modelineConfig
  * @property {ModelineResult} modelineResult
  * @property {number} status
+ * @property {number} machineStatus
  */
 
 /**
@@ -189,11 +285,15 @@ export async function checkVideoBulk(machines, modelineConfig) {
     // get modeline result
     const modelineResult = machine && modelineResultMap[machine.name];
     
+    const status = getVideoStatus(modelineResult);
+    const machineStatus = videoToMachineCompatibilityStatus(status);
+    
     return {
       machine,
       modelineConfig,
       modelineResult,
-      status: getVideoStatus(modelineResult)
+      status,
+      machineStatus
     };
   });
 }
@@ -240,27 +340,13 @@ function getVideoStatus(modelineResult) {
 // Controls
 // ----------------------------------
 
-export const ControlsCompatibilityStatusEnum = {
-  UNKNOWN    : -1,
-  UNSUPPORTED:  0,
-  BAD        :  1,
-  OK         :  2,
-  GOOD       :  3,
-  NATIVE     :  4,
-  
-  /** @param {number} val */
-  translate(val) {
-    const entry = Object.entries(ControlsCompatibilityStatusEnum).find(e => e[1] === val);
-    return entry? entry[0] : val;
-  }
-};
-
 /**
  * @typedef ControlsCompatibility
  * @property {Machine} machine
  * @property {ControlsDatGame} controlsDatGame
  * @property {ControlConfigurationCompatibility} controlConfigComp
  * @property {number} status
+ * @property {number} machineStatus
  * 
  * @typedef ControlConfigurationCompatibility
  * @property {GameControlConfiguration} gameControlConfig
@@ -315,12 +401,14 @@ export function checkControls(machine, cpConfig) {
   }
   
   const status = bestControlConfigComp? bestControlConfigComp.status : ControlsCompatibilityStatusEnum.UNKNOWN;
+  const machineStatus = controlsToMachineCompatibilityStatus(status);
   
   return {
     machine,
     controlsDatGame,
     controlConfigComp: bestControlConfigComp,
     status,
+    machineStatus
   };
 }
 

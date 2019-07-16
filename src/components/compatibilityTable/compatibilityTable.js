@@ -7,11 +7,13 @@ import {EventEmitter} from 'events';
 import {
   EmulationCompatibilityStatusEnum,
   VideoCompatibilityStatusEnum,
-  ControlsCompatibilityStatusEnum
+  ControlsCompatibilityStatusEnum,
+  MachineCompatibilityStatusEnum
 } from '../../compatibilityChecker';
 
 /**
  * @typedef {import('../../compatibilityChecker').MachineCompatibility} MachineCompatibility
+ * @typedef {import('../../compatibilityChecker').ControlsCompatibility} ControlsCompatibility
  * @typedef {import('../../dataAccess/mameList').Machine} Machine
  */
 
@@ -61,9 +63,6 @@ export default class CompatibilityTable extends EventEmitter {
       );
     }
     
-    // update header cells
-    this.videoStatusHeaderCellElem.colSpan = 2 * monitorConfigCellElems.length;
-    
     // set monitor config titles
     for (let i = 0; i < monitorConfigTitles.length; ++i) {
       monitorConfigCellElems[i].innerText = monitorConfigTitles[i];
@@ -74,9 +73,12 @@ export default class CompatibilityTable extends EventEmitter {
       monitorConfigTitles.length <= 1
     );
     
+    // update header cells
+    this.videoStatusHeaderCellElem.colSpan = monitorConfigTitles.length;
+    
     // create rows
     for (let i = 0; i < machineComps.length; ++i) {
-      const rowBlock = CompatibilityTable.createRowBlock(machineComps[i], i, monitorConfigTitles);
+      const rowBlock = this.createRowBlock(machineComps[i], i, monitorConfigTitles);
       this.bodyElem.appendChild(rowBlock);
     }
   }
@@ -93,90 +95,80 @@ export default class CompatibilityTable extends EventEmitter {
    * @param {number} rowIndex 
    * @param {string[]} monitorConfigTitles 
    */
-  static createRowBlock(machineComp, rowIndex, monitorConfigTitles) {
+  createRowBlock(machineComp, rowIndex, monitorConfigTitles) {
     const {machine} = machineComp;
     const evenOddClass = `comp-table__row--${rowIndex % 2 === 0? 'odd' : 'even'}`;
     
-    // translate statuses
-    const {emuStatusDesc, emuStatusClass} = this.translateEmulationStatus(machineComp.emuComp.status);
-    const {controlsStatusDesc, controlsStatusClass} = this.translateControlsStatus(machineComp.controlsComp.status);
-    
-    const bestVideoStatus = Math.max(...machineComp.videoComps.map(x => x.status));
-    const {videoStatusClass} = this.translateVideoStatus(bestVideoStatus);
-    
-    const detailsStr = CompatibilityTable.getDetailsStr(machineComp, monitorConfigTitles);
-    
-    // create short description
-    const shortDesc = machine? this.shortenDescription(machine.description) : 'machine not found';
-    
-    // create block
     const rowBlock = htmlToBlock(compTableRowTemplate);
     
     const rowElem = rowBlock.querySelector('.comp-table__row');
-    rowElem.classList.add(
-      evenOddClass,
-      emuStatusClass,
-      controlsStatusClass,
-      videoStatusClass,
-      !machine? 'comp-table__row--invalid-machine-name' : null
+    rowElem.classList.add(evenOddClass);
+    
+    const rowStatusTrans = this.translateMachineStatus(machineComp.knownStatus);
+    const machineStatusTrans = this.translateMachineStatus(machineComp.status);
+    
+    rowElem.classList.add(rowStatusTrans.cssClass);
+    
+    // machine name
+    if (!machine) {
+      rowElem.classList.add('comp-table__row--invalid-machine-name__text');
+    }
+    
+    rowBlock.querySelector('.comp-table__row__machine-name').classList.add(machineStatusTrans.cssClass);
+    rowBlock.querySelector('.comp-table__row__machine-name__icon').classList.add(rowStatusTrans.cssIconClass);
+    rowBlock.querySelector('.comp-table__row__machine-name__text').innerText = (
+      machine
+      ? machine.name
+      : machineComp.machineNameInput
     );
     
-    rowBlock.querySelector('.comp-table__row__machine-name')
-    .innerText = machine? machine.name : machineComp.machineNameInput;
+    // machine desc
+    rowBlock.querySelector('.comp-table__row__desc__text').innerText = (
+      machine
+      ? this.shortenDescription(machine.description)
+      : 'machine not found'
+    );
     
-    rowBlock.querySelector('.comp-table__row__desc')
-    .innerText = shortDesc;
+    // emulation status
+    const emuStatusTrans = this.translateMachineStatus(machineComp.emuComp.machineStatus);
+    rowBlock.querySelector('.comp-table__row__emu-status'      ).classList.add(emuStatusTrans.cssClass);
+    rowBlock.querySelector('.comp-table__row__emu-status__icon').classList.add(emuStatusTrans.cssIconClass);
+    rowBlock.querySelector('.comp-table__row__emu-status__text').innerText = emuStatusTrans.desc;
     
-    rowBlock.querySelector('.comp-table__row__emu-status')
-    .innerText = emuStatusDesc || '';
+    // control status
+    const controlsStatusTrans = this.translateMachineStatus(machineComp.controlsComp.machineStatus);
+    rowBlock.querySelector('.comp-table__row__controls-status'      ).classList.add(controlsStatusTrans.cssClass);
+    rowBlock.querySelector('.comp-table__row__controls-status__icon').classList.add(controlsStatusTrans.cssIconClass);
+    rowBlock.querySelector('.comp-table__row__controls-status__text').innerText = controlsStatusTrans.desc;
     
-    rowBlock.querySelector('.comp-table__row__controls-status')
-    .innerText = controlsStatusDesc || '';
+    // video status
+    const videoStatusCellElems = [rowBlock.querySelector('.comp-table__row__video-status')];
     
-    const videoStatusIconCellElems = [rowBlock.querySelector('.comp-table__row__video-status-icon')];
-    const videoStatusCellElems     = [rowBlock.querySelector('.comp-table__row__video-status')];
-    
-    for (let i = 1; i < monitorConfigTitles.length; ++i) {
-      const videoStatusIconCellElem = videoStatusIconCellElems[0].cloneNode(true);
-      const videoStatusCellElem     = videoStatusCellElems    [0].cloneNode(true);
+    while (videoStatusCellElems.length < monitorConfigTitles.length) {
+      const lastVideoStatusCellElem = videoStatusCellElems[videoStatusCellElems.length - 1];
+      const newVideoStatusCellElem = lastVideoStatusCellElem.cloneNode(true);
       
-      videoStatusCellElems[i - 1].insertAdjacentElement(
-        'afterend',
-        videoStatusIconCellElem
-      );
-      videoStatusIconCellElem.insertAdjacentElement(
-        'afterend',
-        videoStatusCellElem
-      );
-      
-      videoStatusIconCellElems.push(videoStatusIconCellElem);
-      videoStatusCellElems    .push(videoStatusCellElem    );
+      lastVideoStatusCellElem.insertAdjacentElement('afterend', newVideoStatusCellElem);
+      videoStatusCellElems.push(newVideoStatusCellElem);
     }
     
     for (let i = 0; i < monitorConfigTitles.length; ++i) {
       const videoComp = machineComp.videoComps[i];
-      const {videoStatusDesc, videoStatusClass} = this.translateVideoStatus(videoComp.status);
+      const controlsStatusElem = videoStatusCellElems[i];
       
-      videoStatusIconCellElems[i].classList.add(videoStatusClass);
-      videoStatusCellElems    [i].classList.add(videoStatusClass);
-      videoStatusCellElems    [i].innerText = videoStatusDesc || '';
+      const videoStatusTrans = this.translateMachineStatus(videoComp.machineStatus);
+      controlsStatusElem.classList.add(videoStatusTrans.cssClass);
+      controlsStatusElem.querySelector('.comp-table__row__video-status__icon').classList.add(videoStatusTrans.cssIconClass);
+      controlsStatusElem.querySelector('.comp-table__row__video-status__text').innerText = videoStatusTrans.desc;
     }
     
-    const toggleDetailsButtonElem = rowBlock.querySelector('.comp-table__row__toggle-details-button');
-    if (!detailsStr) {
-      toggleDetailsButtonElem.classList.add('hidden');
-    }
-    
-    
+    // details
     const detailsRowElem = rowBlock.querySelector('.comp-table__details-row');
     detailsRowElem.classList.add(evenOddClass);
-    
-    detailsRowElem.querySelector('td').colSpan = 7 + (2 * monitorConfigTitles.length);
-    
-    rowBlock.querySelector('.comp-table__details-row__text')
-    .value = detailsStr || '';
+    this.populateDetailsRow(detailsRowElem, machineComp, monitorConfigTitles);
     
     // attach event listener to toggle details button
+    const toggleDetailsButtonElem = rowBlock.querySelector('.comp-table__row__toggle-details-button');
     toggleDetailsButtonElem.addEventListener('click', () => {
       const isHidden = detailsRowElem.classList.toggle('hidden');
       toggleDetailsButtonElem.classList.toggle('toggle-state-on', !isHidden);
@@ -187,15 +179,50 @@ export default class CompatibilityTable extends EventEmitter {
   }
   
   /**
+   * @param {HTMLTableRowElement} detailsRowElem 
+   * @param {MachineCompatibility} machineComp 
+   * @param {string[]} monitorConfigTitles 
+   */
+  populateDetailsRow(detailsRowElem, machineComp, monitorConfigTitles) {
+    // expand cell to fill row
+    const cellElem = detailsRowElem.querySelector('td');
+    cellElem.colSpan = 5 + monitorConfigTitles.length;
+    
+    // populate controls details
+    this.populateControlsDetails(detailsRowElem, machineComp.controlsComp);
+    
+    // details JSON
+    detailsRowElem.querySelector('.comp-table__details-row__json').value = (
+      this.getDetailsJSON(machineComp, monitorConfigTitles)
+    );
+  }
+  
+  /**
+   * @param {HTMLTableRowElement} detailsRowElem 
+   * @param {ControlsCompatibility} controlsComp
+   */
+  populateControlsDetails(detailsRowElem, controlsComp) {
+    const controlsListElem = detailsRowElem.querySelector('.comp-table__details-row__controls-list');
+    
+    if (!controlsComp.controlConfigComp) {
+      const liElem = document.createElement('li');
+      liElem.classList.add('comp-table__details-row__warn-list-item');
+      liElem.innerText = 'Unable to find control information for this ROM.';
+      
+      controlsListElem.appendChild(liElem);
+      return;
+    }
+    
+    
+  }
+  
+  /**
    * @param {MachineCompatibility} machineComp 
    * @param {string[]} monitorConfigTitles
    * @returns {string}
    */
-  static getDetailsStr(machineComp, monitorConfigTitles) {
-    if (!machineComp.machine) {
-      return `Machine not found: ${machineComp.machineNameInput}`;
-    }
-    
+  getDetailsJSON(machineComp, monitorConfigTitles) {
+    /*
     let detailsStr = '';
     for (let i = 0; i < monitorConfigTitles.length; ++i) {
       const monitorConfigTitle = monitorConfigTitles[i];
@@ -216,10 +243,28 @@ export default class CompatibilityTable extends EventEmitter {
         detailsStr += `${videoComp.modelineResult.details}\n`;
       }
     }
+    */
     
-    const detailsObj = {
+    return JSON.stringify({
+      status: MachineCompatibilityStatusEnum.translate(machineComp.status),
+      
+      emuComp: {
+        status: EmulationCompatibilityStatusEnum.translate(machineComp.emuComp.status),
+        machineStatus: MachineCompatibilityStatusEnum.translate(machineComp.emuComp.machineStatus),
+      },
+      
+      videoComps: machineComp.videoComps.map((videoComp, i) => (
+        !videoComp? null : {
+          status: VideoCompatibilityStatusEnum.translate(videoComp.status),
+          machineStatus: MachineCompatibilityStatusEnum.translate(videoComp.machineStatus),
+          modelineConfig: videoComp.modelineConfig,
+          modelineResult: videoComp.modelineResult,
+        }
+      )),
+      
       controlsComp: {
         status: ControlsCompatibilityStatusEnum.translate(machineComp.controlsComp.status),
+        machineStatus: MachineCompatibilityStatusEnum.translate(machineComp.controlsComp.machineStatus),
         controlSetComps: !machineComp.controlsComp.controlConfigComp? [] : machineComp.controlsComp.controlConfigComp.controlSetComps.map(controlSetComp => ({
           status: ControlsCompatibilityStatusEnum.translate(controlSetComp.status),
           gameControlSet: {
@@ -253,109 +298,46 @@ export default class CompatibilityTable extends EventEmitter {
             }
           }
         }))
-      }
-    };
-    
-    if (monitorConfigTitles.length > 1) {
-      detailsObj.modelineResultMap = {};
+      },
       
-      for (let i = 0; i < monitorConfigTitles.length; ++i) {
-        const monitorConfigTitle = monitorConfigTitles[i];
-        const videoComp = machineComp.videoComps[i];
-        
-        detailsObj.modelineResultMap[monitorConfigTitle] = (videoComp && videoComp.modelineResult) || null;
-      }
-    }
-    else {
-      const videoComp = machineComp.videoComps[0];
-      detailsObj.modelineResult = (videoComp && videoComp.modelineResult) || null;
-    }
-    
-    detailsObj.machine = machineComp.machine || null;
-    detailsObj.controlsDatGame = machineComp.controlsComp.controlsDatGame || null;
-    
-    detailsStr += `\n${JSON.stringify(detailsObj, null, 2)}`;
-    return detailsStr;
+      machineNameInput: machineComp.machineNameInput,
+      machine: machineComp.machine || null,
+      controlsDatGame: machineComp.controlsComp.controlsDatGame || null,
+    }, null, 2);
   }
   
   /**
-   * @param {number} emuStatus 
+   * @param {number} machineStatus 
    */
-  static translateEmulationStatus(emuStatus) {
-    const emuStatusDesc = {
-      [EmulationCompatibilityStatusEnum.GOOD       ]: 'Good',
-      [EmulationCompatibilityStatusEnum.IMPERFECT  ]: 'Imperfect',
-      [EmulationCompatibilityStatusEnum.PRELIMINARY]: 'Preliminary',
-    }[emuStatus] || 'Unknown';
+  translateMachineStatus(machineStatus) {
+    const classSuffix = {
+      [MachineCompatibilityStatusEnum.UNSUPPORTED]: 'error',
+      [MachineCompatibilityStatusEnum.BAD        ]: 'error',
+      [MachineCompatibilityStatusEnum.OK         ]: 'warn',
+      [MachineCompatibilityStatusEnum.GOOD       ]: 'good',
+      [MachineCompatibilityStatusEnum.NATIVE     ]: 'good'
+    }[machineStatus] || 'unknown';
     
-    const emuStatusClass = {
-      [EmulationCompatibilityStatusEnum.GOOD       ]: 'comp-table__row--emu-status-good',
-      [EmulationCompatibilityStatusEnum.IMPERFECT  ]: 'comp-table__row--emu-status-imperfect',
-      [EmulationCompatibilityStatusEnum.PRELIMINARY]: 'comp-table__row--emu-status-preliminary',
-    }[emuStatus]  || 'comp-table__row--emu-status-unknown';
+    const desc = {
+      [MachineCompatibilityStatusEnum.UNKNOWN    ]: 'Unknown',
+      [MachineCompatibilityStatusEnum.UNSUPPORTED]: 'Unuspported',
+      [MachineCompatibilityStatusEnum.BAD        ]: 'Bad',
+      [MachineCompatibilityStatusEnum.OK         ]: 'OK',
+      [MachineCompatibilityStatusEnum.GOOD       ]: 'Good',
+      [MachineCompatibilityStatusEnum.NATIVE     ]: 'Native'
+    }[machineStatus] || MachineCompatibilityStatusEnum.translate(machineStatus);
     
     return {
-      emuStatusDesc,
-      emuStatusClass
-    };
-  }
-  
-  /**
-   * @param {number} controlsStatus 
-   */
-  static translateControlsStatus(controlsStatus) {
-    const controlsStatusDesc = {
-      [ControlsCompatibilityStatusEnum.NATIVE     ]: 'Native',
-      [ControlsCompatibilityStatusEnum.GOOD       ]: 'Good',
-      [ControlsCompatibilityStatusEnum.OK         ]: 'OK',
-      [ControlsCompatibilityStatusEnum.BAD        ]: 'Bad',
-      [ControlsCompatibilityStatusEnum.UNSUPPORTED]: 'Unsupported'
-    }[controlsStatus] || 'Unknown';
-    
-    const controlsStatusClass = {
-      [ControlsCompatibilityStatusEnum.NATIVE     ]: 'comp-table__row--controls-status-native',
-      [ControlsCompatibilityStatusEnum.GOOD       ]: 'comp-table__row--controls-status-good',
-      [ControlsCompatibilityStatusEnum.OK         ]: 'comp-table__row--controls-status-ok',
-      [ControlsCompatibilityStatusEnum.BAD        ]: 'comp-table__row--controls-status-bad',
-      [ControlsCompatibilityStatusEnum.UNSUPPORTED]: 'comp-table__row--controls-status-unsupported'
-    }[controlsStatus] || 'comp-table__row--controls-status-unknown';
-    
-    return {
-      controlsStatusDesc,
-      controlsStatusClass
-    };
-  }
-  
-  /**
-   * @param {number} videoStatus 
-   */
-  static translateVideoStatus(videoStatus) {
-    const videoStatusDesc = {
-      [VideoCompatibilityStatusEnum.NATIVE            ]: 'Native',
-      [VideoCompatibilityStatusEnum.INT_SCALE         ]: 'Scaled',
-      [VideoCompatibilityStatusEnum.VFREQ_SLIGHTLY_OFF]: 'VFreq',
-      [VideoCompatibilityStatusEnum.BAD               ]: 'Bad',
-      [VideoCompatibilityStatusEnum.UNSUPPORTED       ]: 'Unsupported'
-    }[videoStatus] || 'Unknown';
-    
-    const videoStatusClass = {
-      [VideoCompatibilityStatusEnum.NATIVE            ]: 'comp-table__row--video-status-native',
-      [VideoCompatibilityStatusEnum.INT_SCALE         ]: 'comp-table__row--video-status-int-scale',
-      [VideoCompatibilityStatusEnum.VFREQ_SLIGHTLY_OFF]: 'comp-table__row--video-status-vfreq-slightly-off',
-      [VideoCompatibilityStatusEnum.BAD               ]: 'comp-table__row--video-status-bad',
-      [VideoCompatibilityStatusEnum.UNSUPPORTED       ]: 'comp-table__row--video-status-unsupported'
-    }[videoStatus] || 'comp-table__row--video-status-unknown';
-    
-    return {
-      videoStatusDesc,
-      videoStatusClass
+      cssClass: `comp-table--${classSuffix}`,
+      cssIconClass: `comp-table__icon--${classSuffix}`,
+      desc
     };
   }
   
   /**
    * @param {string} description 
    */
-  static shortenDescription(description) {
+  shortenDescription(description) {
     return description.replace(/\(.+\)/g, '').trim();
   }
 }
