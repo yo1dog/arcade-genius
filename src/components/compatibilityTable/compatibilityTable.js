@@ -31,6 +31,12 @@ export default class CompatibilityTable extends EventEmitter {
     this.bodyElem                   = this.elem.querySelector('.comp-table__body');
     this.refreshButtonElem          = this.elem.querySelector('.comp-table__refresh-button');
     
+    const tempBlock = this.elem.querySelector('template').content;
+    this.iconGoodTempElem    = tempBlock.querySelector('.comp-table__icon--good');
+    this.iconWarnTempElem    = tempBlock.querySelector('.comp-table__icon--warn');
+    this.iconErrorTempElem   = tempBlock.querySelector('.comp-table__icon--error');
+    this.iconUnknownTempElem = tempBlock.querySelector('.comp-table__icon--unknown');
+    
     this.refreshButtonElem.addEventListener('click', () => this.refresh());
   }
   
@@ -101,22 +107,26 @@ export default class CompatibilityTable extends EventEmitter {
     
     const rowBlock = htmlToBlock(compTableRowTemplate);
     
+    // row
     const rowElem = rowBlock.querySelector('.comp-table__row');
     rowElem.classList.add(evenOddClass);
     
     const rowStatusTrans = this.translateMachineStatus(machineComp.knownStatus);
-    const machineStatusTrans = this.translateMachineStatus(machineComp.status);
-    
     rowElem.classList.add(rowStatusTrans.cssClass);
     
-    // machine name
     if (!machine) {
       rowElem.classList.add('comp-table__row--invalid-machine-name__text');
     }
     
-    rowBlock.querySelector('.comp-table__row__machine-name').classList.add(machineStatusTrans.cssClass);
-    rowBlock.querySelector('.comp-table__row__machine-name__icon').classList.add(rowStatusTrans.cssIconClass);
-    rowBlock.querySelector('.comp-table__row__machine-name__text').innerText = (
+    // machine name
+    const machineNameElem     = rowBlock.querySelector('.comp-table__row__machine-name');
+    const machineNameTextElem = rowBlock.querySelector('.comp-table__row__machine-name__text');
+    
+    const machineStatusTrans = this.translateMachineStatus(machineComp.status);
+    machineNameElem.classList.add(machineStatusTrans.cssClass);
+    machineNameTextElem.appendChild(machineStatusTrans.iconTempElem.cloneNode(true));
+    machineNameTextElem.insertAdjacentText(
+      'beforeend',
       machine
       ? machine.name
       : machineComp.machineNameInput
@@ -130,16 +140,22 @@ export default class CompatibilityTable extends EventEmitter {
     );
     
     // emulation status
-    const emuStatusTrans = this.translateMachineStatus(machineComp.emuComp.machineStatus);
-    rowBlock.querySelector('.comp-table__row__emu-status'      ).classList.add(emuStatusTrans.cssClass);
-    rowBlock.querySelector('.comp-table__row__emu-status__icon').classList.add(emuStatusTrans.cssIconClass);
-    rowBlock.querySelector('.comp-table__row__emu-status__text').innerText = emuStatusTrans.desc;
+    const emuStatusElem     = rowBlock.querySelector('.comp-table__row__emu-status');
+    const emuStatusTextElem = rowBlock.querySelector('.comp-table__row__emu-status__text');
     
-    // control status
+    const emuStatusTrans = this.translateMachineStatus(machineComp.emuComp.machineStatus);
+    emuStatusElem.classList.add(emuStatusTrans.cssClass);
+    emuStatusTextElem.appendChild(emuStatusTrans.iconTempElem.cloneNode(true));
+    emuStatusTextElem.insertAdjacentText('beforeend', emuStatusTrans.desc);
+    
+    // controls status
+    const controlsStatusElem     = rowBlock.querySelector('.comp-table__row__controls-status');
+    const controlsStatusTextElem = rowBlock.querySelector('.comp-table__row__controls-status__text');
+    
     const controlsStatusTrans = this.translateMachineStatus(machineComp.controlsComp.machineStatus);
-    rowBlock.querySelector('.comp-table__row__controls-status'      ).classList.add(controlsStatusTrans.cssClass);
-    rowBlock.querySelector('.comp-table__row__controls-status__icon').classList.add(controlsStatusTrans.cssIconClass);
-    rowBlock.querySelector('.comp-table__row__controls-status__text').innerText = controlsStatusTrans.desc;
+    controlsStatusElem.classList.add(controlsStatusTrans.cssClass);
+    controlsStatusTextElem.appendChild(controlsStatusTrans.iconTempElem.cloneNode(true));
+    controlsStatusTextElem.insertAdjacentText('beforeend', controlsStatusTrans.desc);
     
     // video status
     const videoStatusCellElems = [rowBlock.querySelector('.comp-table__row__video-status')];
@@ -154,12 +170,14 @@ export default class CompatibilityTable extends EventEmitter {
     
     for (let i = 0; i < monitorConfigTitles.length; ++i) {
       const videoComp = machineComp.videoComps[i];
-      const controlsStatusElem = videoStatusCellElems[i];
+      const videoStatusElem = videoStatusCellElems[i];
+      
+      const videoStatusTextElem = videoStatusElem.querySelector('.comp-table__row__video-status__text');
       
       const videoStatusTrans = this.translateMachineStatus(videoComp.machineStatus);
-      controlsStatusElem.classList.add(videoStatusTrans.cssClass);
-      controlsStatusElem.querySelector('.comp-table__row__video-status__icon').classList.add(videoStatusTrans.cssIconClass);
-      controlsStatusElem.querySelector('.comp-table__row__video-status__text').innerText = videoStatusTrans.desc;
+      videoStatusElem.classList.add(videoStatusTrans.cssClass);
+      videoStatusTextElem.appendChild(videoStatusTrans.iconTempElem.cloneNode(true));
+      videoStatusTextElem.insertAdjacentText('beforeend', videoStatusTrans.desc);
     }
     
     // details
@@ -310,13 +328,21 @@ export default class CompatibilityTable extends EventEmitter {
    * @param {number} machineStatus 
    */
   translateMachineStatus(machineStatus) {
-    const classSuffix = {
-      [MachineCompatibilityStatusEnum.UNSUPPORTED]: 'error',
-      [MachineCompatibilityStatusEnum.BAD        ]: 'error',
-      [MachineCompatibilityStatusEnum.OK         ]: 'warn',
-      [MachineCompatibilityStatusEnum.GOOD       ]: 'good',
-      [MachineCompatibilityStatusEnum.NATIVE     ]: 'good'
-    }[machineStatus] || 'unknown';
+    const cssClass = {
+      [MachineCompatibilityStatusEnum.UNSUPPORTED]: 'comp-table--error',
+      [MachineCompatibilityStatusEnum.BAD        ]: 'comp-table--error',
+      [MachineCompatibilityStatusEnum.OK         ]: 'comp-table--warn',
+      [MachineCompatibilityStatusEnum.GOOD       ]: 'comp-table--good',
+      [MachineCompatibilityStatusEnum.NATIVE     ]: 'comp-table--good'
+    }[machineStatus] || 'comp-table--unknown';
+    
+    const iconTempElem = {
+      [MachineCompatibilityStatusEnum.UNSUPPORTED]: this.iconErrorTempElem,
+      [MachineCompatibilityStatusEnum.BAD        ]: this.iconErrorTempElem,
+      [MachineCompatibilityStatusEnum.OK         ]: this.iconWarnTempElem,
+      [MachineCompatibilityStatusEnum.GOOD       ]: this.iconGoodTempElem,
+      [MachineCompatibilityStatusEnum.NATIVE     ]: this.iconGoodTempElem
+    }[machineStatus] || this.iconUnknownTempElem;
     
     const desc = {
       [MachineCompatibilityStatusEnum.UNKNOWN    ]: 'Unknown',
@@ -328,8 +354,8 @@ export default class CompatibilityTable extends EventEmitter {
     }[machineStatus] || MachineCompatibilityStatusEnum.translate(machineStatus);
     
     return {
-      cssClass: `comp-table--${classSuffix}`,
-      cssIconClass: `comp-table__icon--${classSuffix}`,
+      cssClass,
+      iconTempElem,
       desc
     };
   }

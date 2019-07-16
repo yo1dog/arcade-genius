@@ -1,23 +1,29 @@
+@goodColor: green;
+@warnColor: orange;
 @errorColor: red;
 @unknownColor: gray;
 @fixedWidthFontFamily: 'Courier New', Courier, monospace;
 
 .comp-table__icon {
-  width: 1.25em;
-  display: inline-block;
-  vertical-align: middle;
+  svg {
+    width: 12pt;
+    height: $width;
+    display: inline-block;
+    vertical-align: -0.275em;
+    overflow: visible;
+  }
 }
 .comp-table__icon--good {
-  content: url('./icons/check.svg');
+  color: @goodColor;
 }
 .comp-table__icon--warn {
-  content: url('./icons/triangle.svg');
+  color: @warnColor;
 }
 .comp-table__icon--error {
-  content: url('./icons/x.svg');
+  color: @errorColor;
 }
 .comp-table__icon--unknown {
-  content: url('./icons/question.svg');
+  color: @unknownColor;
 }
 
 
