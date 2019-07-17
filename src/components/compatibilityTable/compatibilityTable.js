@@ -1,19 +1,26 @@
 import './compatibilityTable.less';
 import compTableTemplate from './compatibilityTable.html';
 import compTableRowTemplate from './compatibilityTableRow.html';
+import compatibilityTableRowDetailsListItemTemplate from './compatibilityTableRowDetailsListItem.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
 import clearNodeChildren from '../../helpers/clearNodeChildren';
+import pluralize from '../../helpers/pluralize';
 import {EventEmitter} from 'events';
 import {
   EmulationCompatibilityStatusEnum,
   VideoCompatibilityStatusEnum,
   ControlsCompatibilityStatusEnum,
-  MachineCompatibilityStatusEnum
+  MachineCompatibilityStatusEnum,
+  emuToMachineCompatibilityStatus,
+  controlsToMachineCompatibilityStatus,
+  videoToMachineCompatibilityStatus
 } from '../../compatibilityChecker';
+import controlDefMap from '../../dataAccess/controlDefMap';
 
 /**
  * @typedef {import('../../compatibilityChecker').MachineCompatibility} MachineCompatibility
  * @typedef {import('../../compatibilityChecker').ControlsCompatibility} ControlsCompatibility
+ * @typedef {import('../../compatibilityChecker').MultidimensionalScore} MultidimensionalScore
  * @typedef {import('../../dataAccess/mameList').Machine} Machine
  */
 
@@ -108,10 +115,6 @@ export default class CompatibilityTable extends EventEmitter {
     const machineStatusTrans = this.translateMachineStatus(machineComp.knownStatus);
     rowElem.classList.add(machineStatusTrans.cssClass);
     
-    if (!machine) {
-      rowElem.classList.add('comp-table__row--invalid-machine-name__text');
-    }
-    
     // machine name
     rowBlock.querySelector('.comp-table__row__machine-name'      ).classList.add(machineStatusTrans.cssClass);
     rowBlock.querySelector('.comp-table__row__machine-name__icon').classList.add(machineStatusTrans.iconCSSClass);
@@ -125,17 +128,17 @@ export default class CompatibilityTable extends EventEmitter {
     rowBlock.querySelector('.comp-table__row__desc__text').innerText = (
       machine
       ? this.shortenDescription(machine.description)
-      : ''
+      : '-- not found --'
     );
     
     // emulation status
-    const emuStatusTrans = this.translateMachineStatus(machineComp.emuComp.machineStatus);
+    const emuStatusTrans = this.translateMachineStatus(emuToMachineCompatibilityStatus(machineComp.emuComp.status));
     rowBlock.querySelector('.comp-table__row__emu-status'      ).classList.add(emuStatusTrans.cssClass);
     rowBlock.querySelector('.comp-table__row__emu-status__icon').classList.add(emuStatusTrans.iconCSSClass);
     rowBlock.querySelector('.comp-table__row__emu-status__text').innerText = emuStatusTrans.desc;
     
     // controls status
-    const controlsStatusTrans = this.translateMachineStatus(machineComp.controlsComp.machineStatus);
+    const controlsStatusTrans = this.translateMachineStatus(controlsToMachineCompatibilityStatus(machineComp.controlsComp.status));
     rowBlock.querySelector('.comp-table__row__controls-status'      ).classList.add(controlsStatusTrans.cssClass);
     rowBlock.querySelector('.comp-table__row__controls-status__icon').classList.add(controlsStatusTrans.iconCSSClass);
     rowBlock.querySelector('.comp-table__row__controls-status__text').innerText = controlsStatusTrans.desc;
@@ -155,7 +158,7 @@ export default class CompatibilityTable extends EventEmitter {
       const videoComp = machineComp.videoComps[i];
       const videoStatusElem = videoStatusCellElems[i];
       
-      const videoStatusTrans = this.translateMachineStatus(videoComp.machineStatus);
+      const videoStatusTrans = this.translateMachineStatus(videoToMachineCompatibilityStatus(videoComp.status));
       videoStatusElem.classList.add(videoStatusTrans.cssClass);
       videoStatusElem.querySelector('.comp-table__row__video-status__icon').classList.add(videoStatusTrans.iconCSSClass);
       videoStatusElem.querySelector('.comp-table__row__video-status__text').innerText = videoStatusTrans.desc;
@@ -201,18 +204,103 @@ export default class CompatibilityTable extends EventEmitter {
    * @param {ControlsCompatibility} controlsComp
    */
   populateControlsDetails(detailsRowElem, controlsComp) {
-    const controlsListElem = detailsRowElem.querySelector('.comp-table__details-row__controls-list');
+    const {controlConfigComp} = controlsComp;
+    const controlsListElem = detailsRowElem.querySelector('.comp-table__details-row__list--controls');
     
-    if (!controlsComp.controlConfigComp) {
-      const liElem = document.createElement('li');
-      liElem.classList.add('comp-table__details-row__warn-list-item');
-      liElem.innerText = 'Unable to find control information for this ROM.';
-      
-      controlsListElem.appendChild(liElem);
+    // check if control compatibility was able to be tested
+    if (!controlConfigComp) {
+      controlsListElem.appendChild(this.createDetailsListItem(
+        MachineCompatibilityStatusEnum.UNKNOWN,
+        'Unable to find control information for this ROM.'
+      ));
       return;
     }
     
+    // for each control set...
+    for (const controlSetComp of controlConfigComp.controlSetComps) {
+      const controlSetIsRequired = controlSetComp.gameControlSet.isRequired;
+      const itemClasses = controlSetIsRequired? ['comp-table__details-row__list__item--optional']: [];
+      
+      // create a header item if there are multiple control sets
+      if (controlConfigComp.controlSetComps.length > 1) {
+        const controlSetTitle = `Player ${controlSetComp.gameControlSet.supportedPlayerNums.join('/')}:`;
+        const controlSetRequiredDesc = controlSetIsRequired? '' : '(not required)';
+        
+        const text = `${controlSetTitle} ${controlSetRequiredDesc}`;
+        const machineStatus = controlsToMachineCompatibilityStatus(controlSetComp.status);
+        
+        const itemElem = this.createDetailsListItem(text, machineStatus);
+        itemElem.classList.add(...itemClasses);
+        itemElem.classList.add('comp-table__details-row__list__item--header');
+        controlsListElem.appendChild(itemElem);
+      }
+      
+      
+      // add a list item for each control compatibility
+      for (const controlComp of controlSetComp.controlComps) {
+        const showControlButtonsDescs = controlComp.gameControl.buttons.length > 0;
+        
+        const gameControlDesc = controlDefMap[controlComp.gameControl.type].name;
+        const gameControlButtonsDesc = `with ${pluralize(controlComp.gameControl.buttons.length, 'button', 'buttons', ' ')}`;
+        
+        const cpControlDesc = controlComp.cpControl? `${controlComp.cpControl.controlDef.name} (${controlComp.cpControl.name})` : '×';
+        const cpControlButtonsDesc = controlComp.cpControl? `with ${pluralize(controlComp.gameControl.buttons.length, 'button', 'buttons', ' ')}` : '';
+        
+        const text = [
+          gameControlDesc,
+          showControlButtonsDescs? gameControlButtonsDesc : '',
+          '→',
+          cpControlDesc,
+          showControlButtonsDescs? cpControlButtonsDesc : ''
+        ].join(' ');
+        const machineStatus = controlsToMachineCompatibilityStatus(controlComp.status);
+        
+        const itemElem = this.createDetailsListItem(text, machineStatus);
+        itemElem.classList.add(...itemClasses);
+        controlsListElem.appendChild(itemElem);
+      }
+      
+      // add a list item for the button compatibility
+      const {buttonsComp} = controlSetComp;
+      if (buttonsComp.gameButtons.length > 0) {
+        const gameButtonsDesc = pluralize(buttonsComp.gameButtons.length, 'button', 'buttons', ' ');
+        const cpButtonsDesc = (
+          buttonsComp.cpButtonCluster
+          ? `${pluralize(buttonsComp.cpButtonCluster.numButtons, 'button', 'buttons', ' ')} (${buttonsComp.cpButtonCluster.name})`
+          : '×'
+        );
+        
+        const text = `${gameButtonsDesc} → ${cpButtonsDesc}`;
+        const machineStatus = controlsToMachineCompatibilityStatus(buttonsComp.status);
+        
+        const itemElem = this.createDetailsListItem(text, machineStatus);
+        itemElem.classList.add(...itemClasses);
+        controlsListElem.appendChild(itemElem);
+      }
+    }
+  }
+  
+  /**
+   * @param {string} text
+   * @param {number} [machineStatus] 
+   * @returns {HTMLElement} 
+   */
+  createDetailsListItem(text, machineStatus = null) {
+    const itemElem = htmlToBlock(compatibilityTableRowDetailsListItemTemplate).firstElementChild;
+    const textElem = itemElem.querySelector('.comp-table__details-row__list__item__text');
+    const iconElem = itemElem.querySelector('.comp-table__details-row__list__item__icon');
     
+    textElem.innerText = text;
+    
+    if (machineStatus === null) {
+      iconElem.classList.add('hidden');
+    }
+    else {
+      const {iconCSSClass} = this.translateMachineStatus(machineStatus);
+      iconElem.classList.add(iconCSSClass);
+    }
+    
+    return itemElem;
   }
   
   /**
@@ -248,14 +336,12 @@ export default class CompatibilityTable extends EventEmitter {
       status: MachineCompatibilityStatusEnum.translate(machineComp.status),
       
       emuComp: {
-        status: EmulationCompatibilityStatusEnum.translate(machineComp.emuComp.status),
-        machineStatus: MachineCompatibilityStatusEnum.translate(machineComp.emuComp.machineStatus),
+        status: EmulationCompatibilityStatusEnum.translate(machineComp.emuComp.status)
       },
       
       videoComps: machineComp.videoComps.map((videoComp, i) => (
         !videoComp? null : {
           status: VideoCompatibilityStatusEnum.translate(videoComp.status),
-          machineStatus: MachineCompatibilityStatusEnum.translate(videoComp.machineStatus),
           modelineConfig: videoComp.modelineConfig,
           modelineResult: videoComp.modelineResult,
         }
@@ -263,9 +349,10 @@ export default class CompatibilityTable extends EventEmitter {
       
       controlsComp: {
         status: ControlsCompatibilityStatusEnum.translate(machineComp.controlsComp.status),
-        machineStatus: MachineCompatibilityStatusEnum.translate(machineComp.controlsComp.machineStatus),
+        score : !machineComp.controlsComp.controlConfigComp? null : formatDetailsScore(machineComp.controlsComp.controlConfigComp.score),
         controlSetComps: !machineComp.controlsComp.controlConfigComp? [] : machineComp.controlsComp.controlConfigComp.controlSetComps.map(controlSetComp => ({
           status: ControlsCompatibilityStatusEnum.translate(controlSetComp.status),
+          score: formatDetailsScore(controlSetComp.score),
           gameControlSet: {
             supportedPlayerNums: controlSetComp.gameControlSet.supportedPlayerNums.join(','),
             isOnOppositeScreenSide: controlSetComp.gameControlSet.isOnOppositeScreenSide,
@@ -275,6 +362,7 @@ export default class CompatibilityTable extends EventEmitter {
             controlStatus: ControlsCompatibilityStatusEnum.translate(controlComp.controlStatus),
             buttonsStatus: ControlsCompatibilityStatusEnum.translate(controlComp.buttonsStatus),
             status: ControlsCompatibilityStatusEnum.translate(controlComp.status),
+            score: formatDetailsScore(controlComp.score),
             gameControl: {
               type: controlComp.gameControl.type,
               buttons: controlComp.gameControl.buttons.map(gameButton => 
@@ -286,8 +374,9 @@ export default class CompatibilityTable extends EventEmitter {
               numButtons: controlComp.cpControl.numButtons
             }
           })),
-          buttonsComp: !controlSetComp.buttonsComp? null : {
+          buttonsComp: {
             status: ControlsCompatibilityStatusEnum.translate(controlSetComp.buttonsComp.status),
+            score: formatDetailsScore(controlSetComp.buttonsComp.score),
             gameButtons: controlSetComp.buttonsComp.gameButtons.map(gameButton => 
               gameButton.input.label || gameButton.input.posLabel || gameButton.input.negLabel || gameButton.input.mameInputPort
             ),
@@ -303,6 +392,24 @@ export default class CompatibilityTable extends EventEmitter {
       machine: machineComp.machine || null,
       controlsDatGame: machineComp.controlsComp.controlsDatGame || null,
     }, null, 2);
+    
+    /**
+     * @param {MultidimensionalScore} score 
+     * @param {object} [obj] 
+     * @param {string} [keyPrefix] 
+     */
+    function formatDetailsScore(score, obj = {}, keyPrefix = '') {
+      for (const dim of score.dims) {
+        if (typeof dim.val === 'number') {
+          obj[keyPrefix + dim.key] = dim.val;
+        }
+        else {
+          formatDetailsScore(dim.val, obj, keyPrefix + dim.key + '.');
+        }
+      }
+      
+      return obj;
+    }
   }
   
   /**

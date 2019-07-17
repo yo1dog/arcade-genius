@@ -22,12 +22,12 @@ import createUUID from '../../helpers/createUUID';
  * @property {number} numButtons
  * 
  * @typedef ControlPanelControlSet
- * @property {string} id
- * @property {string} name
  * @property {ControlPanelControl[]} controls
  * @property {ControlPanelButtonCluster} buttonCluster
  * 
  * @typedef ControlPanelControl
+ * @property {string} id
+ * @property {string} name
  * @property {ControlDef} controlDef
  * @property {number} numButtons
  * @property {boolean} isOnOppositeScreenSide
@@ -39,10 +39,10 @@ import createUUID from '../../helpers/createUUID';
  * @property {HTMLInputElement} countInputElem
  * 
  * @typedef ControlSetRowDef
- * @property {string} controlSetId
+ * @property {string} controlId
  * @property {ControlDef} controlDef
  * @property {HTMLTableRowElement} rowElem
- * @property {HTMLInputElement} nameInputElem
+ * @property {HTMLInputElement} controlNameInputElem
  * @property {HTMLInputElement} controlButtonsCountInputElem
  * @property {HTMLSelectElement} buttonClusterSelectElem
  */
@@ -170,26 +170,26 @@ export default class ControlPanelConfigurator {
   /**
    * @param {object} options 
    * @param {ControlDef} options.controlDef 
-   * @param {string} [options.controlSetId] 
-   * @param {string} [options.name] 
+   * @param {string} [options.controlId] 
+   * @param {string} [options.controlName] 
    * @param {string} [options.buttonClusterId] 
    * @returns {ButtonClusterRowDef}
    */
-  addControlSetRow({controlDef, controlSetId = null, name = null, numControlButtons = null, buttonClusterId = null}) {
-    controlSetId = controlSetId || createUUID();
+  addControlSetRow({controlDef, controlId = null, controlName = null, numControlButtons = null, buttonClusterId = null}) {
+    controlId = controlId || createUUID();
     
     const rowElem = htmlToBlock(cpConfiguratorControlSetTemplate).firstElementChild;
-    const nameInputElem                = rowElem.querySelector('.control-panel-configurator__control-set__name-input');
-    const controlNameElem              = rowElem.querySelector('.control-panel-configurator__control-set__control-name');
+    const controlNameInputElem         = rowElem.querySelector('.control-panel-configurator__control-set__control-name-input');
+    const controlDefNameElem           = rowElem.querySelector('.control-panel-configurator__control-set__control-def-name');
     const controlButtonsDescElem       = rowElem.querySelector('.control-panel-configurator__control-set__control-buttons-desc');
     const controlButtonsCountElem      = rowElem.querySelector('.control-panel-configurator__control-set__control-buttons-desc__count');
     const controlButtonsCountInputElem = rowElem.querySelector('.control-panel-configurator__control-set__control-buttons-desc__count-input');
     const buttonClusterSelectElem      = rowElem.querySelector('.control-panel-configurator__control-set__button-cluster-select');
     const removeButtonElem             = rowElem.querySelector('.control-panel-configurator__control-set__remove-button');
     
-    rowElem.setAttribute('data-control-set-id', controlSetId);
-    nameInputElem.value = name || this.getAutoControlSetName(controlDef);
-    controlNameElem.innerText = controlDef.name;
+    rowElem.setAttribute('data-control-id', controlId);
+    controlNameInputElem.value = controlName || this.getAutoControlName(controlDef);
+    controlDefNameElem.innerText = controlDef.name;
     
     const {
       defaultNumControlButtons,
@@ -228,17 +228,17 @@ export default class ControlPanelConfigurator {
     }
     
     removeButtonElem.addEventListener('click', () => {
-      this.removeControlSetRow(controlSetId);
+      this.removeControlSetRow(controlId);
     });
     
     this.controlSetTableBodyElem.appendChild(rowElem);
     
     /** @type {ControlSetRowDef} */
     const controlSetRowDef = {
-      controlSetId,
+      controlId,
       controlDef,
       rowElem,
-      nameInputElem,
+      controlNameInputElem,
       controlButtonsCountInputElem,
       buttonClusterSelectElem
     };
@@ -248,10 +248,10 @@ export default class ControlPanelConfigurator {
   }
   
   /**
-   * @param {string} controlSetId
+   * @param {string} controlId
    */
-  removeControlSetRow(controlSetId) {
-    const index = this.controlSetRowDefs.findIndex(x => x.controlSetId === controlSetId);
+  removeControlSetRow(controlId) {
+    const index = this.controlSetRowDefs.findIndex(x => x.controlId === controlId);
     if (index === -1) return;
     
     const controlSetRowDef = this.controlSetRowDefs[index];
@@ -265,13 +265,13 @@ export default class ControlPanelConfigurator {
    * @param {ControlDef} controlDef 
    * @returns {string}
    */
-  getAutoControlSetName(controlDef) {
+  getAutoControlName(controlDef) {
     const autoNameBase = controlDef.name;
     const regexp = new RegExp(`^\\s*${autoNameBase}(\\s+(\\d+))?\\s*$`);
     let maxAutoNameNumSuffix = 0;
     
     for (const controlSetRowRef of this.controlSetRowDefs) {
-      const result = regexp.exec(controlSetRowRef.nameInputElem.value);
+      const result = regexp.exec(controlSetRowRef.controlNameInputElem.value);
       if (!result) continue;
       
       const autoNameNumSuffix = result[2]? parseInt(result[2], 10) : 1;
@@ -457,8 +457,8 @@ export default class ControlPanelConfigurator {
       
       for (const controlSet of cpConfigState.controlSets || []) {
         this.addControlSetRow({
-          controlSetId     : controlSet.id,
-          name             : controlSet.name,
+          controlId        : controlSet.controls[0].id,
+          controlName      : controlSet.controls[0].name,
           controlDef       : controlSet.controls[0].controlDef,
           numControlButtons: controlSet.controls[0].numButtons,
           buttonClusterId  : controlSet.buttonCluster? controlSet.buttonCluster.id : null
@@ -493,9 +493,9 @@ export default class ControlPanelConfigurator {
     
     /** @type {ControlPanelControlSet[]} */
     const controlSets = this.controlSetRowDefs.map(controlSetRowDef => ({
-      id  : controlSetRowDef.controlSetId,
-      name: controlSetRowDef.nameInputElem.value.trim(),
       controls: [{
+        id        : controlSetRowDef.controlSetId,
+        name      : controlSetRowDef.controlNameInputElem.value.trim(),
         controlDef: controlSetRowDef.controlDef,
         numButtons: parseInt(controlSetRowDef.controlButtonsCountInputElem.value, 10) || 0,
         isOnOppositeScreenSide: false
@@ -538,9 +538,9 @@ export default class ControlPanelConfigurator {
     const sCPConfigState = {
       buttonClusters: cpConfig.buttonClusters,
       sControlSets: cpConfig.controlSets.map(controlSet => ({
-        id       : controlSet.id,
-        name     : controlSet.name,
         sControls: controlSet.controls.map(control => ({
+          id                    : control.id,
+          name                  : control.name,
           type                  : control.controlDef.type,
           numButtons            : control.numButtons,
           isOnOppositeScreenSide: control.isOnOppositeScreenSide
@@ -564,9 +564,9 @@ export default class ControlPanelConfigurator {
     const controlSets = (
       sCPConfigState.sControlSets
       .map(sControlSet => ({
-        id      : sControlSet.id,
-        name    : sControlSet.name,
         controls: sControlSet.sControls.map(sControl => ({
+          id                    : sControl.id,
+          name                  : sControl.name,
           controlDef            : controlDefMap[sControl.type],
           numButtons            : sControl.numButtons,
           isOnOppositeScreenSide: sControl.isOnOppositeScreenSide

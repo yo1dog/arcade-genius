@@ -36,11 +36,13 @@ export default class MachineNameList {
   parseInput(machineNameListInput) {
     return (
       machineNameListInput
-      .replace(/,/g, '\n')           // replace commas with newlines
-      .split('\n')                   // split by lines
-      .map(str => str.trim())        // trim lines
-      .filter(str => str.length > 0) // remove empty lines
-      .filter((str, i, strs) =>      // remove duplicates
+      .replace(/(\/\/|#).*$/gm, '')          // remove comments (//... or #...)
+      .replace(/\/\*+[\s\S]*?(\*\/|$)/g, '') // remove block comments (/*...*/)
+      .replace(/,/g, '\n')                   // replace commas with newlines
+      .split('\n')                           // split by lines
+      .map(str => str.trim())                // trim lines
+      .filter(str => str.length > 0)         // remove empty lines
+      .filter((str, i, strs) =>              // remove duplicates
         strs.indexOf(str) === i
       )
     );

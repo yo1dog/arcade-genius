@@ -90,7 +90,6 @@
 .comp-table__row--odd {}
 .comp-table__row--even {}
 
-.comp-table__row--invalid-machine-name,
 .comp-table__row.comp-table--error {
   .comp-table__row__machine-name,
   .comp-table__row__desc {
@@ -101,11 +100,6 @@
   .comp-table__row__machine-name,
   .comp-table__row__desc {
     color: @unknownColor;
-  }
-}
-.comp-table__row--invalid-machine-name {
-  .comp-table__row__machine-name {
-    text-decoration: line-through;
   }
 }
 
@@ -137,7 +131,38 @@
   }
 }
 
-.comp-table__details-row__controls-list {}
+.comp-table__details-row__list {
+  list-style: none;
+  padding-left: 1em;
+  margin-top: 0.5em;
+  
+  li + li {
+    padding-top: 0.25em;
+  }
+}
+.comp-table__details-row__list__item {
+  .comp-table__icon {
+    display: inline-block;
+    width: 1.25em;
+  }
+}
+
+/*
+.comp-table__details-row__list__item--optional {
+  font-style: italic;
+  
+  .comp-table__icon {
+    opacity: 0.5;
+  }
+}
+*/
+.comp-table__details-row__list__item--header {
+  font-weight: bold;
+}
+.comp-table__details-row__list__item + .comp-table__details-row__list__item--header {
+  padding-top: 0.75em;
+}
+
 .comp-table__details-row__json {
   box-sizing: border-box;
   width: 100%;
