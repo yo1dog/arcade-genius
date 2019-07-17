@@ -11,13 +11,10 @@ window.localStorage.setItem(LOCAL_STATE_VERSION_NUM_KEY, LOCAL_STATE_CUR_VERSION
 
 const state = {};
 
-const searchParams = new URLSearchParams(location.search);
-const urlStateSearchParamKey = 'state';
-
 
 let initURLState = {};
 try {
-  initURLState = JSON.parse(searchParams.get(urlStateSearchParamKey));
+  initURLState = JSON.parse(decodeURIComponent(window.location.hash));
 } catch(err) {/*noop*/}
 initURLState = initURLState && typeof initURLState === 'object'? initURLState : {};
 
@@ -67,6 +64,5 @@ export function clear() {
 }
 
 function updateURLState() {
-  searchParams.set(urlStateSearchParamKey, JSON.stringify(state));
-  window.history.replaceState({}, '', `${location.pathname}?${searchParams}`);
+  window.history.replaceState(null, null, `#${encodeURIComponent(JSON.stringify(state))}`);
 }
