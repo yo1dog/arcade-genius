@@ -136,7 +136,7 @@ export function videoToMachineCompatibilityStatus(videoCompatibilityStatus) {
  * @returns {Machine}
  */
 export function getMachineByInput(machineNameInput) {
-  return machineMap[machineNameInput.trim().toLowerCase()];
+  return machineMap[machineNameInput.trim().toLowerCase()] || null;
 }
 
 /**
@@ -235,7 +235,9 @@ export function checkEmulation(machine) {
  * @returns {number}
  */
 function getEmulationStatus(machine) {
-  if (!machine) return null;
+  if (!machine) {
+    return EmulationCompatibilityStatusEnum.UNKNOWN;
+  }
   
   switch (machine.driver.status) {
     case 'preliminary': return EmulationCompatibilityStatusEnum.PRELIMINARY;
@@ -279,7 +281,7 @@ export async function checkVideoBulk(machines, modelineConfig) {
   // for each machine... 
   return machines.map(machine => {
     // get modeline result
-    const modelineResult = machine && modelineResultMap[machine.name];
+    const modelineResult = (machine && modelineResultMap[machine.name]) || null;
     
     const status = getVideoStatus(modelineResult);
     
@@ -298,7 +300,7 @@ export async function checkVideoBulk(machines, modelineConfig) {
  */
 function getVideoStatus(modelineResult) {
   if (!modelineResult || modelineResult.err) {
-    return null;
+    return VideoCompatibilityStatusEnum.UNKNOWN;
   }
   
   if (!modelineResult.inRange) {
@@ -337,15 +339,31 @@ function getVideoStatus(modelineResult) {
 /**
  * @typedef ControlsCompatibility
  * @property {Machine} machine
+ * @property {ControlPanelConfig} cpConfig
  * @property {ControlsDatGame} controlsDatGame
- * @property {ControlConfigurationCompatibility} controlConfigComp
+ * @property {ControlConfigurationCompatibility} bestControlConfigComp
+ * @property {ControlConfigurationCompatibility[]} allControlConfigComp
  * @property {number} status
+ * 
  * 
  * @typedef ControlConfigurationCompatibility
  * @property {GameControlConfiguration} gameControlConfig
  * @property {ControlSetCompatibility[]} controlSetComps
  * @property {number} status
  * @property {MultidimensionalScore} score
+ * @property {ControlConfigurationCompatibilityMeta} meta
+ * 
+ * @typedef ControlConfigurationCompatibilityMeta
+ * @property {BestAvailableControlSetCompatibilityContext[]} bestAvailableControlSetCompContexts
+ * 
+ * 
+ * @typedef BestAvailableControlSetCompatibilityContext
+ * @property {GameControlSet} gameControlSet
+ * @property {number} stateProcessedOrder
+ * @property {ControlPanelControl[]} stateCPAvailControls
+ * @property {ControlPanelButtonCluster[]} stateCPAvailButtonClusters
+ * @property {ControlSetCompatibility} bestControlSetComp
+ * @property {ControlSetCompatibility[]} allControlSetComps
  * 
  * @typedef ControlSetCompatibility
  * @property {GameControlSet} gameControlSet
@@ -353,6 +371,18 @@ function getVideoStatus(modelineResult) {
  * @property {ButtonsCompatibility} buttonsComp
  * @property {number} status
  * @property {MultidimensionalScore} score
+ * @property {ControlSetCompatibilityMeta} meta
+ * 
+ * @typedef ControlSetCompatibilityMeta
+ * @property {BestAvailableControlCompContext[]} bestAvailableControlCompContexts
+ * 
+ * 
+ * @typedef BestAvailableControlCompatibilityContext
+ * @property {GameControl} gameControl
+ * @property {number} stateProcessedOrder
+ * @property {ControlPanelControl[]} sateCPControlSetAvailControls
+ * @property {ControlCompatibility} bestControlComp
+ * @property {ControlCompatibility[]} allControlComps
  * 
  * @typedef ControlCompatibility
  * @property {GameControl} gameControl
@@ -362,11 +392,16 @@ function getVideoStatus(modelineResult) {
  * @property {number} status
  * @property {MultidimensionalScore} score
  * 
+ * 
+ * 
  * @typedef ButtonsCompatibility
  * @property {GameButton[]} gameButtons
  * @property {ControlPanelButtonCluster} cpButtonCluster
  * @property {number} status
  * @property {MultidimensionalScore} score
+ * 
+ * @typedef ButtonsCompatibilityContext
+ * @property {number} stateProcessedOrder
  */
 
 /**
@@ -376,34 +411,47 @@ function getVideoStatus(modelineResult) {
  */
 export function checkControls(machine, cpConfig) {
   // get controls.dat game
-  const controlsDatGame = machine && (
-    controlsDat.gameMap[machine.name] ||
-    controlsDat.gameMap[machine.cloneof]
+  const controlsDatGame = (
+    machine && (
+      controlsDat.gameMap[machine.name] ||
+      controlsDat.gameMap[machine.cloneof]
+    )
+  ) || null;
+  
+  // get the compatibility of all game control configurations
+  const gameControlConfigs = controlsDatGame? controlsDatGame.controlConfigurations : [];
+  
+  /** @type {ControlConfigurationCompatibility[]} */
+  const allControlConfigComps = gameControlConfigs.map(gameControlConfig => 
+    getControlConfigCompatibility(cpConfig, gameControlConfig)
   );
   
-  // find the most compatible game control configuration
-  /** @type {ControlConfigurationCompatibility} */
-  let bestControlConfigComp = null;
-  if (controlsDatGame) {
-    for (const gameControlConfig of controlsDatGame.controlConfigurations) {
-      const controlConfigComp = getControlConfigCompatibility(cpConfig, gameControlConfig);
-      
-      if (
-        !bestControlConfigComp ||
-        controlConfigComp.status > bestControlConfigComp.status
-      ) {
-        bestControlConfigComp = controlConfigComp;
-      }
-    }
-  }
+  // find the best compatible game control configuration
+  allControlConfigComps.sort((a, b) =>
+    // prefer best status disregarding unknown (-1) status
+    (min0(b.status) - min0(a.status)) ||
+    
+    // prefer upright configs
+    compareBoolean(
+      a.gameControlConfig.targetCabinetType === 'upright',
+      b.gameControlConfig.targetCabinetType === 'upright'
+    ) ||
+    
+    // prefer best score
+    compareScores(b.score, a.score)
+  );
+  
+  const bestControlConfigComp = allControlConfigComps[0] || null;
   
   const status = bestControlConfigComp? bestControlConfigComp.status : ControlsCompatibilityStatusEnum.UNKNOWN;
   
   return {
     machine,
+    cpConfig,
     controlsDatGame,
-    controlConfigComp: bestControlConfigComp,
-    status
+    bestControlConfigComp,
+    allControlConfigComps,
+    status,
   };
 }
 
@@ -420,7 +468,7 @@ function getControlConfigCompatibility(cpConfig, gameControlConfig) {
   /** @type {ControlPanelControlSet[]} */
   const cpControlSets = cpConfig.controlSets.slice(0);
   
-  // create an empty control panel control set if there are none
+  // if there are no CP control sets, create an empty one
   if (cpControlSets.length === 0) {
     cpControlSets.push({
       controls: [],
@@ -428,35 +476,46 @@ function getControlConfigCompatibility(cpConfig, gameControlConfig) {
     });
   }
   
-  // find the most compatible control panel control set for each game control set
-  /** @type {ControlSetCompatibility[]} */
-  const controlSetComps = gameControlConfig.controlSets.map(gameControlSet => {
+  // for each game control set, find the best compatible CP control set
+  /** @type {BestAvailableControlSetCompatibilityContext[]} */
+  const bestAvailableControlSetCompContexts = gameControlConfig.controlSets.map((gameControlSet, stateProcessedOrder) => {
+    const stateCPAvailControls       = cpAvailControls      .slice(0);
+    const stateCPAvailButtonClusters = cpAvailButtonClusters.slice(0);
     
-    // get the compatibility of all control panel sets
-    const controlSetComps = cpControlSets.map(cpControlSet => 
-      getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButtonClusters, gameControlSet)
+    // get the compatibility of all CP sets
+    /** @type {ControlSetCompatibility[]} */
+    const allControlSetComps = cpControlSets.map(cpControlSet => 
+      getControlSetCompatibility(cpControlSet, stateCPAvailControls, stateCPAvailButtonClusters, gameControlSet)
     );
     
-    // order best score first
-    controlSetComps.sort((a, b) => compareScores(b.score, a.score));
-    const bestControlSetComp = controlSetComps[0];
+    // prefer best score
+    allControlSetComps.sort((a, b) => compareScores(b.score, a.score));
+    const bestControlSetComp = allControlSetComps[0];
     
     if (bestControlSetComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
-      // remove used control panel controls so they can't be used again
+      // remove used CP controls so they can't be used again
       for (const controlComp of bestControlSetComp.controlComps) {
         if (controlComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
           removeVal(cpAvailControls, controlComp.cpControl);
         }
       }
       
-      // remove used control panel button clusters so they can't be used again
+      // remove used CP button clusters so they can't be used again
       if (bestControlSetComp.buttonsComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
         removeVal(cpAvailButtonClusters, bestControlSetComp.buttonsComp.cpButtonCluster);
       }
     }
     
-    return bestControlSetComp;
+    return {
+      gameControlSet,
+      stateProcessedOrder,
+      stateCPAvailControls,
+      stateCPAvailButtonClusters,
+      bestControlSetComp,
+      allControlSetComps
+    };
   });
+  const controlSetComps = bestAvailableControlSetCompContexts.map(x => x.bestControlSetComp);
   
   const requiredControlSetComps = [];
   const optionalControlSetComps = [];
@@ -484,7 +543,10 @@ function getControlConfigCompatibility(cpConfig, gameControlConfig) {
     gameControlConfig,
     controlSetComps,
     status,
-    score
+    score,
+    meta: {
+      bestAvailableControlSetCompContexts
+    }
   };
 }
 
@@ -496,24 +558,34 @@ function getControlConfigCompatibility(cpConfig, gameControlConfig) {
  * @returns {ControlSetCompatibility}
  */
 function getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButtonClusters, gameControlSet) {
-  // get the control panel controls in the control set that are available
+  // get the CP controls in the control set that are available
   /** @type {ControlPanelControl[]} */
-  const cpControlSetAvailControls = cpControlSet.controls.filter(control =>
-    cpAvailControls.includes(control) &&
-    control.isOnOppositeScreenSide === gameControlSet.isOnOppositeScreenSide
+  const cpControlSetAvailControls = cpControlSet.controls.filter(cpControl =>
+    cpAvailControls.includes(cpControl) &&
+    cpControl.isOnOppositeScreenSide === gameControlSet.isOnOppositeScreenSide
   );
   
-  // find the most compatible control panel control for each game control
-  /** @type {ControlCompatibility[]} */
-  const controlComps = gameControlSet.controls.map(gameControl => {
-    // get the compatibility of all available control panel controls in the set
-    const controlComps = cpControlSetAvailControls.map(cpControl => 
+  // get the CP button cluster in the control set if it is available
+  const cpButtonCluster = cpControlSet.buttonCluster;
+  const cpControlSetAvailButtonCluster = (
+    cpButtonCluster &&
+    cpAvailButtonClusters.includes(cpButtonCluster) &&
+    cpButtonCluster.isOnOppositeScreenSide === gameControlSet.isOnOppositeScreenSide
+  )? cpButtonCluster : null;
+  
+  // find the most compatible CP control for each game control
+  /** @type {BestAvailableControlCompatibilityContext[]} */
+  const bestAvailableControlCompContexts = gameControlSet.controls.map((gameControl, stateProcessedOrder) => {
+    const sateCPControlSetAvailControls = cpControlSetAvailControls.slice(0);
+    
+    // get the compatibility of all available CP controls in the set
+    const allControlComps = sateCPControlSetAvailControls.map(cpControl => 
       getControlCompatibility(cpControl, gameControl)
     );
     
-    // order best score first
-    controlComps.sort((a, b) => compareScores(b.score, a.score));
-    let bestControlComp = controlComps[0];
+    // prefer best score
+    allControlComps.sort((a, b) => compareScores(b.score, a.score));
+    let bestControlComp = allControlComps[0];
     
     // if the best compatibile control status is unsupported (not considering button status), ignore it
     if (
@@ -523,18 +595,24 @@ function getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButton
       bestControlComp = getControlCompatibility(null, gameControl);
     }
     
-    // remove used control panel controls so they can't be used again
+    // remove used CP controls so they can't be used again
     if (bestControlComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
       removeVal(cpControlSetAvailControls, bestControlComp.cpControl);
     }
     
-    return bestControlComp;
+    return {
+      gameControl,
+      stateProcessedOrder,
+      sateCPControlSetAvailControls,
+      bestControlComp,
+      allControlComps
+    };
   });
+  const controlComps = bestAvailableControlCompContexts.map(x => x.bestControlComp);
   
   // get buttons compatibility
   const buttonsComp = getButtonsComptability(
-    cpControlSet.buttonCluster,
-    cpAvailButtonClusters,
+    cpControlSetAvailButtonCluster,
     gameControlSet.controlPanelButtons
   );
   
@@ -555,7 +633,10 @@ function getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButton
     controlComps,
     buttonsComp,
     status,
-    score
+    score,
+    meta: {
+      bestAvailableControlCompContexts
+    }
   };
 }
 
@@ -626,46 +707,42 @@ function getControlCompatibilityButtonsStatus(cpControl, gameControl) {
 
 /**
  * @param {ControlPanelButtonCluster} cpButtonCluster 
- * @param {ControlPanelButtonCluster[]} cpAvailButtonClusters 
  * @param {GameButton[]} gameButtons 
  * @returns {ButtonsCompatibility}
  */
-function getButtonsComptability(cpButtonCluster, cpAvailButtonClusters, gameButtons) {
+function getButtonsComptability(cpButtonCluster, gameButtons) {
   /** @type {ButtonsCompatibility} */
-  const comp = {
+  const buttonComp = {
     gameButtons
   };
   
   // check if the game requires any buttons
   if (gameButtons.length === 0) {
-    // don't need to use the control panel button cluster
-    comp.cpButtonCluster = null;
-    comp.status = ControlsCompatibilityStatusEnum.NATIVE;
+    // don't need to use the CP button cluster
+    buttonComp.cpButtonCluster = null;
+    buttonComp.status = ControlsCompatibilityStatusEnum.NATIVE;
   }
-  // check if the control panel button cluster is available
-  else if (
-    !cpButtonCluster ||
-    !cpAvailButtonClusters.includes(cpButtonCluster)
-  ) {
-    // can't use the control panel button cluster
-    comp.cpButtonCluster = null;
-    comp.status = ControlsCompatibilityStatusEnum.UNSUPPORTED;
+  // check if the CP button cluster is available
+  else if (!cpButtonCluster) {
+    // can't use the CP button cluster
+    buttonComp.cpButtonCluster = null;
+    buttonComp.status = ControlsCompatibilityStatusEnum.UNSUPPORTED;
   }
   else {
-    // use the control panel button cluster
-    comp.cpButtonCluster = cpButtonCluster;
-    comp.status = (
+    // use the CP button cluster
+    buttonComp.cpButtonCluster = cpButtonCluster;
+    buttonComp.status = (
       cpButtonCluster.numButtons >= gameButtons.length
       ? ControlsCompatibilityStatusEnum.NATIVE
       : ControlsCompatibilityStatusEnum.UNSUPPORTED
     );
   }
   
-  comp.score = createScore(
-    ['buttonComp.status', comp.status]
+  buttonComp.score = createScore(
+    ['buttonComp.status', buttonComp.status]
   );
   
-  return comp;
+  return buttonComp;
 }
 
 /**
@@ -715,39 +792,51 @@ function sumScores(...scores) {
   /** @type {MultidimensionalScore} */
   const sumScore = {dims: []};
   
-  if (scores.length === 0) {
+  // find the first non-empty score
+  let keyScoreIndex = 0;
+  while (keyScoreIndex < scores.length && scores[keyScoreIndex].dims.length === 0) {
+    ++keyScoreIndex;
+  }
+  
+  if (keyScoreIndex === scores.length) {
     return sumScore;
   }
   
-  for (let dimIndex = 0; dimIndex < scores[0].dims.length; ++dimIndex) {
-    for (let scoreIndex = 0; scoreIndex < scores.length; ++scoreIndex) {
+  // copy values from key score
+  for (let dimIndex = 0; dimIndex < scores[keyScoreIndex].dims.length; ++dimIndex) {
+    const dim = scores[keyScoreIndex].dims[dimIndex];
+    
+    sumScore.dims[dimIndex] = {
+      key: dim.key,
+      val: dim.val
+    };
+  }
+  
+  for (let scoreIndex = keyScoreIndex + 1; scoreIndex < scores.length; ++scoreIndex) {
+    // empty scores (scores with 0 dimensions) should be treated as all 0s and ignored
+    if (scores[scoreIndex].dims.length === 0) {
+      continue;
+    }
+    
+    for (let dimIndex = 0; dimIndex < sumScore.dims.length; ++dimIndex) {
       const dim = scores[scoreIndex].dims[dimIndex];
+      if (!dim) {
+        throw new Error(`Attempting to add scores of different sizes. scores[${keyScoreIndex}].dims.length === ${sumScore.dims.length}, scores[${scoreIndex}].dims.length === ${scores[scoreIndex].dims.length}`);
+      }
       
-      if (scoreIndex === 0) {
-        sumScore.dims[dimIndex] = {
-          key: dim.key,
-          val: dim.val
-        };
+      const sumDim = sumScore.dims[dimIndex];
+      if (sumDim.key !== dim.key) {
+        throw new Error(`Attempting to add scores with different structures. scores[${keyScoreIndex}].dims[${dimIndex}].key === '${sumDim.key}', scores[${scoreIndex}].dims[${dimIndex}].key === '${dim.key}'`);
+      }
+      if (typeof sumDim.val !== typeof dim.val) {
+        throw new Error(`Attempting to add scores with different structures. typeof scores[${keyScoreIndex}].dims[${dimIndex}].val === ${typeof sumDim.val}, typeof scores[${scoreIndex}].dims[${dimIndex}].val === ${typeof dim.val}`);
+      }
+      
+      if (typeof sumDim.val === 'number') {
+        sumDim.val += dim.val;
       }
       else {
-        let sumDim = sumScore.dims[dimIndex];
-        
-        if (!dim) {
-          throw new Error(`Attempting to add scores of different sizes. scores[0].dims.length === ${scores[0].length}, scores[${scoreIndex}].dims.length === ${scores[scoreIndex].length}`);
-        }
-        if (sumDim.key !== dim.key) {
-          throw new Error(`Attempting to add scores with different structures. scores[0].dims[${dimIndex}].key === ${sumDim.key}, scores[${scoreIndex}][${dimIndex}].key === ${dim.key}`);
-        }
-        if (typeof sumDim.val !== typeof dim.val) {
-          throw new Error(`Attempting to add scores with different structures. typeof scores[0].dims[${dimIndex}].val === ${typeof sumDim.val}, typeof scores[${scoreIndex}].dims[${dimIndex}].val === ${typeof dim.val}`);
-        }
-        
-        if (typeof sumDim.val === 'number') {
-          sumDim.val += dim.val;
-        }
-        else {
-          sumDim.val = sumScores(sumDim.val, dim.val);
-        }
+        sumDim.val = sumScores(sumDim.val, dim.val);
       }
     }
   }
@@ -761,6 +850,13 @@ function sumScores(...scores) {
  * @return {number}
  */
 function compareScores(scoreA, scoreB) {
+  // empty scores (scores with 0 dimensions) should always compare lower
+  const scoreAIsEmpty = scoreA.dims.length === 0;
+  const scoreBIsEmpty = scoreB.dims.length === 0;
+  if (scoreAIsEmpty && scoreBIsEmpty) return 0;
+  if (scoreAIsEmpty) return -1;
+  if (scoreBIsEmpty) return 1;
+ 
   if (scoreA.dims.length !== scoreB.dims.length) {
     throw new Error(`Attempting to compare scores of different sizes. scoreA.dims.length === ${scoreA.dims.length}, scoreB.dims.length === ${scoreB.dims.length}`);
   }
@@ -770,7 +866,7 @@ function compareScores(scoreA, scoreB) {
     const dimB = scoreB.dims[dimIndex];
     
     if (dimA.key !== dimB.key) {
-      throw new Error(`Attempting to add scores with different structures. scoreA.dims[${dimIndex}].key === ${dimA.key}, scoreB[${dimIndex}].key === ${dimB.key}`);
+      throw new Error(`Attempting to add scores with different structures. scoreA.dims[${dimIndex}].key === ${dimA.key}, scoreB.dims[${dimIndex}].key === ${dimB.key}`);
     }
     if (typeof dimA.val !== typeof dimB.val) {
       throw new Error(`Attempting to add scores with different structures. typeof scoreA.dims[${dimIndex}].val === ${typeof dimA.val}, typeof scoreB.dims[${dimIndex}].val === ${typeof dimB.val}`);
@@ -795,50 +891,6 @@ function compareScores(scoreA, scoreB) {
   return 0;
 }
 
-///**
-// * @param {...number[]} nums 
-// * @return {number}
-// */
-//const tens = [
-//  1,
-//  10,
-//  100,
-//  1000,
-//  10000,
-//  100000,
-//  1000000,
-//  10000000,
-//  100000000,
-//  1000000000,
-//  10000000000,
-//  100000000000,
-//  1000000000000,
-//  10000000000000,
-//  100000000000000,
-////9007199254740991 (Number.MAX_SAFE_INTEGER)
-//];
-//function calcScore(...nums) {
-//  if (nums.length > tens.length) {
-//    // Yes, this could be down with Math.pow(10, ...) but this is a
-//    // lot faster and we should never have scores over 15 digits.
-//    // We can always replace it if we need to.
-//    throw new Error(`Too many values given. Cannot calculate score: nums.length = ${nums.length} > ${tens.length}`);
-//  }
-//  
-//  let score = 0;
-//  for (let i = 0; i < nums.length; ++i) {
-//    if (nums[i] > 9) {
-//      // this method requires each value to be between 0-9 as each
-//      // value is stored in a digit. If values outside this range
-//      // are required, an array-based solution should be used instead
-//      throw new Error(`Value > 9 given. Cannot calculate score: nums[${i}] = ${nums[i]} > 9`);
-//    }
-//    score += tens[nums.length - 1 - i] * nums[i];
-//  }
-//  
-//  return score;
-//}
-
 
 /**
  * @param {any[]} arr 
@@ -851,4 +903,15 @@ function removeVal(arr, val) {
     arr.splice(index, 1);
   }
   return arr;
+}
+
+function compareBoolean(a, b) {
+  if (a === b) return 0;
+  if (a) return -1;
+  return 1;
+}
+
+function min0(num) {
+  if (num < 0) return 0;
+  return num;
 }

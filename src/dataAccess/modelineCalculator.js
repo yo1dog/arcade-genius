@@ -31,6 +31,7 @@ import * as modelineCache from './modelineCache';
  * @property {number} range
  * 
  * @typedef ModelineResult
+ * @property {string}   [err]
  * @property {boolean}  inRange
  * @property {string}   description
  * @property {string}   details

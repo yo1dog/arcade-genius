@@ -1,9 +1,13 @@
+<tr class="comp-table__spacer-row"></tr>
 <tr class="comp-table__row">
+  <!--
   <td class="comp-table__row__machine-name">
     <i class="comp-table__row__machine-name__icon comp-table__icon"></i>
     <span class="comp-table__row__machine-name__text"></span>
   </td>
+  -->
   <td class="comp-table__row__desc">
+    <i class="comp-table__row__desc__icon comp-table__icon"></i>
     <span class="comp-table__row__desc__text"></span>
   </td>
   <td class="comp-table__row__emu-status">
@@ -26,11 +30,36 @@
     </button>
   </td>
 </tr>
-<tr class="comp-table__details-row hidden">
-  <td colspan="6">
-    <strong>Controls:</strong><br />
-    <ul class="comp-table__details-row__list comp-table__details-row__list--controls"></ul>
-    <br />
-    <textarea class="comp-table__details-row__json" readonly="true"></textarea>
+<tr class="comp-table__details-row">
+  <td colspan="5">
+    <div>
+      <ul class="comp-table__details-row__list comp-table__details-row__list--machine"></ul>
+      
+      <div class="comp-table__details-row__main-content">
+        <strong>Emulation:</strong><br />
+        <ul class="comp-table__details-row__list comp-table__details-row__list--emu"></ul>
+        <br />
+        
+        <strong>Video:</strong><br />
+        <ul class="comp-table__details-row__list comp-table__details-row__list--video"></ul>
+        <br />
+        
+        <strong>Controls:</strong><br />
+        <ul class="comp-table__details-row__list comp-table__details-row__list--controls"></ul>
+      </div>
+      
+      <p class="comp-table__details-row__toggle-data">
+        <a class="comp-table__details-row__toggle-data-link fake-link" href="#">
+          <span class="comp-table__details-row__toggle-data-link__on-text">hide</span>
+          <span class="comp-table__details-row__toggle-data-link__off-text">show</span>
+          data
+        </a>
+      </p>
+      <div class="comp-table__details-row__data">
+        <textarea class="comp-table__details-row__data__modelines" readonly></textarea>
+        <div class="comp-table__details-row__data__json json-view"></div>
+      </div>
+    </div>
   </td>
 </tr>
+<tr class="comp-table__spacer-row"></tr>

@@ -20,6 +20,7 @@ import createUUID from '../../helpers/createUUID';
  * @property {string} id
  * @property {string} name
  * @property {number} numButtons
+ * @property {boolean} isOnOppositeScreenSide
  * 
  * @typedef ControlPanelControlSet
  * @property {ControlPanelControl[]} controls
@@ -488,7 +489,8 @@ export default class ControlPanelConfigurator {
     const buttonClusters = this.buttonClusterRowDefs.map(buttonClusterRowDef => ({
       id  : buttonClusterRowDef.buttonClusterId,
       name: buttonClusterRowDef.nameInputElem.value.trim(),
-      numButtons: parseInt(buttonClusterRowDef.countInputElem.value, 10) || 0
+      numButtons: parseInt(buttonClusterRowDef.countInputElem.value, 10) || 0,
+      isOnOppositeScreenSide: false
     }));
     
     /** @type {ControlPanelControlSet[]} */

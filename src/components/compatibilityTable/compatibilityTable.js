@@ -16,9 +16,12 @@ import {
   videoToMachineCompatibilityStatus
 } from '../../compatibilityChecker';
 import controlDefMap from '../../dataAccess/controlDefMap';
+import jsonView from '../../../lib/jsonview/jsonview';
 
 /**
  * @typedef {import('../../compatibilityChecker').MachineCompatibility} MachineCompatibility
+ * @typedef {import('../../compatibilityChecker').EmulationCompatibility} EmulationCompatibility
+ * @typedef {import('../../compatibilityChecker').VideoCompatibility} VideoCompatibility
  * @typedef {import('../../compatibilityChecker').ControlsCompatibility} ControlsCompatibility
  * @typedef {import('../../compatibilityChecker').MultidimensionalScore} MultidimensionalScore
  * @typedef {import('../../dataAccess/mameList').Machine} Machine
@@ -34,6 +37,7 @@ export default class CompatibilityTable extends EventEmitter {
     this.elem = htmlToBlock(compTableTemplate).firstElementChild;
     this.videoStatusHeaderCellElem  = this.elem.querySelector('.comp-table__header-row__video-status');
     this.monitorConfigHeaderRowElem = this.elem.querySelector('.comp-table__monitor-configs-header-row');
+    /** @type {HTMLTableElement} */
     this.tableElem                  = this.elem.querySelector('.comp-table__table');
     this.bodyElem                   = this.elem.querySelector('.comp-table__body');
     this.refreshButtonElem          = this.elem.querySelector('.comp-table__refresh-button');
@@ -115,6 +119,11 @@ export default class CompatibilityTable extends EventEmitter {
     const machineStatusTrans = this.translateMachineStatus(machineComp.knownStatus);
     rowElem.classList.add(machineStatusTrans.cssClass);
     
+    if (!machine) {
+      rowElem.classList.add('comp-table__row--invalid-machine-name');
+    }
+    
+    /*
     // machine name
     rowBlock.querySelector('.comp-table__row__machine-name'      ).classList.add(machineStatusTrans.cssClass);
     rowBlock.querySelector('.comp-table__row__machine-name__icon').classList.add(machineStatusTrans.iconCSSClass);
@@ -123,12 +132,15 @@ export default class CompatibilityTable extends EventEmitter {
       ? machine.name
       : machineComp.machineNameInput
     );
-    
+    */
+   
     // machine desc
+    rowBlock.querySelector('.comp-table__row__desc'      ).classList.add(machineStatusTrans.cssClass);
+    rowBlock.querySelector('.comp-table__row__desc__icon').classList.add(machineStatusTrans.iconCSSClass);
     rowBlock.querySelector('.comp-table__row__desc__text').innerText = (
       machine
       ? this.shortenDescription(machine.description)
-      : '-- not found --'
+      : machineComp.machineNameInput
     );
     
     // emulation status
@@ -169,12 +181,16 @@ export default class CompatibilityTable extends EventEmitter {
     detailsRowElem.classList.add(evenOddClass);
     this.populateDetailsRow(detailsRowElem, machineComp, monitorConfigTitles);
     
+    const spacerRows = Array.from(rowBlock.querySelectorAll('.comp-table__spacer-row'));
+    
     // attach event listener to toggle details button
     const toggleDetailsButtonElem = rowBlock.querySelector('.comp-table__row__toggle-details-button');
     toggleDetailsButtonElem.addEventListener('click', () => {
-      const isHidden = detailsRowElem.classList.toggle('hidden');
-      toggleDetailsButtonElem.classList.toggle('toggle-state-on', !isHidden);
-      toggleDetailsButtonElem.classList.toggle('toggle-state-off', isHidden);
+      const isShown = detailsRowElem.classList.toggle('comp-table__row--details-shown');
+      
+      for (const elem of [rowElem, ...spacerRows]) {
+        elem.classList.toggle('comp-table__row--details-shown', isShown);
+      }
     });
     
     return rowBlock;
@@ -188,15 +204,167 @@ export default class CompatibilityTable extends EventEmitter {
   populateDetailsRow(detailsRowElem, machineComp, monitorConfigTitles) {
     // expand cell to fill row
     const cellElem = detailsRowElem.querySelector('td');
-    cellElem.colSpan = 5 + monitorConfigTitles.length;
+    cellElem.colSpan = (
+      Array.from(this.tableElem.rows.item(0).cells)
+      .reduce((p, c) => p + c.colSpan, 0)
+    );
+    
+    const machineListElem = detailsRowElem.querySelector('.comp-table__details-row__list--machine');
+    const mainContentElem = detailsRowElem.querySelector('.comp-table__details-row__main-content');
+    
+    if (machineComp.machine) {
+      machineListElem.classList.add('hidden');
+    }
+    else {
+      machineListElem.appendChild(this.createDetailsListItem(
+        'ROM not found.',
+        MachineCompatibilityStatusEnum.UNKNOWN
+      ));
+      mainContentElem.classList.add('hidden');
+    }
+    
+    // populate emulation details
+    this.populateEmulationDetails(detailsRowElem, machineComp.emuComp);
+    
+    // populate video details
+    this.populateVideoDetails(detailsRowElem, machineComp.videoComps, monitorConfigTitles);
     
     // populate controls details
     this.populateControlsDetails(detailsRowElem, machineComp.controlsComp);
     
-    // details JSON
-    detailsRowElem.querySelector('.comp-table__details-row__json').value = (
-      this.getDetailsJSON(machineComp, monitorConfigTitles)
-    );
+    // data
+    // attach event listener to show data link
+    const modelinesDataElem = detailsRowElem.querySelector('.comp-table__details-row__data__modelines');
+    const jsonDataElem      = detailsRowElem.querySelector('.comp-table__details-row__data__json');
+    const showDataLinkElem  = detailsRowElem.querySelector('.comp-table__details-row__toggle-data-link');
+    
+    let jsonViewInit = false;
+    
+    showDataLinkElem.addEventListener('click', e => {
+      e.preventDefault();
+      const isShown = detailsRowElem.classList.toggle('comp-table__row--data-shown');
+      
+      if (isShown) {
+        if (!jsonViewInit) {
+          jsonView.format(this.getDetailsData(machineComp, monitorConfigTitles), jsonDataElem);
+          jsonViewInit = true;
+        }
+      }
+      else {
+        modelinesDataElem.style.width = '';
+        modelinesDataElem.style.height = '';
+        jsonDataElem.style.width = '';
+        jsonDataElem.style.height = '';
+      }
+    });
+  }
+  
+  /**
+   * 
+   * @param {HTMLTableRowElement} detailsRowElem 
+   * @param {EmulationCompatibility} emuComp 
+   */
+  populateEmulationDetails(detailsRowElem, emuComp) {
+    const emuListElem = detailsRowElem.querySelector('.comp-table__details-row__list--emu');
+    
+    let text;
+    if (emuComp.status === EmulationCompatibilityStatusEnum.PRELIMINARY) {
+      text = 'Preliminary - An early driver exists. This often represents skeleton drivers under which most software will not run, though some systems may work a limited basis.';
+    }
+    else if (emuComp.status === EmulationCompatibilityStatusEnum.IMPERFECT) {
+      text = 'Imperfect - Software may run under the driver, though some titles may run slowly or with problems. ';
+    }
+    else if (emuComp.status === EmulationCompatibilityStatusEnum.GOOD) {
+      text = 'Good - Should run with little or no problems.';
+    }
+    else {
+      text = 'Unable to check emulation compatability.';
+    }
+    
+    emuListElem.appendChild(this.createDetailsListItem(
+      text,
+      emuToMachineCompatibilityStatus(emuComp.status)
+    ));
+  }
+  
+  /**
+   * @param {HTMLTableRowElement} detailsRowElem 
+   * @param {VideoCompatibility[]} videoComps
+   * @param {string[]} monitorConfigTitles
+   */
+  populateVideoDetails(detailsRowElem, videoComps, monitorConfigTitles) {
+    const controlsListElem = detailsRowElem.querySelector('.comp-table__details-row__list--video');
+    
+    for (let i = 0; i < monitorConfigTitles.length; ++i) {
+      const monitorConfigTitle = monitorConfigTitles[i];
+      const videoComp          = videoComps         [i];
+      
+      // create a header item if there are multiple monitor configurations
+      if (videoComps.length > 1) {
+        const text = `${monitorConfigTitle} (${videoComp.modelineConfig.preset} ${videoComp.modelineConfig.orientation}):`;
+        
+        const itemElem = this.createDetailsListItem(text);
+        itemElem.classList.add('comp-table__details-row__list__item--header');
+        controlsListElem.appendChild(itemElem);
+      }
+      
+      
+      let text = 'Unable to check video compatability.';
+      
+      const {modelineResult} = videoComp;
+      if (modelineResult) {
+        if (modelineResult.err) {
+           text = 'Error checking video compatability.';
+        }
+        else if (!modelineResult.inRange) {
+          text = 'Out of Range - This monitor is incapable of displaying this ROM in any way.';
+        }
+        else if (modelineResult.modeline.interlace) {
+          text = 'Interlaced - Interlaced video modes flicker and cause other visual issues.';
+        }
+        else if (modelineResult.resStretch) {
+          text = 'Fractional Scaling - The image is stretched unevenly and becomes distorted.';
+        }
+        else if (modelineResult.vfreqOff) {
+          text = 'Vertical Frequency Off - This monitor is not able to match this ROM\'s refresh rate. This may cause significant tearing, sound issues, and/or the game running faster or slower.';
+        }
+        else if (
+          //modelineResult.vDiff !== 0 ||
+          videoComp.status === VideoCompatibilityStatusEnum.VFREQ_SLIGHTLY_OFF
+        ) {
+          text = 'Vertical Frequency Slightly Off - This monitor is not able to match this ROM\'s refresh rate exactly, but it can get close. This may cause slight tearing, sound issues, and/or the game running faster or slower.';
+        }
+        else if (
+          //modelineResult.xScale !== 1 ||
+          //modelineResult.yScale !== 1 ||
+          videoComp.status === VideoCompatibilityStatusEnum.INT_SCALE
+        ) {
+          text = 'Integer Scaling - The image is scaled up evenly (2x, 3x, 4x, ...etc). The image is not distorted but multiple scanlines are present where only 1 was originally.';
+        }
+        else if (videoComp.status === VideoCompatibilityStatusEnum.UNSUPPORTED) {
+          text = 'Unsupported - This monitor is incapable of displaying this ROM in any way.';
+        }
+        else if (videoComp.status === VideoCompatibilityStatusEnum.BAD) {
+          text = 'Bad - This monitor has poor support for this ROM.';
+        }
+        else if (videoComp.status === VideoCompatibilityStatusEnum.NATIVE) {
+          text = 'Native - This monitor supports the native resolution and refresh rate of this ROM.';
+        }
+      }
+      
+      controlsListElem.appendChild(this.createDetailsListItem(
+        text,
+        videoToMachineCompatibilityStatus(videoComp.status)
+      ));
+      
+      const videoModelinesElem = detailsRowElem.querySelector('.comp-table__details-row__data__modelines');
+      if (modelineResult) {
+        videoModelinesElem.value = `${modelineResult.description}\n\n${(modelineResult.details || '').trim()}`;
+      }
+      else {
+        videoModelinesElem.classList.add('hidden');
+      }
+    }
   }
   
   /**
@@ -204,14 +372,14 @@ export default class CompatibilityTable extends EventEmitter {
    * @param {ControlsCompatibility} controlsComp
    */
   populateControlsDetails(detailsRowElem, controlsComp) {
-    const {controlConfigComp} = controlsComp;
+    const controlConfigComp = controlsComp.bestControlConfigComp;
     const controlsListElem = detailsRowElem.querySelector('.comp-table__details-row__list--controls');
     
     // check if control compatibility was able to be tested
     if (!controlConfigComp) {
       controlsListElem.appendChild(this.createDetailsListItem(
-        MachineCompatibilityStatusEnum.UNKNOWN,
-        'Unable to find control information for this ROM.'
+        'Unable to find control information for this ROM.',
+        MachineCompatibilityStatusEnum.UNKNOWN
       ));
       return;
     }
@@ -306,9 +474,9 @@ export default class CompatibilityTable extends EventEmitter {
   /**
    * @param {MachineCompatibility} machineComp 
    * @param {string[]} monitorConfigTitles
-   * @returns {string}
+   * @returns {Object}
    */
-  getDetailsJSON(machineComp, monitorConfigTitles) {
+  getDetailsData(machineComp, monitorConfigTitles) {
     /*
     let detailsStr = '';
     for (let i = 0; i < monitorConfigTitles.length; ++i) {
@@ -332,7 +500,8 @@ export default class CompatibilityTable extends EventEmitter {
     }
     */
     
-    return JSON.stringify({
+    return {
+      machineNameInput: machineComp.machineNameInput,
       status: MachineCompatibilityStatusEnum.translate(machineComp.status),
       
       emuComp: {
@@ -349,8 +518,8 @@ export default class CompatibilityTable extends EventEmitter {
       
       controlsComp: {
         status: ControlsCompatibilityStatusEnum.translate(machineComp.controlsComp.status),
-        score : !machineComp.controlsComp.controlConfigComp? null : formatDetailsScore(machineComp.controlsComp.controlConfigComp.score),
-        controlSetComps: !machineComp.controlsComp.controlConfigComp? [] : machineComp.controlsComp.controlConfigComp.controlSetComps.map(controlSetComp => ({
+        score : !machineComp.controlsComp.bestControlConfigComp? null : formatDetailsScore(machineComp.controlsComp.bestControlConfigComp.score),
+        controlSetComps: !machineComp.controlsComp.bestControlConfigComp? [] : machineComp.controlsComp.bestControlConfigComp.controlSetComps.map(controlSetComp => ({
           status: ControlsCompatibilityStatusEnum.translate(controlSetComp.status),
           score: formatDetailsScore(controlSetComp.score),
           gameControlSet: {
@@ -387,11 +556,10 @@ export default class CompatibilityTable extends EventEmitter {
           }
         }))
       },
-      
-      machineNameInput: machineComp.machineNameInput,
-      machine: machineComp.machine || null,
       controlsDatGame: machineComp.controlsComp.controlsDatGame || null,
-    }, null, 2);
+      
+      machine: machineComp.machine || null,
+    };
     
     /**
      * @param {MultidimensionalScore} score 
