@@ -1,12 +1,11 @@
 
 # mame-genius
 
-## Build
+## Setup
 
 ```bash
 npm install
-(cd groovymame_0210_switchres; make prod)
-npm run-script build
+make prod # emscripten switchres build 
 ```
 
 ## Run
@@ -15,15 +14,29 @@ npm run-script build
 npm start
 ```
 
+## Build/Release
+
+```bash
+make prod # emscripten switchres build 
+npm run-script build
+cp dist/* ...
+```
+
 ## Data Files
-### `mameList.filtered.partial.min.json`
+### `data/mameList.filtered.partial.min.json`
 
 ```bash
 mame.exe -listxml | node ../controls-dat-json/tools/listXMLToJSON.js -props name,isbios,isdevice,ismechanical,description,year,manufacturer,displays,driver,cloneof -min | node tools/filterMAMEListJSON.js -min > data/mameList.filtered.partial.min.json
 ```
 
-### `controls.filtered.partial.min.json`
+### `data/controls.filtered.partial.min.json`
 
 ```bash
 cat ../controls-dat-json/json/restructuredControls.json | node tools/filterControlsJSON.js -min > data/controls.filtered.partial.min.json
+```
+
+### `data/controlsDefMap.json`
+
+```bash
+cp ../controls-dat-json/json/controlsDefMap.json data/
 ```
