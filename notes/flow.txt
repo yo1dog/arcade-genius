@@ -1,0 +1,63 @@
+Determain general goal
+  - Which should take priority? (Explain why you can't have both.)
+    - acurate as possible recreation
+    - number of games supported
+  - How many simultanious player support?
+    - 1
+    - 2
+    - 4
+  - What size control panel would be ideal?
+    - Small
+    - Medium
+    - Large
+    - Don't care
+    - Not sure
+  - Who is the target player
+    - Just me
+    - Myself and rarely friends/family
+    - Myself and often friends/family
+    - Others/public use
+    - Kids
+  - How tech savy are you with computers?
+    - Not at All
+    - Somewhat
+    - Very
+  - How hand are you in the shop?
+    - Not at All
+    - Somewhat
+    - Very
+
+which games to focus setup around.
+  - List the games you care about.
+  - Which are your favorites?
+  - Which can you not possibly live without?
+  - Which generes do you usually play?
+
+how accurate controls need to be.
+  - Are there any games or generies you are serious player? 
+    - What generes or specifc games are you serious about?
+  - Which of these comparmises are you willing to make?
+    - 2way -> 4way/8way, analog?
+    - true 4way -> restrictor plate, 8way, analog?
+    - 4way diagonal -> 8way, analog
+    - 8way -> analog
+    - topfire -> joy+button
+    - trigger -> joy+button
+    - directional buttons -> joy
+    - 49way -> analog
+    - yoke/flightstick -> analog
+    - roller -> trackball
+    - paddle -> spinner
+    - 
+  - rank comparmises
+  
+
+4 player support
+authentic video
+
+Ideas
+  Allow users to make changes to game requirements. Record theses changes to use as crowdsourced QA
+  Allow users to make changes to opinions. Record theses changes to use as crowdsourced QA
+  Record when users differ from recomendations and use as crowdsourced QA
+  Include consoles in game list but suggest consoles don't belong on an Aracde. Suggest either bluetooth or controller ports and sources on building an emulation set top box.
+  
