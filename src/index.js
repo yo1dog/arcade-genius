@@ -10,14 +10,18 @@ import * as compChecker from './compatibilityChecker';
 import * as modelineCalculator from './dataAccess/modelineCalculator';
 
 
-document.addEventListener('DOMContentLoaded', onLoad, false);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', onLoad, false);
+}
+else {
+  onLoad();
+}
 
 async function onLoad() {
   document.querySelector('.title-version-tag__number').innerText = `v${npmPackage.version}`;
   
-  const loadingTimerId = startLoading();
   await modelineCalculator.init();
-  doneLoading(loadingTimerId);
+  window.doneLoading();
   
   populateMetaData();
   
@@ -87,23 +91,4 @@ function populateMetaData() {
   delete metaData.mameList.machines;
   
   document.querySelector('.metadata__text').value = JSON.stringify(metaData, null, 2);
-}
-
-function startLoading() {
-  const ellipsisElem = document.querySelector('.loading-indicator__ellipsis');
-  const ellipsisStr = '...';
-  let len = 0;
-  
-  const loadingTimerId = window.setInterval(() => {
-    ellipsisElem.innerText = ellipsisStr.substring(0, len);
-    len = (len + 1) % (ellipsisStr.length + 1);
-  }, 200);
-  
-  return loadingTimerId;
-}
-
-function doneLoading(loadingTimerId) {
-  window.clearInterval(loadingTimerId);
-  document.querySelector('.loading-indicator').classList.add('hidden');
-  document.querySelector('.content').classList.remove('hidden');
 }
