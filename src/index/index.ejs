@@ -4,17 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>MAME Genius</title>
-  <script src="preload.js"></script>
-  <script src="main.js" async></script>
-  <script>
-  
-  </script>
+  <link rel="icon" type="image/x-icon" href="<%= require('./favicon.ico') %>">
+  <title>MAME Genius v<%= appVersion %></title>
 </head>
 <body>
-  <h1>MAME Genius <span class="title-version-tag">(Alpha <span class="title-version-tag__number"></span>)</span></h1>
+  <h1>
+    <img class="title-logo-img" src="<%= require('./logo.png') %>" alt="MAME Genius" /><br />
+  </h1>
+  <h2 class="title-version-tag">
+    v<%= appVersion %> Alpha
+  </h2>
   
-  <p class="disclaimer"><strong>This tool is in Alpha. Beware false positivies and negatives.</strong></p>
+  <p class="disclaimer"><strong>This is an early release. Beware false positivies and negatives.</strong></p>
   <p>
     Internet Explorer and Microsoft Edge browsers are currently <strong>not supported</strong>.
     Please use
@@ -34,23 +35,31 @@
   </div>
   
   <section class="content hidden">
-    <h2><a id="machine-names">ROM Names</a></h2>
-    <div class="machine-name-list-container"></div>
+    <h3><a id="machine-names">ROM Names</a></h3>
+    <div class="machine-name-list-container">
+      Loading...
+    </div>
     <br />
     <hr />
     
-    <h2><a id="control-panel-config">Control Panel Configuration</a></h2>
-    <div class="control-panel-configurator-container"></div>
+    <h3><a id="control-panel-config">Control Panel Configuration</a></h3>
+    <div class="control-panel-configurator-container">
+      Loading...
+    </div>
     <br />
     <hr />
     
-    <h2><a id="monitor-config">CRT Monitor Configuration</a></h2>
-    <div class="monitor-configurator-group-container"></div>
+    <h3><a id="monitor-config">CRT Monitor Configuration</a></h3>
+    <div class="monitor-configurator-group-container">
+      Loading...
+    </div>
     <br />
     <hr />
     
-    <h2><a id="compatibility">Compatibility</a></h2>
-    <div class="comp-table-container"></div>
+    <h3><a id="compatibility">Compatibility</a></h3>
+    <div class="comp-table-container">
+      Loading...
+    </div>
     <br />
     <hr />
     

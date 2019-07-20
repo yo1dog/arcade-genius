@@ -42,9 +42,51 @@
  * @typedef {'good'|'imperfect'|'preliminary'} MachineDriverStatus
  */
 
-import _mameList from '../../data/mameList.filtered.partial.min.json';
 
 /** @type {MAMEList} */
-const mameList = _mameList;
+let mameList = null;
 
-export default mameList;
+/** @type {Object<string, Machine>} */
+let machineMap = null;
+
+async function _init() {
+  const {default: _mameList} = await import(
+    /* webpackChunkName: "controlDefMap" */
+    '../../data/mameList.filtered.partial.min.json'
+  );
+  
+  const _machineMap = {};
+  for (const machine of _mameList.machines) {
+    _machineMap[machine.name] = machine;
+  }
+  
+  mameList = _mameList;
+  machineMap = _machineMap;
+}
+
+let initPromise = null;
+export async function init() {
+  return (initPromise = initPromise || _init());
+}
+
+/**
+ * @returns {MAMEList}
+ */
+export function get() {
+  return mameList;
+}
+
+/**
+ * @returns {Object<string, Machine>}
+ */
+export function getMachineMap() {
+  return machineMap;
+}
+
+/**
+ * @param {string} name 
+ * @returns {Machine}
+ */
+export function getMachineByName(name) {
+  return machineMap[name];
+}

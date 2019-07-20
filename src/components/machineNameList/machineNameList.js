@@ -17,7 +17,7 @@ export default class MachineNameList {
     });
   }
   
-  init() {
+  async init() {
     this.inputElem.value = this.loadState() || getDefaultMachineNameInputsStr();
   }
   

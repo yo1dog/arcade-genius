@@ -1,3 +1,9 @@
+import * as controlDefUtil from './controlDefUtil';
+
+/**
+ * @typedef {import('./controlDefUtil').ControlDef} ControlDef
+ */
+
 /**
  * @typedef ControlsDat
  * @property {object} meta
@@ -29,6 +35,7 @@
  * 
  * @typedef GameControl
  * @property {string} type
+ * @property {ControlDef} controlDef
  * @property {string} [descriptor]
  * @property {Object<string, GameInput>} outputToInputMap
  * @property {GameButton[]} buttons
@@ -45,11 +52,55 @@
  * @property {string} [posLabel]
  */
 
-import _restructuredControls from '../../data/controls.filtered.partial.min.json';
-import gameMapOverride from './controlsDatGameMapOverride.json';
 
 /** @type {ControlsDat} */
-const restructuredControls = _restructuredControls;
-Object.assign(restructuredControls.gameMap, gameMapOverride);
+let controlsDat = null;
 
-export default restructuredControls;
+async function _init() {
+  /** @type {ControlsDat}  */
+  const {default: _controlsDat} = await import(
+    /* webpackChunkName: "controlsDat" */
+    '../../data/controls.filtered.partial.min.json'
+  );
+  const {default: gameMapOverride} = await import(
+    /* webpackChunkName: "controlsDat" */
+    './controlsDatGameMapOverride.json'
+  );
+  
+  Object.assign(_controlsDat.gameMap, gameMapOverride);
+  delete _controlsDat.gameMap['default'];
+  
+  await controlDefUtil.init();
+  
+  for (const name in _controlsDat.gameMap) {
+    for (const controlConfig of _controlsDat.gameMap[name].controlConfigurations) {
+      for (const controlSet of controlConfig.controlSets) {
+        for (const control of controlSet.controls) {
+          control.controlDef = controlDefUtil.getByType(control.type);
+        }
+      }
+    }
+  }
+  
+  controlsDat = _controlsDat;
+}
+
+let initPromise = null;
+export async function init() {
+  return (initPromise = initPromise || _init());
+}
+
+/**
+ * @returns {ControlsDat}
+ */
+export function get() {
+  return controlsDat;
+}
+
+/**
+ * @param {string} name
+ * @returns {ControlsDat}
+ */
+export function getGameByName(name) {
+  return controlsDat.gameMap[name];
+}

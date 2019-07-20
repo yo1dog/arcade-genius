@@ -25,9 +25,40 @@
  * @typedef {'good'|'ok'|'bad'} ControlFallbackLevel
  */
 
-import _controlDefMap from '../../data/controlDefMap.json';
-
 /** @type {Object<string, ControlDef>} */
-const controlDefMap = _controlDefMap;
+let controlDefMap = null;
 
-export default controlDefMap;
+async function _init() {
+  const {default: _controlDefMap} = await import(
+    /* webpackChunkName: "controlDefMap" */
+    '../../data/controlDefMap.json'
+  );
+  controlDefMap = _controlDefMap;
+}
+
+let initPromise = null;
+export async function init() {
+  return (initPromise = initPromise || _init());
+}
+
+/**
+ * @returns {Object<string, ControlDef>}
+ */
+export function getMap() {
+  return controlDefMap;
+}
+
+/**
+ * @returns {ControlDef[]}
+ */
+export function getAll() {
+  return Object.values(controlDefMap);
+}
+
+/**
+ * @param {string} type 
+ * @returns {ControlDef}
+ */
+export function getByType(type) {
+  return controlDefMap[type];
+}

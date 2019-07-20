@@ -3,7 +3,7 @@ import compTableTemplate from './compatibilityTable.html';
 import compTableRowTemplate from './compatibilityTableRow.html';
 import compatibilityTableRowDetailsListItemTemplate from './compatibilityTableRowDetailsListItem.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
-import clearNodeChildren from '../../helpers/clearNodeChildren';
+import replaceNodeChildren from '../../helpers/replaceNodeChildren';
 import pluralize from '../../helpers/pluralize';
 import {EventEmitter} from 'events';
 import {
@@ -15,7 +15,6 @@ import {
   controlsToMachineCompatibilityStatus,
   videoToMachineCompatibilityStatus
 } from '../../compatibilityChecker';
-import controlDefMap from '../../dataAccess/controlDefMap';
 import jsonView from '../../../lib/jsonview/jsonview';
 
 /**
@@ -45,6 +44,9 @@ export default class CompatibilityTable extends EventEmitter {
     this.refreshButtonElem.addEventListener('click', () => this.refresh());
   }
   
+  async init() {
+  }
+  
   refresh() {
     this.emit('refresh');
   }
@@ -57,7 +59,7 @@ export default class CompatibilityTable extends EventEmitter {
     this.machineComs = machineComps;
     
     // clear rows
-    clearNodeChildren(this.bodyElem);
+    replaceNodeChildren(this.bodyElem);
     
     // clear monitor config cells
     const monitorConfigCellElems = Array.from(this.monitorConfigHeaderRowElem.querySelectorAll('.comp-table__monitor-configs-header-row__title'));
@@ -418,7 +420,7 @@ export default class CompatibilityTable extends EventEmitter {
       for (const controlComp of controlSetComp.controlComps) {
         const showControlButtonsDescs = controlComp.gameControl.buttons.length > 0;
         
-        const gameControlDesc = controlDefMap[controlComp.gameControl.type].name;
+        const gameControlDesc = controlComp.gameControl.controlDef.name;
         const gameControlButtonsDesc = `with ${pluralize(controlComp.gameControl.buttons.length, 'button', 'buttons', ' ')}`;
         
         const cpControlDesc = controlComp.cpControl? `${controlComp.cpControl.controlDef.name} (${controlComp.cpControl.name})` : '×';

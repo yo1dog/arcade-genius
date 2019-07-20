@@ -1,5 +1,3 @@
-import initModule from '../../groovymame_0210_switchres/out/prod/groovymame_0210_switchres.js';
-import wasmUri    from '../../groovymame_0210_switchres/out/prod/groovymame_0210_switchres.wasm';
 import * as modelineCache from './modelineCache';
 
 /**
@@ -59,16 +57,17 @@ import * as modelineCache from './modelineCache';
  */
 
 
-let initPromise = null;
 let Module = null;
 
-/**
- * @returns {Promise<void>}
- */
-export async function init() {
-  if (initPromise) {
-    return initPromise;
-  }
+async function _init() {
+  const {default: initModule} = await import(
+    /* webpackChunkName: "switchres" */
+    '../../groovymame_0210_switchres/out/prod/groovymame_0210_switchres.js'
+  );
+  const {default: wasmUri} = await import(
+    /* webpackChunkName: "switchres" */
+    '../../groovymame_0210_switchres/out/prod/groovymame_0210_switchres.wasm'
+  );
   
   const _Module = initModule({
     locateFile(path) {
@@ -76,12 +75,16 @@ export async function init() {
     }
   });
   
-  initPromise = new Promise(async resolve => {
+  await new Promise(resolve => {
     _Module.then(() => resolve());
   });
   
-  await initPromise;
   Module = _Module;
+}
+
+let initPromise = null;
+export async function init() {
+  return (initPromise = initPromise || _init());
 }
 
 /**

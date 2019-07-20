@@ -4,11 +4,11 @@ import cpConfiguratorButtonClusterTemplate from './controlPanelConfiguratorButto
 import cpConfiguratorControlSetTemplate from './controlPanelConfiguratorControlSet.html';
 import htmlToBlock from '../../helpers/htmlToBlock';
 import * as state from '../../dataAccess/state';
-import controlDefMap from '../../dataAccess/controlDefMap';
-import clearNodeChildren from '../../helpers/clearNodeChildren';
+import * as controlDefUtil from '../../dataAccess/controlDefUtil';
+import replaceNodeChildren from '../../helpers/replaceNodeChildren';
 import createUUID from '../../helpers/createUUID';
 
-/** @typedef {import('../../dataAccess/controlDefMap').ControlDef} ControlDef */
+/** @typedef {import('../../dataAccess/controlDefUtil').ControlDef} ControlDef */
 
 /**
  * @typedef ControlPanelConfig
@@ -75,11 +75,9 @@ export default class ControlPanelConfigurator {
       this.updateAllButtonClusterSelectElems();
     });
     
-    this.populateControlTypeSelect();
-    
     this.controlTypeSelectElem.addEventListener('change', () => {
       const controlType = this.controlTypeSelectElem.value;
-      const controlDef = controlDefMap[controlType];
+      const controlDef = controlDefUtil.getByType(controlType);
       
       this.setControlDescription(controlDef);
     });
@@ -90,7 +88,7 @@ export default class ControlPanelConfigurator {
         return;
       }
       
-      const controlDef = controlDefMap[controlType];
+      const controlDef = controlDefUtil.getByType(controlType);
       this.addControlSetRow({controlDef});
     });
   }
@@ -366,7 +364,7 @@ export default class ControlPanelConfigurator {
     const prevValue = selectElem.value;
     let prevValueExists = false;
     
-    clearNodeChildren(selectElem);
+    replaceNodeChildren(selectElem);
     
     const noneOptionElem = document.createElement('option');
     noneOptionElem.value = '';
@@ -394,7 +392,7 @@ export default class ControlPanelConfigurator {
       optgroupElem.label = categoryTitle;
       
       for (const controlType of controlTypes) {
-        const controlDef = controlDefMap[controlType];
+        const controlDef = controlDefUtil.getByType(controlType);
         
         const optionElem = document.createElement('option');
         optionElem.value = controlDef.type;
@@ -411,7 +409,7 @@ export default class ControlPanelConfigurator {
    * @param {ControlDef} controlDef 
    */
   setControlDescription(controlDef) {
-    clearNodeChildren(this.controlDescriptionElem);
+    replaceNodeChildren(this.controlDescriptionElem);
     
     if (!controlDef) {
       return;
@@ -444,7 +442,9 @@ export default class ControlPanelConfigurator {
   }
   
   
-  init() {
+  async init() {
+    await controlDefUtil.init();
+    
     const cpConfigState = this.loadState();
     
     if (cpConfigState) {
@@ -475,10 +475,12 @@ export default class ControlPanelConfigurator {
     
     if (this.controlSetRowDefs.length === 0) {
       this.addControlSetRow({
-        controlDef: controlDefMap['joy-8way'],
+        controlDef: controlDefUtil.getByType('joy-8way'),
         buttonClusterId: this.buttonClusterRowDefs[0].buttonClusterId
       });
     }
+    
+    this.populateControlTypeSelect();
   }
   
   /**
@@ -569,7 +571,7 @@ export default class ControlPanelConfigurator {
         controls: sControlSet.sControls.map(sControl => ({
           id                    : sControl.id,
           name                  : sControl.name,
-          controlDef            : controlDefMap[sControl.type],
+          controlDef            : controlDefUtil.getByType(sControl.type),
           numButtons            : sControl.numButtons,
           isOnOppositeScreenSide: sControl.isOnOppositeScreenSide
         })),

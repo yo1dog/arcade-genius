@@ -28,7 +28,7 @@ export default class MonitorConfiguratorGroup {
     });
   }
   
-  init() {
+  async init() {
     const configuratorIds = this.loadState();
     for (const configuratorId of configuratorIds) {
       this.addConfigurator(configuratorId);

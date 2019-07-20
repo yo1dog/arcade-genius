@@ -1,18 +1,17 @@
-import machineMap from './dataAccess/machineMap';
-import controlsDat from './dataAccess/controlsDat';
+import * as mameListUtil from './dataAccess/mameListUtil';
+import * as controlsDatUtil from './dataAccess/controlsDatUtil';
 import * as modelineCaculator from './dataAccess/modelineCalculator';
-import controlDefMap from './dataAccess/controlDefMap';
 import coalesceUndefined from './helpers/coalesceUndefined';
 
 /**
  * @typedef {import('./dataAccess/mameList').Machine} Machine
  * @typedef {import('./dataAccess/mameList').MachineDriverStatus} MachineDriverStatus
  * 
- * @typedef {import('./dataAccess/controlsDat').ControlsDatGame} ControlsDatGame
- * @typedef {import('./dataAccess/controlsDat').GameControlConfiguration} GameControlConfiguration
- * @typedef {import('./dataAccess/controlsDat').GameControlSet} GameControlSet
- * @typedef {import('./dataAccess/controlsDat').GameControl} GameControl
- * @typedef {import('./dataAccess/controlsDat').GameButton} GameButton
+ * @typedef {import('./dataAccess/controlsDatUtil').ControlsDatGame} ControlsDatGame
+ * @typedef {import('./dataAccess/controlsDatUtil').GameControlConfiguration} GameControlConfiguration
+ * @typedef {import('./dataAccess/controlsDatUtil').GameControlSet} GameControlSet
+ * @typedef {import('./dataAccess/controlsDatUtil').GameControl} GameControl
+ * @typedef {import('./dataAccess/controlsDatUtil').GameButton} GameButton
  * @typedef {import('./components/controlPanelConfigurator/controlPanelConfigurator').ControlPanelConfig} ControlPanelConfig
  * @typedef {import('./components/controlPanelConfigurator/controlPanelConfigurator').ControlPanelButtonCluster} ControlPanelButtonCluster
  * @typedef {import('./components/controlPanelConfigurator/controlPanelConfigurator').ControlPanelControlSet} ControlPanelControlSet
@@ -136,7 +135,7 @@ export function videoToMachineCompatibilityStatus(videoCompatibilityStatus) {
  * @returns {Machine}
  */
 export function getMachineByInput(machineNameInput) {
-  return machineMap[machineNameInput.trim().toLowerCase()] || null;
+  return mameListUtil.getMachineByName(machineNameInput.trim().toLowerCase()) || null;
 }
 
 /**
@@ -417,8 +416,8 @@ export function checkControls(machine, cpConfig) {
   // get controls.dat game
   const controlsDatGame = (
     machine && (
-      controlsDat.gameMap[machine.name] ||
-      controlsDat.gameMap[machine.cloneof]
+      controlsDatUtil.getGameByName(machine.name) ||
+      controlsDatUtil.getGameByName(machine.cloneof)
     )
   ) || null;
   
@@ -763,7 +762,7 @@ function getControlCompatibility(cpControl, gameControl) {
  */
 function getControlCompatibilityControlStatus(cpControl, gameControl) {
   const cpControlDef = cpControl.controlDef;
-  const gameControlDef = controlDefMap[gameControl.type];
+  const gameControlDef = gameControl.controlDef;
   
   if (cpControlDef.type === gameControl.type) {
     return ControlsCompatibilityStatusEnum.NATIVE;

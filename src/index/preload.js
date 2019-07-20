@@ -1,4 +1,3 @@
-(function() {
 function startLoading() {
   const ellipsisElem = document.querySelector('.loading-indicator__ellipsis');
   const ellipsisStr = '...';
@@ -21,6 +20,7 @@ function doneLoading(loadingTimerId) {
   document.querySelector('.content').classList.remove('hidden');
 }
 
+
 let loadingTimerId = null;
 document.addEventListener('DOMContentLoaded', () => {
   loadingTimerId = startLoading();
@@ -29,5 +29,3 @@ document.addEventListener('DOMContentLoaded', () => {
 window.doneLoading = () => {
   doneLoading(loadingTimerId);
 };
-
-})();

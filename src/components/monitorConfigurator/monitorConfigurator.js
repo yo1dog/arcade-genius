@@ -27,7 +27,7 @@ export default class MonitorConfigurator {
     });
   }
   
-  init() {
+  async init() {
     const modelineConfig = this.loadState();
     if (modelineConfig) {
       this.presetInputElem            .value   = modelineConfig.preset;
