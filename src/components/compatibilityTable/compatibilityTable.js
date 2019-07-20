@@ -116,8 +116,13 @@ export default class CompatibilityTable extends EventEmitter {
     const rowElem = rowBlock.querySelector('.comp-table__row');
     rowElem.classList.add(evenOddClass);
     
-    const machineStatusTrans = this.translateMachineStatus(machineComp.knownStatus);
-    rowElem.classList.add(machineStatusTrans.cssClass);
+    const rowMachineStatus = (
+      machineComp.knownStatus <= MachineCompatibilityStatusEnum.BAD
+      ?machineComp.knownStatus
+      :machineComp.status
+    );
+    const rowMachineStatusTrans = this.translateMachineStatus(rowMachineStatus);
+    rowElem.classList.add(rowMachineStatusTrans.cssClass);
     
     if (!machine) {
       rowElem.classList.add('comp-table__row--invalid-machine-name');
@@ -135,8 +140,8 @@ export default class CompatibilityTable extends EventEmitter {
     */
    
     // machine desc
-    rowBlock.querySelector('.comp-table__row__desc'      ).classList.add(machineStatusTrans.cssClass);
-    rowBlock.querySelector('.comp-table__row__desc__icon').classList.add(machineStatusTrans.iconCSSClass);
+    rowBlock.querySelector('.comp-table__row__desc'      ).classList.add(rowMachineStatusTrans.cssClass);
+    rowBlock.querySelector('.comp-table__row__desc__icon').classList.add(rowMachineStatusTrans.iconCSSClass);
     rowBlock.querySelector('.comp-table__row__desc__text').innerText = (
       machine
       ? this.shortenDescription(machine.description)
