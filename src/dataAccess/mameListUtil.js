@@ -51,7 +51,7 @@ let machineMap = null;
 
 async function _init() {
   const {default: _mameList} = await import(
-    /* webpackChunkName: "controlDefMap" */
+    /* webpackChunkName: "mameList" */
     '../../data/mameList.filtered.partial.min.json'
   );
   
