@@ -121,8 +121,13 @@ export default class CompatibilityTable extends EventEmitter {
       ?machineComp.knownStatus
       :machineComp.status
     );
+    
     const rowMachineStatusTrans = this.translateMachineStatus(rowMachineStatus);
     rowElem.classList.add(rowMachineStatusTrans.cssClass);
+    
+    if (rowMachineStatus === MachineCompatibilityStatusEnum.UNSUPPORTED) {
+      rowElem.classList.add('comp-table__row--unsupported');
+    }
     
     if (!machine) {
       rowElem.classList.add('comp-table__row--invalid-machine-name');
