@@ -354,16 +354,20 @@ function getVideoStatus(modelineResult) {
  * @property {ControlConfigurationCompatibilityMeta} meta
  * 
  * @typedef ControlConfigurationCompatibilityMeta
- * @property {BestAvailableControlSetCompatibilityContext[]} bestAvailableControlSetCompContexts
+ * @property {GameControlSetCompatibilityOptimizationRound[]} gameControlSetCompOptRounds
  * 
  * 
- * @typedef BestAvailableControlSetCompatibilityContext
+ * @typedef GameControlSetCompatibilityOptimizationRound
+ * @property {ControlPanelControl[]} roundCPAvailControls
+ * @property {ControlPanelButtonCluster[]} roundCPAvailButtonClusters
+ * @property {GameControlSetCompatibilityOptimization[]} savedGameControlSetCompOpts
+ * @property {GameControlSetCompatibilityOptimization[]} allGameControlSetCompOpts
+ * 
+ * @typedef GameControlSetCompatibilityOptimization
  * @property {GameControlSet} gameControlSet
- * @property {number} stateProcessedOrder
- * @property {ControlPanelControl[]} stateCPAvailControls
- * @property {ControlPanelButtonCluster[]} stateCPAvailButtonClusters
  * @property {ControlSetCompatibility} bestControlSetComp
  * @property {ControlSetCompatibility[]} allControlSetComps
+ * 
  * 
  * @typedef ControlSetCompatibility
  * @property {GameControlSet} gameControlSet
@@ -374,15 +378,19 @@ function getVideoStatus(modelineResult) {
  * @property {ControlSetCompatibilityMeta} meta
  * 
  * @typedef ControlSetCompatibilityMeta
- * @property {BestAvailableControlCompContext[]} bestAvailableControlCompContexts
+ * @property {GameControlCompatibilityOptimizationRound[]} gameControlCompOptRounds
  * 
  * 
- * @typedef BestAvailableControlCompatibilityContext
+ * @typedef GameControlCompatibilityOptimizationRound
+ * @property {ControlPanelControl[]} roundCPControlSetAvailControls
+ * @property {GameControlCompatibilityOptimization[]} savedGameControlCompOpts
+ * @property {GameControlCompatibilityOptimization[]} allGameControlCompOpts
+ * 
+ * @typedef GameControlCompatibilityOptimization
  * @property {GameControl} gameControl
- * @property {number} stateProcessedOrder
- * @property {ControlPanelControl[]} sateCPControlSetAvailControls
  * @property {ControlCompatibility} bestControlComp
  * @property {ControlCompatibility[]} allControlComps
+ * 
  * 
  * @typedef ControlCompatibility
  * @property {GameControl} gameControl
@@ -393,15 +401,11 @@ function getVideoStatus(modelineResult) {
  * @property {MultidimensionalScore} score
  * 
  * 
- * 
  * @typedef ButtonsCompatibility
  * @property {GameButton[]} gameButtons
  * @property {ControlPanelButtonCluster} cpButtonCluster
  * @property {number} status
  * @property {MultidimensionalScore} score
- * 
- * @typedef ButtonsCompatibilityContext
- * @property {number} stateProcessedOrder
  */
 
 /**
@@ -476,46 +480,93 @@ function getControlConfigCompatibility(cpConfig, gameControlConfig) {
     });
   }
   
-  // for each game control set, find the best compatible CP control set
-  /** @type {BestAvailableControlSetCompatibilityContext[]} */
-  const bestAvailableControlSetCompContexts = gameControlConfig.controlSets.map((gameControlSet, stateProcessedOrder) => {
-    const stateCPAvailControls       = cpAvailControls      .slice(0);
-    const stateCPAvailButtonClusters = cpAvailButtonClusters.slice(0);
+  /** @type {GameControlSetCompatibilityOptimizationRound[]} */
+  const gameControlSetCompOptRounds = [];
+  const remainingGameControlSets = gameControlConfig.controlSets.slice(0);
+  
+  while (remainingGameControlSets.length > 0) {
+    const roundCPAvailControls = cpAvailControls.slice(0);
+    const roundCPAvailButtonClusters = cpAvailButtonClusters.slice(0);
     
-    // get the compatibility of all CP sets
-    /** @type {ControlSetCompatibility[]} */
-    const allControlSetComps = cpControlSets.map(cpControlSet => 
-      getControlSetCompatibility(cpControlSet, stateCPAvailControls, stateCPAvailButtonClusters, gameControlSet)
-    );
+    // for each game control set, find the best compatible CP control set
+    /** @type {GameControlSetCompatibilityOptimization[]} */
+    const allGameControlSetCompOpts = remainingGameControlSets.map((gameControlSet, stateProcessedOrder) => {
+      
+      // get the compatibility of all available CP sets
+      /** @type {ControlSetCompatibility[]} */
+      const allControlSetComps = cpControlSets.map(cpControlSet => 
+        getControlSetCompatibility(cpControlSet, roundCPAvailControls, roundCPAvailButtonClusters, gameControlSet)
+      );
+      
+      // prefer best score
+      allControlSetComps.sort((a, b) => compareScores(b.score, a.score));
+      const bestControlSetComp = allControlSetComps[0];
+      
+      return {
+        gameControlSet,
+        bestControlSetComp,
+        allControlSetComps
+      };
+    });
     
     // prefer best score
-    allControlSetComps.sort((a, b) => compareScores(b.score, a.score));
-    const bestControlSetComp = allControlSetComps[0];
+    allGameControlSetCompOpts.sort((a, b) => compareScores(b.bestControlSetComp.score, a.bestControlSetComp.score));
     
-    if (bestControlSetComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
-      // remove used CP controls so they can't be used again
-      for (const controlComp of bestControlSetComp.controlComps) {
-        if (controlComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
+    // for each optimization (best compatibile optimizations first)...
+    const savedGameControlSetCompOpts = [];
+    for (const controlSetCompOpt of allGameControlSetCompOpts) {
+      // check if all the optimal CP controls are still available
+      const isCPControlsAvail = (
+        controlSetCompOpt.bestControlSetComp.controlComps.every(controlComp => 
+          !controlComp.cpControl ||
+          cpAvailControls.includes(controlComp.cpControl)
+        )
+      );
+      
+      // check if the optimal CP button cluster is still available
+      const cpButtonCluster = controlSetCompOpt.bestControlSetComp.buttonsComp.cpButtonCluster;
+      const isCPButtonClusterAvail = (
+        !cpButtonCluster ||
+        cpAvailButtonClusters.includes(cpButtonCluster)
+      );
+      
+      if (!isCPControlsAvail || !isCPButtonClusterAvail) {
+        continue;
+      }
+      
+      // save the optimization
+      savedGameControlSetCompOpts.push(controlSetCompOpt);
+      removeVal(remainingGameControlSets, controlSetCompOpt.gameControlSet);
+      
+      // remove the optimal CP controls so they can't be used again
+      for (const controlComp of controlSetCompOpt.bestControlSetComp.controlComps) {
+        if (controlComp.cpControl) {
           removeVal(cpAvailControls, controlComp.cpControl);
         }
       }
       
-      // remove used CP button clusters so they can't be used again
-      if (bestControlSetComp.buttonsComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
-        removeVal(cpAvailButtonClusters, bestControlSetComp.buttonsComp.cpButtonCluster);
+      // remove the optimal CP button cluster so it can't be used again
+      if (cpButtonCluster) {
+        removeVal(cpAvailButtonClusters, cpButtonCluster);
       }
     }
     
-    return {
-      gameControlSet,
-      stateProcessedOrder,
-      stateCPAvailControls,
-      stateCPAvailButtonClusters,
-      bestControlSetComp,
-      allControlSetComps
-    };
-  });
-  const controlSetComps = bestAvailableControlSetCompContexts.map(x => x.bestControlSetComp);
+    gameControlSetCompOptRounds.push({
+      roundCPAvailControls,
+      roundCPAvailButtonClusters,
+      savedGameControlSetCompOpts,
+      allGameControlSetCompOpts
+    });
+  }
+  
+  // collect the saved game control set compatibilities from each round of optimization
+  /** @type {ControlSetCompatibility[]} */
+  const controlSetComps = [];
+  for (const gameControlSetCompOptRound of gameControlSetCompOptRounds) {
+    for (const gameControlSetCompOpt of gameControlSetCompOptRound.savedGameControlSetCompOpts) {
+      controlSetComps.push(gameControlSetCompOpt.bestControlSetComp);
+    }
+  }
   
   const requiredControlSetComps = [];
   const optionalControlSetComps = [];
@@ -545,7 +596,7 @@ function getControlConfigCompatibility(cpConfig, gameControlConfig) {
     status,
     score,
     meta: {
-      bestAvailableControlSetCompContexts
+      gameControlSetCompOptRounds
     }
   };
 }
@@ -573,42 +624,81 @@ function getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButton
     cpButtonCluster.isOnOppositeScreenSide === gameControlSet.isOnOppositeScreenSide
   )? cpButtonCluster : null;
   
-  // find the most compatible CP control for each game control
-  /** @type {BestAvailableControlCompatibilityContext[]} */
-  const bestAvailableControlCompContexts = gameControlSet.controls.map((gameControl, stateProcessedOrder) => {
-    const sateCPControlSetAvailControls = cpControlSetAvailControls.slice(0);
+  /** @type {GameControlCompatibilityOptimizationRound[]} */
+  const gameControlCompOptRounds = [];
+  const remainingGameControls = gameControlSet.controls.slice(0);
+  
+  while (remainingGameControls.length > 0) {
+    const roundCPControlSetAvailControls = cpControlSetAvailControls.slice(0);
     
-    // get the compatibility of all available CP controls in the set
-    const allControlComps = sateCPControlSetAvailControls.map(cpControl => 
-      getControlCompatibility(cpControl, gameControl)
-    );
+    // for each game control, find the most compatible CP control
+    /** @type {GameControlCompatibilityOptimization[]} */
+    const allGameControlCompOpts = remainingGameControls.map(gameControl => {
+      
+      // get the compatibility of all available CP controls in the set
+      const allControlComps = roundCPControlSetAvailControls.map(cpControl => 
+        getControlCompatibility(cpControl, gameControl)
+      );
+      
+      // prefer best score
+      allControlComps.sort((a, b) => compareScores(b.score, a.score));
+      let bestControlComp = allControlComps[0];
+      
+      // if the best compatibile control status is unsupported (not considering button status), ignore it
+      if (
+        !bestControlComp ||
+        bestControlComp.controlStatus <= ControlsCompatibilityStatusEnum.UNSUPPORTED
+      ) {
+        bestControlComp = getControlCompatibility(null, gameControl);
+      }
+      
+      return {
+        gameControl,
+        bestControlComp,
+        allControlComps
+      };
+    });
     
     // prefer best score
-    allControlComps.sort((a, b) => compareScores(b.score, a.score));
-    let bestControlComp = allControlComps[0];
+    allGameControlCompOpts.sort((a, b) => compareScores(b.bestControlComp.score, a.bestControlComp.score));
     
-    // if the best compatibile control status is unsupported (not considering button status), ignore it
-    if (
-      !bestControlComp ||
-      bestControlComp.controlStatus <= ControlsCompatibilityStatusEnum.UNSUPPORTED
-    ) {
-      bestControlComp = getControlCompatibility(null, gameControl);
+    // for each optimization (best compatibile optimizations first)...
+    const savedGameControlCompOpts = [];
+    for (const controlCompOpt of allGameControlCompOpts) {
+      const cpControl = controlCompOpt.bestControlComp.cpControl;
+      
+      // if the optimal CP control is still available
+      // (or if the optimization is not compatibile with any CP control)
+      if (
+        !cpControl ||
+        cpControlSetAvailControls.includes(cpControl)
+      ) {
+        // save the optimization
+        savedGameControlCompOpts.push(controlCompOpt);
+        removeVal(remainingGameControls, controlCompOpt.gameControl);
+        
+        // remove the optimal CP control so it can't be used again
+        if (cpControl) {
+          removeVal(cpControlSetAvailControls, cpControl);
+        }
+      }
     }
     
-    // remove used CP controls so they can't be used again
-    if (bestControlComp.status > ControlsCompatibilityStatusEnum.UNSUPPORTED) {
-      removeVal(cpControlSetAvailControls, bestControlComp.cpControl);
+    gameControlCompOptRounds.push({
+      roundCPControlSetAvailControls,
+      savedGameControlCompOpts,
+      allGameControlCompOpts
+    });
+  }
+  
+  // collect the saved game control compatibilities from each round of optimization
+  /** @type {ControlCompatibility[]} */
+  const controlComps = [];
+  for (const gameControlCompOptRound of gameControlCompOptRounds) {
+    for (const gameControlCompOpt of gameControlCompOptRound.savedGameControlCompOpts) {
+      controlComps.push(gameControlCompOpt.bestControlComp);
     }
-    
-    return {
-      gameControl,
-      stateProcessedOrder,
-      sateCPControlSetAvailControls,
-      bestControlComp,
-      allControlComps
-    };
-  });
-  const controlComps = bestAvailableControlCompContexts.map(x => x.bestControlComp);
+  }
   
   // get buttons compatibility
   const buttonsComp = getButtonsComptability(
@@ -635,7 +725,7 @@ function getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButton
     status,
     score,
     meta: {
-      bestAvailableControlCompContexts
+      gameControlCompOptRounds
     }
   };
 }
