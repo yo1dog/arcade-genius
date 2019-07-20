@@ -359,7 +359,7 @@ function getVideoStatus(modelineResult) {
  * @typedef GameControlSetCompatibilityOptimizationRound
  * @property {ControlPanelControl[]} roundCPAvailControls
  * @property {ControlPanelButtonCluster[]} roundCPAvailButtonClusters
- * @property {GameControlSetCompatibilityOptimization[]} savedGameControlSetCompOpts
+ * @property {GameControlSetCompatibilityOptimization[]} allocGameControlSetCompOpts
  * @property {GameControlSetCompatibilityOptimization[]} allGameControlSetCompOpts
  * 
  * @typedef GameControlSetCompatibilityOptimization
@@ -382,7 +382,7 @@ function getVideoStatus(modelineResult) {
  * 
  * @typedef GameControlCompatibilityOptimizationRound
  * @property {ControlPanelControl[]} roundCPControlSetAvailControls
- * @property {GameControlCompatibilityOptimization[]} savedGameControlCompOpts
+ * @property {GameControlCompatibilityOptimization[]} allocGameControlCompOpts
  * @property {GameControlCompatibilityOptimization[]} allGameControlCompOpts
  * 
  * @typedef GameControlCompatibilityOptimization
@@ -512,7 +512,7 @@ function getControlConfigCompatibility(cpConfig, gameControlConfig) {
     allGameControlSetCompOpts.sort((a, b) => compareScores(b.bestControlSetComp.score, a.bestControlSetComp.score));
     
     // for each optimization (best compatibile optimizations first)...
-    const savedGameControlSetCompOpts = [];
+    const allocGameControlSetCompOpts = [];
     for (const controlSetCompOpt of allGameControlSetCompOpts) {
       // check if all the optimal CP controls are still available
       const isCPControlsAvail = (
@@ -533,8 +533,8 @@ function getControlConfigCompatibility(cpConfig, gameControlConfig) {
         continue;
       }
       
-      // save the optimization
-      savedGameControlSetCompOpts.push(controlSetCompOpt);
+      // allocate the optimization's controls
+      allocGameControlSetCompOpts.push(controlSetCompOpt);
       removeVal(remainingGameControlSets, controlSetCompOpt.gameControlSet);
       
       // remove the optimal CP controls so they can't be used again
@@ -553,16 +553,16 @@ function getControlConfigCompatibility(cpConfig, gameControlConfig) {
     gameControlSetCompOptRounds.push({
       roundCPAvailControls,
       roundCPAvailButtonClusters,
-      savedGameControlSetCompOpts,
+      allocGameControlSetCompOpts,
       allGameControlSetCompOpts
     });
   }
   
-  // collect the saved game control set compatibilities from each round of optimization
+  // collect the allocated controls from each round of optimization
   /** @type {ControlSetCompatibility[]} */
   const controlSetComps = [];
   for (const gameControlSetCompOptRound of gameControlSetCompOptRounds) {
-    for (const gameControlSetCompOpt of gameControlSetCompOptRound.savedGameControlSetCompOpts) {
+    for (const gameControlSetCompOpt of gameControlSetCompOptRound.allocGameControlSetCompOpts) {
       controlSetComps.push(gameControlSetCompOpt.bestControlSetComp);
     }
   }
@@ -662,7 +662,7 @@ function getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButton
     allGameControlCompOpts.sort((a, b) => compareScores(b.bestControlComp.score, a.bestControlComp.score));
     
     // for each optimization (best compatibile optimizations first)...
-    const savedGameControlCompOpts = [];
+    const allocGameControlCompOpts = [];
     for (const controlCompOpt of allGameControlCompOpts) {
       const cpControl = controlCompOpt.bestControlComp.cpControl;
       
@@ -672,8 +672,8 @@ function getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButton
         !cpControl ||
         cpControlSetAvailControls.includes(cpControl)
       ) {
-        // save the optimization
-        savedGameControlCompOpts.push(controlCompOpt);
+        // allocate the optimization's controls
+        allocGameControlCompOpts.push(controlCompOpt);
         removeVal(remainingGameControls, controlCompOpt.gameControl);
         
         // remove the optimal CP control so it can't be used again
@@ -685,16 +685,16 @@ function getControlSetCompatibility(cpControlSet, cpAvailControls, cpAvailButton
     
     gameControlCompOptRounds.push({
       roundCPControlSetAvailControls,
-      savedGameControlCompOpts,
+      allocGameControlCompOpts,
       allGameControlCompOpts
     });
   }
   
-  // collect the saved game control compatibilities from each round of optimization
+  // collect the allocated controls from each round of optimization
   /** @type {ControlCompatibility[]} */
   const controlComps = [];
   for (const gameControlCompOptRound of gameControlCompOptRounds) {
-    for (const gameControlCompOpt of gameControlCompOptRound.savedGameControlCompOpts) {
+    for (const gameControlCompOpt of gameControlCompOptRound.allocGameControlCompOpts) {
       controlComps.push(gameControlCompOpt.bestControlComp);
     }
   }
