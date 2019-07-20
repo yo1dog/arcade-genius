@@ -412,7 +412,7 @@ export default class CompatibilityTable extends EventEmitter {
         const gameControlButtonsDesc = `with ${pluralize(controlComp.gameControl.buttons.length, 'button', 'buttons', ' ')}`;
         
         const cpControlDesc = controlComp.cpControl? `${controlComp.cpControl.controlDef.name} (${controlComp.cpControl.name})` : '×';
-        const cpControlButtonsDesc = controlComp.cpControl? `with ${pluralize(controlComp.gameControl.buttons.length, 'button', 'buttons', ' ')}` : '';
+        const cpControlButtonsDesc = controlComp.cpControl? `with ${pluralize(controlComp.cpControl.numButtons, 'button', 'buttons', ' ')}` : '';
         
         const text = [
           gameControlDesc,
