@@ -19,13 +19,18 @@ T get_json_or_0(json *j) {
   return j->get<T>();
 }
 
+std::string copy_json_str(std::string str) {
+  // not sure why this is necessary
+  return std::string(str.c_str());
+}
+
 t_machine_output calc_modeline(json config, json machine) {
   t_machine_output machine_output;
   std::string machine_name;
   json machine_display;
   
   try {
-    machine_name = machine["name"].get<std::string>();
+    machine_name = copy_json_str(machine["name"].get<std::string>());
     machine_display = machine["display"];
     
     if (machine_display.is_null()) {
@@ -44,7 +49,7 @@ t_machine_output calc_modeline(json config, json machine) {
   try {
     screen_device screen = screen_device();
     
-    const char *screen_type_str = machine_display["type"].get<std::string>().c_str();
+    const char *screen_type_str = copy_json_str(machine_display["type"].get<std::string>()).c_str();
     screen_type_enum screen_type;
     if (!strcmp(screen_type_str, "raster")) {
       screen_type = SCREEN_TYPE_RASTER;
@@ -109,12 +114,12 @@ t_machine_output calc_modeline(json config, json machine) {
     
     json monitor_orientation_json = config["orientation"];
     if (!monitor_orientation_json.is_null()) {
-      options.m_orientation = monitor_orientation_json.get<std::string>().c_str();
+      options.m_orientation = copy_json_str(monitor_orientation_json.get<std::string>()).c_str();
     }
     
     json monitor_preset_json = config["preset"];
     if (!monitor_preset_json.is_null()) {
-      options.m_monitor = monitor_preset_json.get<std::string>().c_str();
+      options.m_monitor = copy_json_str(monitor_preset_json.get<std::string>()).c_str();
     }
     
     json monitor_ranges_json = config["ranges"];

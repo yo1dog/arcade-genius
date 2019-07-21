@@ -62,11 +62,11 @@ let Module = null;
 async function _init() {
   const {default: initModule} = await import(
     /* webpackChunkName: "switchres" */
-    '../../groovymame_0210_switchres/out/prod/groovymame_0210_switchres.js'
+    '../../groovymame_0210_switchres/out/wasm/groovymame_0210_switchres.js'
   );
   const {default: wasmUri} = await import(
     /* webpackChunkName: "switchres" */
-    '../../groovymame_0210_switchres/out/prod/groovymame_0210_switchres.wasm'
+    '../../groovymame_0210_switchres/out/wasm/groovymame_0210_switchres.wasm'
   );
   
   const _Module = initModule({
@@ -172,13 +172,25 @@ export async function calcModelineBulk(_config, _machines) {
   }
   
   // calculate modelines
-  console.log(input);
   const outputStr = Module.ccall(
     'calc_modelines',
     'string',
     ['string'],
     [JSON.stringify(input)]
   );
+  /*
+  const inputJSON = JSON.stringify(input);
+  const inputIntArray = Module.intArrayFromString(inputJSON);
+  const inputPointer = Module.allocate(inputIntArray, 'i8', Module.ALLOC_NORMAL);
+  let outputPointer;
+  try {
+    outputPointer = Module._calc_modelines(inputPointer);
+  }
+  finally {
+    Module._free(inputPointer);
+  }
+  const outputStr = Module.UTF8ToString(outputPointer);
+  */
   
   let output;
   try {

@@ -3,16 +3,17 @@ NATIVE_CC = g++
 
 CFLAGS = -std=c++11
 WEB_CFLAGS = $(CFLAGS) \
-  -s WASM=1 \
   -s FILESYSTEM=0 \
   -s NO_EXIT_RUNTIME=1 \
   -s MODULARIZE=1 \
   -s 'EXPORT_NAME="initModule"' \
-  -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall','UTF8ToString']" \
+  -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall']" \
   -s "EXPORTED_FUNCTIONS=['_calc_modelines']" \
-	-s DISABLE_EXCEPTION_CATCHING=0
-DEV_CFLAGS = $(WEB_CFLAGS) -g4
-PROD_CFLAGS = $(WEB_CFLAGS) --closure 1
+	-s DISABLE_EXCEPTION_CATCHING=0 \
+	-g4 \
+	--closure 1
+WASM_CFLAGS = $(WEB_CFLAGS) -s WASM=1
+JS_CFLAGS   = $(WEB_CFLAGS) -s WASM=0
 NATIVE_CFLAGS = $(CFLAGS) -lm
 
 SOURCE  = src/*.cpp
@@ -20,32 +21,32 @@ HEADERS = src/*.h
 INPUT = $(SOURCE) $(HEADERS)
 
 OUT = out
-DEV_OUT  = $(OUT)/dev
-PROD_OUT = $(OUT)/prod
+WASM_OUT   = $(OUT)/wasm
+JS_OUT     = $(OUT)/js
 NATIVE_OUT = $(OUT)/native
 
 TARGET_NAME = groovymame_0210_switchres
-DEV_TARGET  = $(DEV_OUT)/$(TARGET_NAME).js
-PROD_TARGET = $(PROD_OUT)/$(TARGET_NAME).js
+WASM_TARGET   = $(WASM_OUT)/$(TARGET_NAME).js
+JS_TARGET     = $(JS_OUT)/$(TARGET_NAME).js
 NATIVE_TARGET = $(NATIVE_OUT)/$(TARGET_NAME)
 
-.PHONY: dev
-dev: $(DEV_TARGET)
-$(DEV_TARGET): $(INPUT)
-	mkdir -p $(DEV_OUT)
+.PHONY: js
+js: $(JS_TARGET)
+$(JS_TARGET): $(INPUT)
+	mkdir -p $(JS_OUT)
 	$(WEB_CC) \
-	  $(DEV_CFLAGS) \
+	  $(JS_CFLAGS) \
 	  $(SOURCE) \
-	  -o $(DEV_TARGET)
+	  -o $(JS_TARGET)
 
-.PHONY: prod
-prod: $(PROD_TARGET)
-$(PROD_TARGET): $(INPUT)
-	mkdir -p $(PROD_OUT)
+.PHONY: wasm
+wasm: $(WASM_TARGET)
+$(WASM_TARGET): $(INPUT)
+	mkdir -p $(WASM_OUT)
 	$(WEB_CC) \
-	  $(PROD_CFLAGS) \
+	  $(WASM_CFLAGS) \
 	  $(SOURCE) \
-	  -o $(PROD_TARGET)
+	  -o $(WASM_TARGET)
 
 .PHONY: native
 native: $(NATIVE_TARGET)
@@ -57,10 +58,13 @@ $(NATIVE_TARGET): $(INPUT)
 	  -o $(NATIVE_TARGET)
 
 .PHONY: clean-all
-.PHONY: clean-dev
-.PHONY: clean-prod
+.PHONY: clean-wasm
+.PHONY: clean-js
 .PHONY: clean-native
-clean-all: clean-dev clean-prod clean-native
-clean-dev: rm -f $(DEV_OUT)/*
-clean-prod: rm -f $(PROD_OUT)/*
-clean-native: rm -f $(NATIVE_OUT)/*
+clean-all: clean-wasm clean-js clean-native
+clean-wasm:
+	rm -f $(WASM_OUT)/*
+clean-js:
+	rm -f $(JS_OUT)/*
+clean-native:
+	rm -f $(NATIVE_OUT)/*

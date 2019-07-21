@@ -5,7 +5,7 @@
 
 ```bash
 npm install
-make prod # emscripten switchres build 
+make wasm # emscripten switchres build 
 ```
 
 ## Run
@@ -17,7 +17,7 @@ npm start
 ## Build/Release
 
 ```bash
-make prod # emscripten switchres build 
+make wasm # emscripten switchres build 
 npm run-script build
 cp dist/* ...
 ```
