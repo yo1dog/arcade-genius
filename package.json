@@ -11,7 +11,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack-dev-server --open --config config/webpack.dev.js",
     "build": "webpack --config config/webpack.prod.js",
-    "build-dev": "webpack --config config/webpack.dev.js"
+    "build-dev": "webpack --config config/webpack.dev.js",
+    "release": "make wasm && npm run-script build && ssh yo1.dog 'rm -f ~/www/html/mameGenius/*' && scp dist/* yo1.dog:~/www/html/mameGenius/"
   },
   "repository": {
     "type": "git",
