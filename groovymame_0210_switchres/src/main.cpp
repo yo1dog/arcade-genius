@@ -7,7 +7,7 @@
 using json = nlohmann::json;
 
 typedef struct t_machine_output {
-  const char* machine_name;
+  char machine_name[256] = {'\x00'};
   json output;
 } t_machine_output;
 
@@ -19,18 +19,19 @@ T get_json_or_0(json *j) {
   return j->get<T>();
 }
 
-std::string copy_json_str(std::string str) {
+void copy_json_str(std::string str, char* dest) {
   // not sure why this is necessary
-  return std::string(str.c_str());
+  strcpy(dest, str.c_str());
 }
 
 t_machine_output calc_modeline(json config, json machine) {
   t_machine_output machine_output;
-  std::string machine_name;
+  char machine_name[256] = {'\x00'};
   json machine_display;
   
   try {
-    machine_name = copy_json_str(machine["name"].get<std::string>());
+    copy_json_str(machine["name"].get<std::string>().c_str(), machine_name);
+    
     machine_display = machine["display"];
     
     if (machine_display.is_null()) {
@@ -41,7 +42,7 @@ t_machine_output calc_modeline(json config, json machine) {
     json err_json = {
       {"err", err.what()}
     };
-    machine_output.machine_name = machine_name.c_str();
+    strcpy(machine_output.machine_name, machine_name);
     machine_output.output = err_json;
     return machine_output;
   }
@@ -49,7 +50,9 @@ t_machine_output calc_modeline(json config, json machine) {
   try {
     screen_device screen = screen_device();
     
-    const char *screen_type_str = copy_json_str(machine_display["type"].get<std::string>()).c_str();
+    char screen_type_str[256] = {'\x00'};
+    copy_json_str(machine_display["type"].get<std::string>(), screen_type_str);
+    
     screen_type_enum screen_type;
     if (!strcmp(screen_type_str, "raster")) {
       screen_type = SCREEN_TYPE_RASTER;
@@ -95,7 +98,7 @@ t_machine_output calc_modeline(json config, json machine) {
     bool machine_display_flipx  = machine_display["flipx"].get<bool>();
     
     game_driver system = game_driver(
-      machine_name.c_str(),
+      machine_name,
       (
         machine_flags::TYPE_ARCADE | (
           (
@@ -114,14 +117,13 @@ t_machine_output calc_modeline(json config, json machine) {
     
     json monitor_orientation_json = config["orientation"];
     if (!monitor_orientation_json.is_null()) {
-      options.m_orientation = copy_json_str(monitor_orientation_json.get<std::string>()).c_str();
+      copy_json_str(monitor_orientation_json.get<std::string>(), options.m_orientation);
     }
     
     json monitor_preset_json = config["preset"];
     if (!monitor_preset_json.is_null()) {
-      options.m_monitor = copy_json_str(monitor_preset_json.get<std::string>()).c_str();
+      copy_json_str(monitor_preset_json.get<std::string>(), options.m_monitor);
     }
-    
     json monitor_ranges_json = config["ranges"];
     if (!monitor_ranges_json.is_null()) {
       std::vector<std::string> monitor_ranges_str = monitor_ranges_json.get<std::vector<std::string>>();
@@ -238,7 +240,7 @@ t_machine_output calc_modeline(json config, json machine) {
       };
     }
     
-    machine_output.machine_name = machine_name.c_str();
+    strcpy(machine_output.machine_name, machine_name);
     machine_output.output = output;
     return machine_output;
   }
@@ -247,7 +249,7 @@ t_machine_output calc_modeline(json config, json machine) {
     json err_json = {
       {"err", err.what()}
     };
-    machine_output.machine_name = machine_name.c_str();
+    strcpy(machine_output.machine_name, machine_name);
     machine_output.output = err_json;
     return machine_output;
   }

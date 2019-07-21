@@ -212,8 +212,8 @@ class emu_options {
   game_driver *m_system;
   
   public:
-    const char* m_orientation;
-    const char* m_monitor;
+    char m_orientation[256] = {'\x00'};
+    char m_monitor[256] = {'\x00'};
     char m_ranges[MAX_RANGES][MAX_RANGE_LEN];
     bool m_allow_interlaced;
     bool m_allow_doublescan;
@@ -221,8 +221,6 @@ class emu_options {
     emu_options(game_driver *system)
     : m_system(system)
     {
-      m_orientation = "";
-      m_monitor = "";
       memset(m_ranges, 0, sizeof(char) * MAX_RANGES * MAX_RANGE_LEN);
       m_allow_interlaced = true;
       m_allow_doublescan = true;
