@@ -48,15 +48,28 @@
         <ul class="comp-table__details-row__list comp-table__details-row__list--controls"></ul>
       </div>
       
-      <p class="comp-table__details-row__toggle-data">
+      <div class="comp-table__details-row__toggle-data">
         <a class="comp-table__details-row__toggle-data-link fake-link" href="#">
           <span class="comp-table__details-row__toggle-data-link__on-text">hide</span>
           <span class="comp-table__details-row__toggle-data-link__off-text">show</span>
           data
         </a>
-      </p>
+      </div>
       <div class="comp-table__details-row__data">
-        <textarea class="comp-table__details-row__data__modelines" readonly></textarea>
+        <table class="comp-table__details-row__data__modelines-table">
+          <tr>
+            <th>Description:</th>
+            <td><div class="comp-table__details-row__data__modelines-table__value comp-table__details-row__data__modelines-table__value--desc"></div></td>
+          </tr>
+          <tr>
+            <th>Result:</th>
+            <td><div class="comp-table__details-row__data__modelines-table__value comp-table__details-row__data__modelines-table__value--result"></div></td>
+          </tr>
+          <tr>
+            <th>Modeline:</th>
+            <td><div class="comp-table__details-row__data__modelines-table__value comp-table__details-row__data__modelines-table__value--modeline"></div></td>
+          </tr>
+        </table>
         <div class="comp-table__details-row__data__json json-view"></div>
       </div>
     </div>

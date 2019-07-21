@@ -188,11 +188,15 @@ t_machine_output calc_modeline(json config, json machine) {
       
       char details[256] = {'\x00'};
       modeline_result(best_mode, details);
-    
+      
+      char modeline_str[512] = {'\x00'};
+      modeline_print(best_mode, modeline_str, MS_LABEL | MS_PARAMS);
+      
       output = {
         {"inRange", true},
         {"description", description},
         {"details", details},
+        {"modelineStr", modeline_str},
         {"vfreqOff",   best_mode->result.weight & R_V_FREQ_OFF ? true : false},
         {"resStretch", best_mode->result.weight & R_RES_STRETCH? true : false},
         {"weight",     best_mode->result.weight },

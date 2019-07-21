@@ -32,6 +32,7 @@ import * as modelineCache from './modelineCache';
  * @property {string}   [err]
  * @property {boolean}  inRange
  * @property {string}   description
+ * @property {string}   modelineStr
  * @property {string}   details
  * @property {boolean}  vfreqOff
  * @property {boolean}  resStretch

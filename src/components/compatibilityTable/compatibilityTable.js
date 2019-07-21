@@ -369,12 +369,21 @@ export default class CompatibilityTable extends EventEmitter {
         videoToMachineCompatibilityStatus(videoComp.status)
       ));
       
-      const videoModelinesElem = detailsRowElem.querySelector('.comp-table__details-row__data__modelines');
+      const videoModelinesTableElem = detailsRowElem.querySelector('.comp-table__details-row__data__modelines-table');
+      
       if (modelineResult) {
-        videoModelinesElem.value = `${modelineResult.description}\n\n${(modelineResult.details || '').trim()}`;
+        detailsRowElem.querySelector('.comp-table__details-row__data__modelines-table__value--desc').innerText = (
+          (modelineResult.description || '').trim()
+        );
+        detailsRowElem.querySelector('.comp-table__details-row__data__modelines-table__value--result').innerText = (
+          (modelineResult.details || '').trim()
+        );
+        detailsRowElem.querySelector('.comp-table__details-row__data__modelines-table__value--modeline').innerText = (
+          (modelineResult.modelineStr || '').trim()
+        );
       }
       else {
-        videoModelinesElem.classList.add('hidden');
+        videoModelinesTableElem.classList.add('hidden');
       }
     }
   }

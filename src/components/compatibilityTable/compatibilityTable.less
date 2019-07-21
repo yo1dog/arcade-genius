@@ -79,13 +79,7 @@
   border-collapse: collapse;
   padding: 0.5em;
   
-  th, td {
-    padding-left: 0.5em;
-    padding-right: $padding-left;
-    max-width: 50em;
-  }
-  
-  thead {
+  > thead {
     text-align: left;
     vertical-align: bottom;
   }
@@ -105,10 +99,19 @@
 
 .comp-table__row {
   border: 1px lightgray;
-  border-style: dotted none
+  border-style: dotted none;
 }
 .comp-table__row--odd {}
 .comp-table__row--even {}
+
+.comp-table__row,
+.comp-table__details-row {
+  > th, > td {
+    padding-left: 0.5em;
+    padding-right: $padding-left;
+    max-width: 50em;
+  }
+}
 
 .comp-table__row.comp-table--error {
   .comp-table__row__machine-name,
@@ -209,18 +212,24 @@
       height: 0;
     }
   }
+  
+  &:first-of-type,
+  &:last-of-type {
+    height: 0;
+  }
 }
 
 .comp-table__details-row {
   display: none;
   
-  td {
+  & > td {
     padding: 0;
     margin: 0;
-  }
-  
-  td > div  {
-    margin: 1em;
+    
+    & > div {
+      margin: 1em;
+      position: relative;
+    }
   }
   
   
@@ -300,15 +309,37 @@
   }
 }
 
-.comp-table__details-row__data__modelines {
-  height: 6em;
-  width: 100%;
-  box-sizing: border-box;
-  
+.comp-table__details-row__data__modelines-table {
+  border-collapse: collapse;
   display: none;
+  width: 100%;
+  background-color: white;
+  
   .comp-table__row--data-shown & {
     display: block;
   }
+}
+
+.comp-table__details-row__data__modelines-table {
+  td, th {
+    border: 1px solid black;
+    border-bottom-style: none;
+    padding: 0.25em;
+    box-sizing: border-box;
+  }
+  
+  td {
+    width: 100%;
+    position: relative;
+  }
+  
+  th {
+    text-align: left;
+  }
+}
+
+.comp-table__details-row__data__modelines-table__value {
+  font-family: 'Courier New', Courier, monospace;
 }
 
 .comp-table__details-row__data__json {
