@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "checkJs": true,
+    "target": "es2019",
+    "module": "esnext",
+    "alwaysStrict": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "downlevelIteration": true,
+    "allowJs": true,
+    "outDir": "fubar",
+    "plugins": [
+      {
+        "name": "typescript-tslint-plugin",
+        "jsEnable": true,
+        "ignoreDefinitionFiles": false,
+        "alwaysShowRuleFailuresAsWarnings": false
+      }
+    ]
+  },
+  "include": [
+    "./src/**/*"
+  ]
+}

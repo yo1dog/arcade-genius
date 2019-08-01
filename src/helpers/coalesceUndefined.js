@@ -1,7 +1,7 @@
 /**
  * @template T1
  * @template T2
- * @param {T1} val 
+ * @param {T1 | undefined} val 
  * @param {T2} defaultVal 
  * @returns {T1|T2}
  */

@@ -1,51 +1,53 @@
 import './controlPanelConfigurator.less';
-import cpConfiguratorTemplate from './controlPanelConfigurator.html';
+import cpConfiguratorTemplate              from './controlPanelConfigurator.html';
 import cpConfiguratorButtonClusterTemplate from './controlPanelConfiguratorButtonCluster.html';
-import cpConfiguratorControlSetTemplate from './controlPanelConfiguratorControlSet.html';
-import htmlToBlock from '../../helpers/htmlToBlock';
-import * as state from '../../dataAccess/state';
-import * as controlDefUtil from '../../dataAccess/controlDefUtil';
-import replaceNodeChildren from '../../helpers/replaceNodeChildren';
-import createUUID from '../../helpers/createUUID';
-
-/** @typedef {import('../../dataAccess/controlDefUtil').ControlDef} ControlDef */
+import cpConfiguratorControlSetTemplate    from './controlPanelConfiguratorControlSet.html';
+import createUUID                          from '../../helpers/createUUID';
+import * as stateUtil                      from '../../dataAccess/stateUtil';
+import * as controlDefUtil                 from '../../dataAccess/controlDefUtil';
+import {
+  serializeState,
+  deserializeState
+} from './controlPanelConfiguratorSerializer';
+import {
+  htmlToBlock,
+  selectR,
+  firstChildR,
+  replaceChildren
+} from '../../helpers/htmlUtil';
+import {
+  ICPConfiguration,
+  ICPButtonCluster,
+  ICPControlSet
+} from '../../types/controlPanel';
+import {
+  IControlDef
+} from '../../types/controlDef';
+import {
+  ControlType,
+  controlTypeEnum
+} from '../../types/controlDefEnums';
 
 /**
- * @typedef ControlPanelConfig
- * @property {ControlPanelControl[]} controls
- * @property {ControlPanelButtonCluster[]} buttonClusters
- * @property {ControlPanelControlSet[]} controlSets
+ * @typedef {{
+ *   readonly cpConfig: ICPConfiguration;
+ * }} ICPConfiguratorState
+ *
+ * @typedef {{
+ *   readonly buttonClusterId: string;
+ *   readonly rowElem        : HTMLTableRowElement;
+ *   readonly nameInputElem  : HTMLInputElement;
+ *   readonly countInputElem : HTMLInputElement;
+ * }} IButtonClusterRowDef
  * 
- * @typedef ControlPanelButtonCluster
- * @property {string} id
- * @property {string} name
- * @property {number} numButtons
- * @property {boolean} isOnOppositeScreenSide
- * 
- * @typedef ControlPanelControlSet
- * @property {ControlPanelControl[]} controls
- * @property {ControlPanelButtonCluster} buttonCluster
- * 
- * @typedef ControlPanelControl
- * @property {string} id
- * @property {string} name
- * @property {ControlDef} controlDef
- * @property {number} numButtons
- * @property {boolean} isOnOppositeScreenSide
- * 
- * @typedef ButtonClusterRowDef
- * @property {string} buttonClusterId
- * @property {HTMLTableRowElement} rowElem
- * @property {HTMLInputElement} nameInputElem
- * @property {HTMLInputElement} countInputElem
- * 
- * @typedef ControlSetRowDef
- * @property {string} controlId
- * @property {ControlDef} controlDef
- * @property {HTMLTableRowElement} rowElem
- * @property {HTMLInputElement} controlNameInputElem
- * @property {HTMLInputElement} controlButtonsCountInputElem
- * @property {HTMLSelectElement} buttonClusterSelectElem
+ * @typedef {{
+ *   readonly controlId                   : string;
+ *   readonly controlDef                  : IControlDef;
+ *   readonly rowElem                     : HTMLTableRowElement;
+ *   readonly controlNameInputElem        : HTMLInputElement;
+ *   readonly controlButtonsCountInputElem: HTMLInputElement;
+ *   readonly buttonClusterSelectElem     : HTMLSelectElement;
+ * }} IControlSetRowDef
  */
 
 
@@ -56,18 +58,18 @@ export default class ControlPanelConfigurator {
   constructor(id) {
     this.id = id;
     
-    this.elem = htmlToBlock(cpConfiguratorTemplate).firstElementChild;
-    this.buttonClusterTableBodyElem    = this.elem.querySelector('.control-panel-configurator__button-cluster-table__body');
-    this.addButtonClusterTableBodyElem = this.elem.querySelector('.control-panel-configurator__add-button-cluster-button');
+    this.elem = firstChildR(htmlToBlock(cpConfiguratorTemplate));
+    this.buttonClusterTableBodyElem    = selectR(this.elem, '.control-panel-configurator__button-cluster-table__body');
+    this.addButtonClusterTableBodyElem = selectR(this.elem, '.control-panel-configurator__add-button-cluster-button');
     
-    this.controlSetTableBodyElem = this.elem.querySelector('.control-panel-configurator__control-set-table__body');
-    this.controlTypeSelectElem   = this.elem.querySelector('.control-panel-configurator__control-type-select');
-    this.addControlSetButtonElem = this.elem.querySelector('.control-panel-configurator__add-control-set-button');
-    this.controlDescriptionElem  = this.elem.querySelector('.control-panel-configurator__control-description');
+    this.controlSetTableBodyElem = selectR(this.elem, '.control-panel-configurator__control-set-table__body');
+    this.controlTypeSelectElem   = selectR(this.elem, '.control-panel-configurator__control-type-select', 'select');
+    this.addControlSetButtonElem = selectR(this.elem, '.control-panel-configurator__add-control-set-button');
+    this.controlDescriptionElem  = selectR(this.elem, '.control-panel-configurator__control-description');
     
-    /** @type {ButtonClusterRowDef[]} */
+    /** @type {IButtonClusterRowDef[]} */
     this.buttonClusterRowDefs = [];
-    /** @type {ControlSetRowDef[]} */
+    /** @type {IControlSetRowDef[]} */
     this.controlSetRowDefs = [];
     
     this.addButtonClusterTableBodyElem.addEventListener('click', () => {
@@ -76,41 +78,58 @@ export default class ControlPanelConfigurator {
     });
     
     this.controlTypeSelectElem.addEventListener('change', () => {
-      const controlType = this.controlTypeSelectElem.value;
-      const controlDef = controlDefUtil.getByType(controlType);
+      const controlTypeInput = this.controlTypeSelectElem.value;
+      if (!controlTypeInput) {
+        this.setControlDescription();
+        return;
+      }
       
+      const controlType = controlTypeEnum.get(controlTypeInput);
+      if (!controlType) throw new Error(`Invalid control type selected: '${controlTypeInput}'`);
+      
+      const controlDef = controlDefUtil.getByType(controlType);
       this.setControlDescription(controlDef);
     });
     
     this.addControlSetButtonElem.addEventListener('click', () => {
-      const controlType = this.controlTypeSelectElem.value;
-      if (!controlType) {
+      const controlTypeInput = this.controlTypeSelectElem.value;
+      if (!controlTypeInput) {
         return;
       }
       
+      const controlType = controlTypeEnum.get(controlTypeInput);
+      if (!controlType) {
+        throw new Error(`Invalid control type selected: '${controlTypeInput}'`);
+      }
+      
       const controlDef = controlDefUtil.getByType(controlType);
-      this.addControlSetRow({controlDef});
+      this.addControlSetRow(controlDef);
     });
   }
   
   /**
-   * @param {object} [options] 
-   * @param {string} [options.buttonClusterId] 
-   * @param {string} [options.name] 
-   * @param {number} [options.numButtons] 
-   * @returns {ButtonClusterRowDef}
+   * @param {{
+   *  buttonClusterId?: string; 
+   *  name?           : string; 
+   *  numButtons?     : number; 
+   * }} [options] 
+   * @returns {IButtonClusterRowDef}
    */
-  addButtonClusterRow({buttonClusterId = null, name = null, numButtons = null} = {}) {
-    buttonClusterId = buttonClusterId || createUUID();
+  addButtonClusterRow(options = {}) {
+    const {
+      buttonClusterId = createUUID(),
+      name            = this.getAutoButtonClusterName(),
+      numButtons      = 1
+    } = options;
     
-    const rowElem = htmlToBlock(cpConfiguratorButtonClusterTemplate).firstElementChild;
-    const nameInputElem    = rowElem.querySelector('.control-panel-configurator__button-cluster__name-input');
-    const countInputElem   = rowElem.querySelector('.control-panel-configurator__button-cluster__count-input');
-    const removeButtonElem = rowElem.querySelector('.control-panel-configurator__button-cluster__remove-button');
+    const rowElem = firstChildR(htmlToBlock(cpConfiguratorButtonClusterTemplate), 'tr');
+    const nameInputElem    = selectR(rowElem, '.control-panel-configurator__button-cluster__name-input', 'input');
+    const countInputElem   = selectR(rowElem, '.control-panel-configurator__button-cluster__count-input', 'input');
+    const removeButtonElem = selectR(rowElem, '.control-panel-configurator__button-cluster__remove-button');
     
     rowElem.setAttribute('data-button-cluster-id', buttonClusterId);
-    nameInputElem.value = name || this.getAutoButtonClusterName();
-    countInputElem.value = numButtons || 1;
+    nameInputElem.value = name;
+    countInputElem.value = numButtons.toString();
     
     nameInputElem.addEventListener('change', () => {
       this.updateAllButtonClusterSelectElems();
@@ -122,7 +141,7 @@ export default class ControlPanelConfigurator {
     
     this.buttonClusterTableBodyElem.appendChild(rowElem);
     
-    /** @type {ButtonClusterRowDef} */
+    /** @type {IButtonClusterRowDef} */
     const buttonClusterRowDef = {
       buttonClusterId,
       rowElem,
@@ -134,12 +153,14 @@ export default class ControlPanelConfigurator {
     return buttonClusterRowDef;
   }
   
+  /**
+   * @param {string} buttonClusterId 
+   */
   removeButtonClusterRow(buttonClusterId) {
     const index = this.buttonClusterRowDefs.findIndex(x => x.buttonClusterId === buttonClusterId);
     if (index === -1) return;
     
     const buttonClusterRowDef = this.buttonClusterRowDefs[index];
-    
     buttonClusterRowDef.rowElem.remove();
     
     this.buttonClusterRowDefs.splice(index, 1);
@@ -167,37 +188,42 @@ export default class ControlPanelConfigurator {
   }
   
   /**
-   * @param {object} options 
-   * @param {ControlDef} options.controlDef 
-   * @param {string} [options.controlId] 
-   * @param {string} [options.controlName] 
-   * @param {string} [options.buttonClusterId] 
-   * @returns {ButtonClusterRowDef}
+   * @param {IControlDef} controlDef 
+   * @param {{
+   *   controlId?        : string;
+   *   controlName?      : string;
+   *   numControlButtons?: number;
+   *   buttonClusterId?  : string;
+   * }} [options]
    */
-  addControlSetRow({controlDef, controlId = null, controlName = null, numControlButtons = null, buttonClusterId = null}) {
-    controlId = controlId || createUUID();
-    
-    const rowElem = htmlToBlock(cpConfiguratorControlSetTemplate).firstElementChild;
-    const controlNameInputElem         = rowElem.querySelector('.control-panel-configurator__control-set__control-name-input');
-    const controlDefNameElem           = rowElem.querySelector('.control-panel-configurator__control-set__control-def-name');
-    const controlButtonsDescElem       = rowElem.querySelector('.control-panel-configurator__control-set__control-buttons-desc');
-    const controlButtonsCountElem      = rowElem.querySelector('.control-panel-configurator__control-set__control-buttons-desc__count');
-    const controlButtonsCountInputElem = rowElem.querySelector('.control-panel-configurator__control-set__control-buttons-desc__count-input');
-    const buttonClusterSelectElem      = rowElem.querySelector('.control-panel-configurator__control-set__button-cluster-select');
-    const removeButtonElem             = rowElem.querySelector('.control-panel-configurator__control-set__remove-button');
-    
-    rowElem.setAttribute('data-control-id', controlId);
-    controlNameInputElem.value = controlName || this.getAutoControlName(controlDef);
-    controlDefNameElem.innerText = controlDef.name;
-    
+  addControlSetRow(controlDef, options = {}) {
     const {
       defaultNumControlButtons,
       canEditNumControlButtons
     } = this.getControlButtonsDescOptions(controlDef);
     
-    numControlButtons = typeof numControlButtons === 'number'? numControlButtons : defaultNumControlButtons;
-    controlButtonsCountElem.innerText = numControlButtons;
-    controlButtonsCountInputElem.value = numControlButtons;
+    const {
+      controlId         = createUUID(),
+      controlName       = this.getAutoControlName(controlDef),
+      numControlButtons = defaultNumControlButtons,
+      buttonClusterId
+    } = options;
+    
+    const rowElem = firstChildR(htmlToBlock(cpConfiguratorControlSetTemplate), 'tr');
+    const controlNameInputElem         = selectR(rowElem, '.control-panel-configurator__control-set__control-name-input', 'input');
+    const controlDefNameElem           = selectR(rowElem, '.control-panel-configurator__control-set__control-def-name');
+    const controlButtonsDescElem       = selectR(rowElem, '.control-panel-configurator__control-set__control-buttons-desc');
+    const controlButtonsCountElem      = selectR(rowElem, '.control-panel-configurator__control-set__control-buttons-desc__count');
+    const controlButtonsCountInputElem = selectR(rowElem, '.control-panel-configurator__control-set__control-buttons-desc__count-input', 'input');
+    const buttonClusterSelectElem      = selectR(rowElem, '.control-panel-configurator__control-set__button-cluster-select', 'select');
+    const removeButtonElem             = selectR(rowElem, '.control-panel-configurator__control-set__remove-button');
+    
+    rowElem.setAttribute('data-control-id', controlId);
+    controlNameInputElem.value = controlName;
+    controlDefNameElem.innerText = controlDef.name;
+    
+    controlButtonsCountElem.innerText = numControlButtons.toString();
+    controlButtonsCountInputElem.value = numControlButtons.toString();
     
     if (numControlButtons > 0 || canEditNumControlButtons) {
       controlButtonsDescElem.classList.remove('hidden');
@@ -232,7 +258,7 @@ export default class ControlPanelConfigurator {
     
     this.controlSetTableBodyElem.appendChild(rowElem);
     
-    /** @type {ControlSetRowDef} */
+    /** @type {IControlSetRowDef} */
     const controlSetRowDef = {
       controlId,
       controlDef,
@@ -254,14 +280,13 @@ export default class ControlPanelConfigurator {
     if (index === -1) return;
     
     const controlSetRowDef = this.controlSetRowDefs[index];
-    
     controlSetRowDef.rowElem.remove();
     
     this.controlSetRowDefs.splice(index, 1);
   }
   
   /**
-   * @param {ControlDef} controlDef 
+   * @param {IControlDef} controlDef 
    * @returns {string}
    */
   getAutoControlName(controlDef) {
@@ -283,50 +308,53 @@ export default class ControlPanelConfigurator {
   }
   
   /**
-   * @param {ControlDef} controlDef 
-   * @returns {{defaultNumControlButtons: number, canEditNumControlButtons: boolean}}
+   * @param {IControlDef} controlDef 
+   * @returns {{
+   *   defaultNumControlButtons: number;
+   *   canEditNumControlButtons: boolean;
+   * }}
    */
   getControlButtonsDescOptions(controlDef) {
     switch (controlDef.type) {
-      case 'joy-2way-vertical-trigger':
-      case 'joy-4way-trigger':
-      case 'joy-8way-trigger':
+      case controlTypeEnum.JOY_2WAY_VERTICAL_TRIGGER:
+      case controlTypeEnum.JOY_4WAY_TRIGGER:
+      case controlTypeEnum.JOY_8WAY_TRIGGER:
         return {
           defaultNumControlButtons: 1,
           canEditNumControlButtons: true
         };
       
-      case 'joy-8way-topfire':
+      case controlTypeEnum.JOY_8WAY_TOPFIRE:
         return {
           defaultNumControlButtons: 1,
           canEditNumControlButtons: false
         };
       
-      case 'joy-analog-flightstick':
+      case controlTypeEnum.JOY_ANALOG_FLIGHTSTICK:
         return {
           defaultNumControlButtons: 3,
           canEditNumControlButtons: true
         };
       
-      case 'joy-analog-yoke':
-      case 'throttle': 
+      case controlTypeEnum.JOY_ANALOG_YOKE:
+      case controlTypeEnum.THROTTLE:
         return {
           defaultNumControlButtons: 2,
           canEditNumControlButtons: true
         };
       
-      case 'steeringwheel-360':
-      case 'steeringwheel-270':
-      case 'shifter-highlow': 
-      case 'shifter-updown':
-      case 'shifter-4gear':
+      case controlTypeEnum.STEERINGWHEEL_360:
+      case controlTypeEnum.STEERINGWHEEL_270:
+      case controlTypeEnum.SHIFTER_HIGHLOW:
+      case controlTypeEnum.SHIFTER_UPDOWN:
+      case controlTypeEnum.SHIFTER_4GEAR:
         return {
           defaultNumControlButtons: 0,
           canEditNumControlButtons: true
         };
       
-      case 'lightgun':
-      case 'lightgun-analog':
+      case controlTypeEnum.LIGHTGUN:
+      case controlTypeEnum.LIGHTGUN_ANALOG:
         return {
           defaultNumControlButtons: 1,
           canEditNumControlButtons: true
@@ -364,7 +392,7 @@ export default class ControlPanelConfigurator {
     const prevValue = selectElem.value;
     let prevValueExists = false;
     
-    replaceNodeChildren(selectElem);
+    replaceChildren(selectElem);
     
     const noneOptionElem = document.createElement('option');
     noneOptionElem.value = '';
@@ -387,7 +415,7 @@ export default class ControlPanelConfigurator {
   }
   
   populateControlTypeSelect() {
-    for (const [categoryTitle, controlTypes] of Object.entries(getCategoryControlTypeMap())) {
+    for (const [categoryTitle, controlTypes] of this.getCategoryControlTypeMap()) {
       const optgroupElem = document.createElement('optgroup');
       optgroupElem.label = categoryTitle;
       
@@ -395,7 +423,7 @@ export default class ControlPanelConfigurator {
         const controlDef = controlDefUtil.getByType(controlType);
         
         const optionElem = document.createElement('option');
-        optionElem.value = controlDef.type;
+        optionElem.value = controlDef.type.val;
         optionElem.innerText = controlDef.name;
         
         optgroupElem.appendChild(optionElem);
@@ -406,10 +434,10 @@ export default class ControlPanelConfigurator {
   }
   
   /**
-   * @param {ControlDef} controlDef 
+   * @param {IControlDef} [controlDef] 
    */
   setControlDescription(controlDef) {
-    replaceNodeChildren(this.controlDescriptionElem);
+    replaceChildren(this.controlDescriptionElem);
     
     if (!controlDef) {
       return;
@@ -418,10 +446,11 @@ export default class ControlPanelConfigurator {
     const desc = controlDef.description;
     
     const regexp = /https?:\/\/\S+/g;
-    /** @type {RegExpExecArray} */
+    /** @type {RegExpExecArray | null} */
     let match = null;
     let index = 0;
     
+    // tslint:disable-next-line no-conditional-assignment
     while ((match = regexp.exec(desc))) {
       this.controlDescriptionElem.appendChild(document.createTextNode(
         desc.substring(index, match.index)
@@ -445,10 +474,12 @@ export default class ControlPanelConfigurator {
   async init() {
     await controlDefUtil.init();
     
-    const cpConfigState = this.loadState();
+    const state = this.loadState();
     
-    if (cpConfigState) {
-      for (const buttonCluster of cpConfigState.buttonClusters || []) {
+    if (state) {
+      const {cpConfig} = state;
+      
+      for (const buttonCluster of cpConfig.buttonClusters) {
         this.addButtonClusterRow({
           buttonClusterId: buttonCluster.id,
           name           : buttonCluster.name,
@@ -456,14 +487,16 @@ export default class ControlPanelConfigurator {
         });
       }
       
-      for (const controlSet of cpConfigState.controlSets || []) {
-        this.addControlSetRow({
-          controlId        : controlSet.controls[0].id,
-          controlName      : controlSet.controls[0].name,
-          controlDef       : controlSet.controls[0].controlDef,
-          numControlButtons: controlSet.controls[0].numButtons,
-          buttonClusterId  : controlSet.buttonCluster? controlSet.buttonCluster.id : null
-        });
+      for (const controlSet of cpConfig.controlSets) {
+        this.addControlSetRow(
+          controlSet.controls[0].controlDef,
+          {
+            controlId        : controlSet.controls[0].id,
+            controlName      : controlSet.controls[0].name,
+            numControlButtons: controlSet.controls[0].numButtons,
+            buttonClusterId  : controlSet.buttonCluster? controlSet.buttonCluster.id : undefined
+          }
+        );
       }
     }
     
@@ -474,58 +507,64 @@ export default class ControlPanelConfigurator {
     this.updateAllButtonClusterSelectElems();
     
     if (this.controlSetRowDefs.length === 0) {
-      this.addControlSetRow({
-        controlDef: controlDefUtil.getByType('joy-8way'),
-        buttonClusterId: this.buttonClusterRowDefs[0].buttonClusterId
-      });
+      this.addControlSetRow(
+        controlDefUtil.getByType(controlTypeEnum.JOY_8WAY),
+        {buttonClusterId: this.buttonClusterRowDefs[0].buttonClusterId}
+      );
     }
     
     this.populateControlTypeSelect();
   }
   
   /**
-   * @returns {ControlPanelConfig}
+   * @returns {ICPConfiguration}
    */
   getControlPanelConfig() {
-    /** @type {ControlPanelButtonCluster[]} */
-    const buttonClusters = this.buttonClusterRowDefs.map(buttonClusterRowDef => ({
-      id  : buttonClusterRowDef.buttonClusterId,
-      name: buttonClusterRowDef.nameInputElem.value.trim(),
-      numButtons: parseInt(buttonClusterRowDef.countInputElem.value, 10) || 0,
-      isOnOppositeScreenSide: false
-    }));
-    
-    /** @type {ControlPanelControlSet[]} */
-    const controlSets = this.controlSetRowDefs.map(controlSetRowDef => ({
-      controls: [{
-        id        : controlSetRowDef.controlSetId,
-        name      : controlSetRowDef.controlNameInputElem.value.trim(),
-        controlDef: controlSetRowDef.controlDef,
-        numButtons: parseInt(controlSetRowDef.controlButtonsCountInputElem.value, 10) || 0,
+    const buttonClusters = this.buttonClusterRowDefs.map(buttonClusterRowDef => {
+      /** @type {ICPButtonCluster} */
+      const buttonCluster = {
+        id  : buttonClusterRowDef.buttonClusterId,
+        name: buttonClusterRowDef.nameInputElem.value.trim(),
+        numButtons: parseInt(buttonClusterRowDef.countInputElem.value, 10) || 0,
         isOnOppositeScreenSide: false
-      }],
-      buttonCluster: buttonClusters.find(x => x.id === controlSetRowDef.buttonClusterSelectElem.value) || null
-    }));
+      };
+      return buttonCluster;
+    });
     
-    // assume each control set row defines physical controls
+    const controlSets = this.controlSetRowDefs.map(controlSetRowDef => {
+      /** @type {ICPControlSet} */
+      const controlSet = {
+        controls: [{
+          id        : controlSetRowDef.controlId,
+          name      : controlSetRowDef.controlNameInputElem.value.trim(),
+          controlDef: controlSetRowDef.controlDef,
+          numButtons: parseInt(controlSetRowDef.controlButtonsCountInputElem.value, 10) || 0,
+          isOnOppositeScreenSide: false
+        }],
+        buttonCluster: buttonClusters.find(x => x.id === controlSetRowDef.buttonClusterSelectElem.value)
+      };
+      return controlSet;
+    });
+    
+    // assume each control set row defines a physical control
     // 
     // this may seem backwards as you would assume you define the physical
     // controls first and then create control sets based on those. However,
-    // we do it this way to keep the UI simple
+    // we do it this way for now to keep the UI simple
     
-    /** @type {ControlPanelControl[]} */
     const controls = (
       controlSets
       .map(x => x.controls)
       .reduce((p, c) => p.concat(c), [])
     );
     
-    /** @type {ControlPanelConfig} */
-    return {
+    /** @type {ICPConfiguration} */
+    const controlPanelConfig = {
       controls,
       buttonClusters,
       controlSets
     };
+    return controlPanelConfig;
   }
   
   /**
@@ -536,129 +575,103 @@ export default class ControlPanelConfigurator {
   }
   
   saveState() {
-    const cpConfig = this.getControlPanelConfig();
-    
-    // serialize
-    const sCPConfigState = {
-      buttonClusters: cpConfig.buttonClusters,
-      sControlSets: cpConfig.controlSets.map(controlSet => ({
-        sControls: controlSet.controls.map(control => ({
-          id                    : control.id,
-          name                  : control.name,
-          type                  : control.controlDef.type,
-          numButtons            : control.numButtons,
-          isOnOppositeScreenSide: control.isOnOppositeScreenSide
-        })),
-        buttonClusterId: controlSet.buttonCluster? controlSet.buttonCluster.id : null
-      })),
+    /** @type {ICPConfiguratorState} */
+    const state = {
+      cpConfig: this.getControlPanelConfig()
     };
     
-    state.set(this.getStateKey(), sCPConfigState);
+    const sState = serializeState(state);
+    stateUtil.set(this.getStateKey(), sState);
   }
   
+  /**
+   * @returns {ICPConfiguratorState | undefined}
+   */
   loadState() {
-    // de-serialize
-    const sCPConfigState = state.get(this.getStateKey());
-    if (!sCPConfigState) return null;
+    const sState = stateUtil.get(this.getStateKey());
+    if (!sState) return;
     
-    /** @type {ControlPanelButtonCluster[]} */
-    const buttonClusters = sCPConfigState.buttonClusters;
-    
-    /** @type {ControlPanelControlSet[]} */
-    const controlSets = (
-      sCPConfigState.sControlSets
-      .map(sControlSet => ({
-        controls: sControlSet.sControls.map(sControl => ({
-          id                    : sControl.id,
-          name                  : sControl.name,
-          controlDef            : controlDefUtil.getByType(sControl.type),
-          numButtons            : sControl.numButtons,
-          isOnOppositeScreenSide: sControl.isOnOppositeScreenSide
-        })),
-        buttonCluster: buttonClusters.find(x => x.id === sControlSet.buttonClusterId)
-      }))
-      .filter(controlSet =>
-        controlSet.controls[0] &&
-        controlSet.controls[0].controlDef
-      )
-    );
-    
-    const cpConfigState = {
-      buttonClusters,
-      controlSets
-    };
-    return cpConfigState;
+    try {
+      return deserializeState(sState, 'sCPConfiguratorState');
+    }
+    catch (err) {
+      console.error(`Error deserializing Control Panel Configurator '${this.id}' state:`);
+      console.error(err);
+    }
   }
   
   clearState() {
-    state.remove(this.getStateKey());
+    stateUtil.remove(this.getStateKey());
   }
-}
-
-function getCategoryControlTypeMap() {
-  return {
-    'Popular': [
-      'joy-4way',
-      'joy-8way',
-      'joy-analog',
-      'trackball',
-      'spinner',
-      'lightgun',
-    ],
-    'Joysticks': [
-      'joy-2way-horizontal',
-      'joy-2way-vertical',
-      //'joy-2way-vertical-trigger',
-      'joy-4way',
-      'joy-4way-diagonal',
-      //'joy-4way-trigger',
-      'joy-8way',
-      'joy-8way-trigger',
-      'joy-8way-topfire',
-      //'joy-8way-rotary-optical',
-      //'joy-8way-rotary-mechanical',
-      'joy-49way',
-      'joy-analog',
-      'joy-analog-flightstick',
-    ],
-    'Trackball/Spinner': [
-      'trackball',
-      //'roller-horizontal',
-      //'roller-vertical',
-      'spinner',
-      'spinner-pushpull',
-      'paddle',
-    ],
-    'Shooting': [
-      'lightgun',
-      'lightgun-analog',
-    ],
-    'Driving': [
-      'steeringwheel-360',
-      'steeringwheel-270',
-      'pedal-digital',
-      'pedal-analog',
-      'shifter-highlow',
-      'shifter-updown',
-      'shifter-4gear',
-    ],
-    'Flying': [
-      'joy-analog-flightstick',
-      //'joy-analog-yoke',
-      //'throttle',
-    ],
-    'Other': [
-      'directionalbuttons-2way-horizontal',
-      'directionalbuttons-2way-vertical',
-      'directionalbuttons-4way',
-      //'handlebars',
-      //'turntable',
-      //'baseballpitcher',
-      //'battercontrol',
-      //'footballkicker',
-      //'triviabuttons',
-      //'mahjongcp',
-      //'misc',
-    ]
-  };
+  
+  /**
+   * @returns {Map<string, ControlType[]>}
+   */
+  getCategoryControlTypeMap() {
+    return new Map(Object.entries({
+      'Popular': [
+        controlTypeEnum.JOY_4WAY,
+        controlTypeEnum.JOY_8WAY,
+        controlTypeEnum.JOY_ANALOG,
+        controlTypeEnum.TRACKBALL,
+        controlTypeEnum.SPINNER,
+        controlTypeEnum.LIGHTGUN,
+      ],
+      'Joysticks': [
+        controlTypeEnum.JOY_2WAY_HORIZONTAL,
+        controlTypeEnum.JOY_2WAY_VERTICAL,
+        //controlTypeEnum.JOY_2WAY_VERTICAL_TRIGGER,
+        controlTypeEnum.JOY_4WAY,
+        controlTypeEnum.JOY_4WAY_DIAGONAL,
+        //controlTypeEnum.JOY_4WAY_TRIGGER,
+        controlTypeEnum.JOY_8WAY,
+        controlTypeEnum.JOY_8WAY_TRIGGER,
+        controlTypeEnum.JOY_8WAY_TOPFIRE,
+        //controlTypeEnum.JOY_8WAY_ROTARY_OPTICAL,
+        //controlTypeEnum.JOY_8WAY_ROTARY_MECHANICAL,
+        controlTypeEnum.JOY_49WAY,
+        controlTypeEnum.JOY_ANALOG,
+        controlTypeEnum.JOY_ANALOG_FLIGHTSTICK,
+      ],
+      'Trackball/Spinner': [
+        controlTypeEnum.TRACKBALL,
+        //controlTypeEnum.ROLLER_HORIZONTAL,
+        //controlTypeEnum.ROLLER_VERTICAL,
+        controlTypeEnum.SPINNER,
+        controlTypeEnum.SPINNER_PUSHPULL,
+        controlTypeEnum.PADDLE,
+      ],
+      'Shooting': [
+        controlTypeEnum.LIGHTGUN,
+        controlTypeEnum.LIGHTGUN_ANALOG,
+      ],
+      'Driving': [
+        controlTypeEnum.STEERINGWHEEL_360,
+        controlTypeEnum.STEERINGWHEEL_270,
+        controlTypeEnum.PEDAL_DIGITAL,
+        controlTypeEnum.PEDAL_ANALOG,
+        controlTypeEnum.SHIFTER_HIGHLOW,
+        controlTypeEnum.SHIFTER_UPDOWN,
+        controlTypeEnum.SHIFTER_4GEAR,
+      ],
+      'Flying': [
+        controlTypeEnum.JOY_ANALOG_FLIGHTSTICK,
+        //controlTypeEnum.JOY_ANALOG_YOKE,
+        //controlTypeEnum.THROTTLE,
+      ],
+      'Other': [
+        controlTypeEnum.DIRECTIONALBUTTONS_2WAY_HORIZONTAL,
+        controlTypeEnum.DIRECTIONALBUTTONS_2WAY_VERTICAL,
+        controlTypeEnum.DIRECTIONALBUTTONS_4WAY,
+        //controlTypeEnum.HANDLEBARS,
+        //controlTypeEnum.TURNTABLE,
+        //controlTypeEnum.BASEBALLPITCHER,
+        //controlTypeEnum.BATTERCONTROL,
+        //controlTypeEnum.FOOTBALLKICKER,
+        //controlTypeEnum.TRIVIABUTTONS,
+        //controlTypeEnum.MAHJONGCP,
+        //controlTypeEnum.MISC,
+      ]
+    }));
+  }
 }

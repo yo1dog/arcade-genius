@@ -1,15 +1,20 @@
 import './index.less';
-import npmPackage from '../../package.json';
-import * as mameListUtil from '../dataAccess/mameListUtil';
-import * as controlsDatUtil from '../dataAccess/controlsDatUtil';
-import * as controlDefUtil from '../dataAccess/controlDefUtil';
-import * as modelineCaculator from '../dataAccess/modelineCalculator';
+import * as preload             from './preload';
+import * as mameUtil            from '../dataAccess/mameUtil';
+import * as controlsDatUtil     from '../dataAccess/controlsDatUtil';
+import * as controlDefUtil      from '../dataAccess/controlDefUtil';
+import * as modelineCaculator   from '../dataAccess/modelineCalculator';
 import MonitorConfiguratorGroup from '../components/monitorConfiguratorGroup/monitorConfiguratorGroup';
 import ControlPanelConfigurator from '../components/controlPanelConfigurator/controlPanelConfigurator';
-import MachineNameList from '../components/machineNameList/machineNameList';
-import CompatibilityTable from '../components/compatibilityTable/compatibilityTable';
-import * as compChecker from '../compatibilityChecker';
-import replaceNodeChildren from '../helpers/replaceNodeChildren';
+import MachineNameList          from '../components/machineNameList/machineNameList';
+import CompatibilityTable       from '../components/compatibilityTable/compatibilityTable';
+import * as compUtil            from '../compatibilityUtil';
+import npmPackage               from '../../package.json';
+import {IJSONObject}            from '../types/json';
+import {
+  replaceChildren,
+  selectR
+} from '../helpers/htmlUtil';
 
 
 if (document.readyState === 'loading') {
@@ -21,7 +26,7 @@ else {
 
 async function onLoad() {
   // pre initialize data
-  mameListUtil.init();
+  mameUtil.init();
   controlsDatUtil.init();
   controlDefUtil.init();
   modelineCaculator.init();
@@ -52,7 +57,7 @@ async function onLoad() {
       const monitorConfigTitles = [];
       const modelineConfigs = [];
       for (let i = 0; i < monitorConfiguratorGroup.items.length; ++i) {
-        monitorConfigTitles[i] = monitorConfiguratorGroup.items[i].title;
+        monitorConfigTitles[i] = monitorConfiguratorGroup.items[i].getTitle();
         modelineConfigs    [i] = monitorConfiguratorGroup.items[i].configurator.getModelineConfig();
       }
       
@@ -61,17 +66,17 @@ async function onLoad() {
       
       // check the compatibility of each machine name input
       await Promise.all([
-        mameListUtil.init(),
+        mameUtil.init(),
         controlsDatUtil.init(),
         modelineCaculator.init()
       ]);
-      const machineComps = await compChecker.checkMachineBulk(machineNameInputs, modelineConfigs, cpConfig);
+      const machineComps = await compUtil.checkMachineBulk(machineNameInputs, modelineConfigs, cpConfig);
       
       // update the compatibility table
       compTable.update(machineComps, monitorConfigTitles);
     }
     finally {
-      refreshIsPending = false; // eslint-disable-line require-atomic-updates
+      refreshIsPending = false;
       compTable.enableRefresh();
     }
   });
@@ -83,31 +88,32 @@ async function onLoad() {
     compTable.init()
   ]);
   
-  replaceNodeChildren(
+  replaceChildren(
     document.querySelector('.machine-name-list-container'),
     machineNameList.elem
   );
-  replaceNodeChildren(
+  replaceChildren(
     document.querySelector('.monitor-configurator-group-container'),
     monitorConfiguratorGroup.elem
   );
-  replaceNodeChildren(
+  replaceChildren(
     document.querySelector('.control-panel-configurator-container'),
     controlPanelConfigurator.elem
   );
-  replaceNodeChildren(
+  replaceChildren(
     document.querySelector('.comp-table-container'),
     compTable.elem
   );
   
-  window.doneLoading();
+  preload.doneLoading();
   
   compTable.refresh();
 }
 
 async function populateMetadata() {
-  const metadataTextElem = document.querySelector('.metadata__text');
+  const metadataTextElem = selectR(document, '.metadata__text', 'textarea');
   
+  /** @type {IJSONObject} */
   const metadata = {
     mameGenius: {
       version: npmPackage.version
@@ -115,12 +121,12 @@ async function populateMetadata() {
   };
   metadataTextElem.value = JSON.stringify(metadata, null, 2);
   
-  await mameListUtil.init();
+  await mameUtil.init();
   await controlsDatUtil.init();
   
-  metadata.mameList = {
-    build: mameListUtil.get().build,
-    debug: mameListUtil.get().debug
+  metadata.mame = {
+    build: mameUtil.getList().build,
+    debug: mameUtil.getList().debug
   };
   metadata.controlsDat = {
     ...controlsDatUtil.get().meta

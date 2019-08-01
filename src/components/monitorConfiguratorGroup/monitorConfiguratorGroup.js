@@ -1,14 +1,24 @@
 import './monitorConfiguratorGroup.less';
-import monitorConfiguratorGroupTemplate from './monitorConfiguratorGroup.html';
+import {EventEmitter}                       from 'events';
+import monitorConfiguratorGroupTemplate     from './monitorConfiguratorGroup.html';
 import monitorConfiguratorGroupItemTemplate from './monitorConfiguratorGroupItem.html';
-import htmlToBlock from '../../helpers/htmlToBlock';
-import MonitorConfigurator from '../monitorConfigurator/monitorConfigurator';
-import {EventEmitter} from 'events';
-import * as state from '../../dataAccess/state';
-import createUUID from '../../helpers/createUUID';
+import MonitorConfigurator                  from '../monitorConfigurator/monitorConfigurator';
+import createUUID                           from '../../helpers/createUUID';
+import * as stateUtil                       from '../../dataAccess/stateUtil';
+import {
+  serializeState,
+  deserializeState
+} from './monitorConfiguratorGroupSerializer';
+import {
+  htmlToBlock,
+  selectR,
+  firstChildR
+} from '../../helpers/htmlUtil';
 
 /**
- * @typedef {import('../../dataAccess/modelineCalculator').ModelineConfig} ModelineConfig
+ * @typedef {{
+ *   readonly configuratorIds: string[]
+ * }} IMonitorConfiguratorGroupState
  */
 
 
@@ -17,11 +27,9 @@ export default class MonitorConfiguratorGroup {
     /** @type {MonitorConfiguratorGroupItem[]} */
     this.items = [];
     
-    this.curIdIndex = 0;
-    
-    this.elem = htmlToBlock(monitorConfiguratorGroupTemplate).firstElementChild;
-    this.itemContainerElem = this.elem.querySelector('.monitor-configurator-group__item-container');
-    this.addItemButton = this.elem.querySelector('.monitor-configurator-group__add-item-button');
+    this.elem = firstChildR(htmlToBlock(monitorConfiguratorGroupTemplate));
+    this.itemContainerElem = selectR(this.elem, '.monitor-configurator-group__item-container');
+    this.addItemButton     = selectR(this.elem, '.monitor-configurator-group__add-item-button');
     
     this.addItemButton.addEventListener('click', () => {
       this.addConfigurator();
@@ -29,25 +37,28 @@ export default class MonitorConfiguratorGroup {
   }
   
   async init() {
-    const configuratorIds = this.loadState();
-    for (const configuratorId of configuratorIds) {
-      this.addConfigurator(configuratorId);
+    const state = this.loadState();
+    if (state) {
+      for (const configuratorId of state.configuratorIds) {
+        this.addConfigurator(configuratorId);
+      }
     }
     
     if (this.items.length === 0) {
       this.addConfigurator();
     }
+    
+    return Promise.resolve();
   }
   
   /**
    * @param {string} [configuratorId]
-   * @returns {MonitorConfiguratorGroupItem}
    */
-  addConfigurator(configuratorId) {
+  addConfigurator(configuratorId = createUUID()) {
     const itemIndex = this.items.length;
     const itemTitle = this.createTitleFromIndex(itemIndex);
     
-    const configurator = new MonitorConfigurator(configuratorId || createUUID());
+    const configurator = new MonitorConfigurator(configuratorId);
     configurator.init();
     
     const item = new MonitorConfiguratorGroupItem(itemTitle, configurator);
@@ -70,12 +81,11 @@ export default class MonitorConfiguratorGroup {
   }
   
   /**
-   * @param {string} id 
-   * @returns {MonitorConfiguratorGroupItem}
+   * @param {string} configuratorId 
    */
-  removeConfigurator(id) {
+  removeConfigurator(configuratorId) {
     // find the item
-    const itemIndex = this.items.findIndex(x => x.configurator.id === id);
+    const itemIndex = this.items.findIndex(x => x.configurator.id === configuratorId);
     if (itemIndex === -1) {
       return null;
     }
@@ -106,7 +116,6 @@ export default class MonitorConfiguratorGroup {
   
   /**
    * @param {number} index 
-   * @returns {string}
    */
   createTitleFromIndex(index) {
     // A,B,C...Z,A2,B2,C2...Z2,A3,B3,C3...
@@ -121,16 +130,18 @@ export default class MonitorConfiguratorGroup {
     return letter + prefix;
   }
   
-  /**
-   * @returns {string}
-   */
   getStateKey() {
     return 'monitorConfiguratorGroupItemIds';
   }
   
   saveState() {
-    const configuratorIds = this.items.map(x => x.configurator.id);
-    state.set(this.getStateKey(), configuratorIds);
+    /** @type {IMonitorConfiguratorGroupState} */
+    const state = {
+      configuratorIds: this.items.map(x => x.configurator.id)
+    };
+    
+    const sState = serializeState(state);
+    stateUtil.set(this.getStateKey(), sState);
     
     for (const item of this.items) {
       item.configurator.saveState();
@@ -138,36 +149,40 @@ export default class MonitorConfiguratorGroup {
   }
   
   /**
-   * @returns {string[]}
+   * @returns {IMonitorConfiguratorGroupState | undefined}
    */
   loadState() {
-    let configuratorIds = null;
-    try {
-      configuratorIds = state.get(this.getStateKey());
-    } catch(err) {/*noop*/}
+    const sState = stateUtil.get(this.getStateKey());
+    if (!sState) return;
     
-    return configuratorIds || [];
+    try {
+      return deserializeState(sState, 'sMonitorConfiguratorGroupState');
+    }
+    catch (err) {
+      console.error(`Error deserializing Monitor Configurator Group state:`);
+      console.error(err);
+    }
   }
 }
 
+
 class MonitorConfiguratorGroupItem extends EventEmitter {
   /**
-   * @param {String} title 
+   * @param {string} title 
    * @param {MonitorConfigurator} configurator 
    */
   constructor(title, configurator) {
     super();
     
-    this.title = '';
     this.configurator = configurator;
     
-    this.elem = htmlToBlock(monitorConfiguratorGroupItemTemplate).firstElementChild;
-    this.titleElem                 = this.elem.querySelector('.monitor-configurator-group__item__title');
-    this.configuratorContainerElem = this.elem.querySelector('.monitor-configurator-group__item__configurator-container');
-    this.removeButtonElem          = this.elem.querySelector('.monitor-configurator-group__item__remove-button');
+    this.elem = firstChildR(htmlToBlock(monitorConfiguratorGroupItemTemplate));
+    this.titleElem                 = selectR(this.elem, '.monitor-configurator-group__item__title');
+    this.configuratorContainerElem = selectR(this.elem, '.monitor-configurator-group__item__configurator-container');
+    this.removeButtonElem          = selectR(this.elem, '.monitor-configurator-group__item__remove-button');
     
+    this.title = '';
     this.setTitle(title);
-    
     this.configuratorContainerElem.appendChild(configurator.elem);
     
     this.removeButtonElem.addEventListener('click', () => {
@@ -185,6 +200,10 @@ class MonitorConfiguratorGroupItem extends EventEmitter {
   setTitle(title) {
     this.title = title;
     this.titleElem.innerText = title;
+  }
+  
+  getTitle() {
+    return this.title;
   }
   
   hideRemoveButton() {

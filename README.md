@@ -18,7 +18,9 @@ npm start
 
 ```bash
 make wasm # emscripten switchres build 
-npm run-script build
+npm run lint
+npm run lint-node
+npm run build
 cp dist/* ...
 ```
 

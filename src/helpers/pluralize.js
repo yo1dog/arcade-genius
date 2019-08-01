@@ -11,7 +11,7 @@ export default function pluralize(num, singularVal, pluralVal, separatorStr) {
   const val = num === 1? singularVal : pluralVal;
   
   if (typeof separatorStr === 'string') {
-    return num + separatorStr + val;
+    return String(num) + separatorStr + String(val);
   }
   
   return val;

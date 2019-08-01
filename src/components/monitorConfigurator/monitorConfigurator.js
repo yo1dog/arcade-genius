@@ -1,26 +1,40 @@
 import './monitorConfigurator.less';
 import monitorConfiguratorTemplate from './monitorConfigurator.html';
-import htmlToBlock from '../../helpers/htmlToBlock';
-import coalesceUndefined from '../../helpers/coalesceUndefined';
-import * as state from '../../dataAccess/state';
+import * as stateUtil              from '../../dataAccess/stateUtil';
+import {
+  serializeState,
+  deserializeState
+} from './monitorConfiguratorSerializer';
+import {
+  htmlToBlock,
+  selectR,
+  firstChildR
+} from '../../helpers/htmlUtil';
+import {
+  IModelineConfig
+} from '../../types/modeline';
+import {
+  orientationEnum
+} from '../../types/commonEnums';
 
-/** @typedef {import('../../dataAccess/modelineCalculator').ModelineConfig} ModelineConfig */
+/**
+ * @typedef {{
+ *   readonly modelineConfig: IModelineConfig;
+ * }} IMonitorConfiguratorState
+ */
 
 
 export default class MonitorConfigurator {
-  /**
-   * @param {string} id 
-   */
+  /** @param {string} id */
   constructor(id) {
     this.id = id;
-    
-    this.elem = htmlToBlock(monitorConfiguratorTemplate).firstElementChild;
-    this.presetInputElem             = this.elem.querySelector('.monitor-configurator__preset-input');
-    this.orientationInputElem        = this.elem.querySelector('.monitor-configurator__orientation-input');
-    this.rangesRowElem               = this.elem.querySelector('.monitor-configurator__ranges-row');
-    this.rangesInputElem             = this.elem.querySelector('.monitor-configurator__ranges-input');
-    this.allowInterlacedCheckboxElem = this.elem.querySelector('.monitor-configurator__allow-interlaced-checkbox');
-    this.allowDoublescanCheckboxElem = this.elem.querySelector('.monitor-configurator__allow-doublescan-checkbox');
+    this.elem = firstChildR(htmlToBlock(monitorConfiguratorTemplate));
+    this.presetInputElem             = selectR(this.elem, '.monitor-configurator__preset-input', 'select');
+    this.orientationInputElem        = selectR(this.elem, '.monitor-configurator__orientation-input', 'select');
+    this.rangesRowElem               = selectR(this.elem, '.monitor-configurator__ranges-row');
+    this.rangesInputElem             = selectR(this.elem, '.monitor-configurator__ranges-input', 'textarea');
+    this.allowInterlacedCheckboxElem = selectR(this.elem, '.monitor-configurator__allow-interlaced-checkbox', 'input');
+    this.allowDoublescanCheckboxElem = selectR(this.elem, '.monitor-configurator__allow-doublescan-checkbox', 'input');
     
     this.presetInputElem.addEventListener('change', () => {
       this.updateRangesVisibility();
@@ -28,24 +42,30 @@ export default class MonitorConfigurator {
   }
   
   async init() {
-    const modelineConfig = this.loadState();
-    if (modelineConfig) {
+    const state = this.loadState();
+    if (state) {
+      const {modelineConfig} = state;
+      
       this.presetInputElem            .value   = modelineConfig.preset;
-      this.orientationInputElem       .value   = modelineConfig.orientation;
-      this.rangesInputElem            .value   = (modelineConfig.ranges || []).join('\n');
-      this.allowInterlacedCheckboxElem.checked = coalesceUndefined(modelineConfig.allowInterlaced, false);
-      this.allowDoublescanCheckboxElem.checked = coalesceUndefined(modelineConfig.allowDoublescan, true);
+      this.orientationInputElem       .value   = modelineConfig.orientation.val;
+      this.rangesInputElem            .value   = modelineConfig.ranges.join('\n');
+      this.allowInterlacedCheckboxElem.checked = modelineConfig.allowInterlaced;
+      this.allowDoublescanCheckboxElem.checked = modelineConfig.allowDoublescan;
     }
     this.updateRangesVisibility();
+    return Promise.resolve();
   }
   
-  /**
-   * @returns {ModelineConfig}
-   */
+  /** @returns {IModelineConfig} */
   getModelineConfig() {
-    const preset      = this.presetInputElem     .value;
-    const orientation = this.orientationInputElem.value;
-    const ranges = preset !== 'custom'? [] : (
+    const presetInput = this.presetInputElem.value;
+    const preset = presetInput;
+    
+    const orientationInput = this.orientationInputElem.value;
+    const orientation = orientationEnum.get(orientationInput);
+    if (!orientation) throw new Error(`Invalid orientation: '${orientationInput}'`);
+    
+    const ranges = presetInput !== 'custom'? [] : (
       this.rangesInputElem.value
       .split('\n')
       .map(line => line.trim())
@@ -54,38 +74,52 @@ export default class MonitorConfigurator {
     const allowInterlaced = this.allowInterlacedCheckboxElem.checked;
     const allowDoublescan = this.allowDoublescanCheckboxElem.checked;
     
-    return {
+    /** @type {IModelineConfig} */
+    const modelineConfig = {
       preset,
       orientation,
       ranges,
       allowInterlaced,
       allowDoublescan
     };
+    return modelineConfig;
   }
   
   updateRangesVisibility() {
     this.rangesRowElem.classList.toggle('hidden', this.presetInputElem.value !== 'custom');
   }
   
-  /**
-   * @returns {string}
-   */
   getStateKey() {
     return `monitorConfiguratorModelineConfig-${this.id}`;
   }
   
   saveState() {
-    state.set(this.getStateKey(), this.getModelineConfig());
+    /** @type {IMonitorConfiguratorState} */
+    const state = {
+      modelineConfig: this.getModelineConfig()
+    };
+    
+    const sState = serializeState(state);
+    stateUtil.set(this.getStateKey(), sState);
   }
   
   /**
-   * @returns {ModelineConfig}
+   * @returns {IMonitorConfiguratorState | undefined}
    */
   loadState() {
-    return state.get(this.getStateKey());
+    const sState = stateUtil.get(this.getStateKey());
+    if (!sState) return;
+    
+    try {
+      return deserializeState(sState, 'sMonitorConfiguratorState');
+    }
+    catch (err) {
+      console.error(`Error deserializing Monitor Configurator '${this.id}' state:`);
+      console.error(err);
+    }
   }
   
   clearState() {
-    state.remove(this.getStateKey());
+    stateUtil.remove(this.getStateKey());
   }
 }

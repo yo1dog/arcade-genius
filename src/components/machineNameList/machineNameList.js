@@ -1,24 +1,42 @@
 import './machineNameList.less';
-import machineNameListTemplate from './machineNameList.html';
-import htmlToBlock from '../../helpers/htmlToBlock';
+import machineNameListTemplate  from './machineNameList.html';
 import defaultMachineNameInputs from './defaultMachineNameInputs.json';
-import * as state from '../../dataAccess/state';
+import * as stateUtil           from '../../dataAccess/stateUtil';
+import {
+  serializeState,
+  deserializeState
+} from './machineNameListSerializer';
+import {
+  htmlToBlock,
+  selectR,
+  firstChildR
+} from '../../helpers/htmlUtil';
+
+/**
+ * @typedef {{
+ *   readonly inputStr: string
+ * }} IMachineNameListState
+ */
+
 
 
 export default class MachineNameList {
   constructor() {
-    this.elem = htmlToBlock(machineNameListTemplate).firstElementChild;
-    this.inputElem = this.elem.querySelector('.machine-name-list__input');
-    this.demoListLinkElem = this.elem.querySelector('.machine-name-list__demo-list-link');
+    this.elem = firstChildR(htmlToBlock(machineNameListTemplate));
+    this.inputElem        = selectR(this.elem, '.machine-name-list__input', 'textarea');
+    this.demoListLinkElem = selectR(this.elem, '.machine-name-list__demo-list-link');
     
     this.demoListLinkElem.addEventListener('click', e => {
       e.preventDefault();
-      this.inputElem.value = getDefaultMachineNameInputsStr();
+      this.inputElem.value = this.getDefaultMachineNameInputsStr();
     });
   }
   
   async init() {
-    this.inputElem.value = this.loadState() || getDefaultMachineNameInputsStr();
+    const state = this.loadState();
+    
+    this.inputElem.value = state? state.inputStr : this.getDefaultMachineNameInputsStr();
+    return Promise.resolve();
   }
   
   /**
@@ -48,25 +66,38 @@ export default class MachineNameList {
     );
   }
   
-  /**
-   * @returns {string}
-   */
+  getDefaultMachineNameInputsStr() {
+    return defaultMachineNameInputs.join('\n');
+  }
+  
   getStateKey() {
     return 'machineNameListInput';
   }
   
   saveState() {
-    state.set(this.getStateKey(), this.inputElem.value);
+    /** @type {IMachineNameListState} */
+    const state = {
+      inputStr: this.inputElem.value
+    };
+    
+    const sState = serializeState(state);
+    stateUtil.set(this.getStateKey(), sState);
   }
   
   /**
-   * @returns {string}
+   * @returns {IMachineNameListState | undefined}
    */
   loadState() {
-    return state.get(this.getStateKey()) || '';
+    const sState = stateUtil.get(this.getStateKey());
+    if (!sState) return;
+    
+    try {
+      return deserializeState(sState, 'sMachineNameListState');
+    }
+    catch (err) {
+      console.error(`Error deserializing Machine Name List state:`);
+      console.error(err);
+    }
   }
 }
 
-function getDefaultMachineNameInputsStr() {
-  return defaultMachineNameInputs.join('\n');
-}

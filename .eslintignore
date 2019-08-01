@@ -1,2 +1,3 @@
-/groovymame_0210_switchres
-/lib
+/**/*.js
+!/config/*.js
+!/tools/*.js

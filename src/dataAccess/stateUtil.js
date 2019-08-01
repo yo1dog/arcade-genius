@@ -1,27 +1,36 @@
-const LOCAL_STATE_CUR_VERSION_NUM = 3;
-const LOCAL_STATE_MIN_VERSION_NUM = 3;
+import {TJSONValue} from '../types/json';
+
+
+const LOCAL_STATE_CUR_VERSION_NUM = 4;
+const LOCAL_STATE_MIN_VERSION_NUM = 4;
 const LOCAL_STATE_VERSION_NUM_KEY = '__stateVersionNum';
 
-const localStateVersionNum = parseInt(window.localStorage.getItem(LOCAL_STATE_VERSION_NUM_KEY), 10);
+const localStateVersionNum = parseInt(window.localStorage.getItem(LOCAL_STATE_VERSION_NUM_KEY) || '', 10);
 if (isNaN(localStateVersionNum) || localStateVersionNum < LOCAL_STATE_MIN_VERSION_NUM) {
   window.localStorage.clear();
 }
 
-window.localStorage.setItem(LOCAL_STATE_VERSION_NUM_KEY, LOCAL_STATE_CUR_VERSION_NUM);
+window.localStorage.setItem(LOCAL_STATE_VERSION_NUM_KEY, LOCAL_STATE_CUR_VERSION_NUM.toString());
 
+/** @type {{[key:string]: TJSONValue}} */
 const state = {};
 
 const searchParams = new URLSearchParams(location.search);
 const urlStateSearchParamKey = 'state';
 
 
+/** @type {{[key:string]: TJSONValue}} */
 let initURLState = {};
 try {
-  initURLState = JSON.parse(searchParams.get(urlStateSearchParamKey));
+  initURLState = JSON.parse(searchParams.get(urlStateSearchParamKey) || '');
 } catch(err) {/*noop*/}
 initURLState = initURLState && typeof initURLState === 'object'? initURLState : {};
 
 
+/**
+ * @param {string} key
+ * @param {TJSONValue} val
+ */
 export function set(key, val) {
   state[key] = val;
   
@@ -31,8 +40,13 @@ export function set(key, val) {
   updateURLState();
 }
 
+/**
+ * @param {string} key
+ * @returns {TJSONValue}
+ */
 export function get(key) {
-  let val = null;
+  /** @type {TJSONValue} */
+  let val;
   
   if (key in state) {
     val = state[key];
@@ -42,7 +56,7 @@ export function get(key) {
   }
   else {
     try {
-      val = JSON.parse(window.localStorage.getItem(key));
+      val = JSON.parse(window.localStorage.getItem(key) || '');
     } catch(err) {/*noop*/}
   }
   
@@ -52,6 +66,7 @@ export function get(key) {
   return val;
 }
 
+/** @param {string} key */
 export function remove(key) {
   delete state[key];
   window.localStorage.removeItem(key);

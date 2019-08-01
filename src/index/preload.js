@@ -1,5 +1,6 @@
+/** @returns {number} */
 function startLoading() {
-  const ellipsisElem = document.querySelector('.loading-indicator__ellipsis');
+  const ellipsisElem = /** @type {HTMLElement} */(document.querySelector('.loading-indicator__ellipsis'));
   const ellipsisStr = '...';
   let len = 0;
   
@@ -11,21 +12,23 @@ function startLoading() {
   return loadingTimerId;
 }
 
-function doneLoading(loadingTimerId) {
-  if (loadingTimerId) {
+/** @param {number} [loadingTimerId] */
+function stopLoading(loadingTimerId) {
+  if (typeof loadingTimerId === 'number') {
     window.clearInterval(loadingTimerId);
   }
   
-  document.querySelector('.loading-indicator').classList.add('hidden');
-  document.querySelector('.content').classList.remove('hidden');
+  /** @type {HTMLElement} */(document.querySelector('.loading-indicator')).classList.add   ('hidden');
+  /** @type {HTMLElement} */(document.querySelector('.content'          )).classList.remove('hidden');
 }
 
 
-let loadingTimerId = null;
+/** @type {number|undefined} */
+let loadingTimerId;
 document.addEventListener('DOMContentLoaded', () => {
   loadingTimerId = startLoading();
 });
 
-window.doneLoading = () => {
-  doneLoading(loadingTimerId);
-};
+export function doneLoading() {
+  stopLoading(loadingTimerId);
+}

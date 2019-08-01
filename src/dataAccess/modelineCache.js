@@ -1,35 +1,33 @@
-/**
- * @typedef {import('./modelineCalculator').ModelineConfig} ModelineConfig
- * @typedef {import('./modelineCalculator').ModelineResult} ModelineResult
- * @typedef {import('./mameList').MachineDisplay} MachineDisplay
- */
+import {IMachineDisplay} from '../types/mame';
+import {IModelineResult, IModelineConfig} from '../types/modeline';
 
 
-const cache = {};
+/** @type {Map<string, IModelineResult>} */
+const cache = new Map();
 
 /**
- * @param {ModelineConfig} modelineConfig 
- * @param {MachineDisplay} machineDisplay 
- * @param {ModelineResult} modelineResult 
+ * @param {IModelineConfig} modelineConfig
+ * @param {IMachineDisplay} machineDisplay
+ * @param {IModelineResult} modelineResult
  */
 export function set(modelineConfig, machineDisplay, modelineResult) {
   const key = createKey(modelineConfig, machineDisplay);
-  cache[key] = modelineResult;
+  cache.set(key, modelineResult);
 }
 
 /**
- * @param {ModelineConfig} modelineConfig 
- * @param {MachineDisplay} machineDisplay 
- * @returns {ModelineResult}
+ * @param {IModelineConfig} modelineConfig
+ * @param {IMachineDisplay} machineDisplay
+ * @returns {IModelineResult | undefined}
  */
 export function get(modelineConfig, machineDisplay) {
   const key = createKey(modelineConfig, machineDisplay);
-  return cache[key];
+  return cache.get(key);
 }
 
 /**
- * @param {ModelineConfig} modelineConfig 
- * @param {MachineDisplay} machineDisplay 
+ * @param {IModelineConfig} modelineConfig
+ * @param {IMachineDisplay} machineDisplay
  * @returns {string}
  */
 function createKey(modelineConfig, machineDisplay) {
