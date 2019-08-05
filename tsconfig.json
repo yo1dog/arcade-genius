@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "noEmit": true,
     "checkJs": true,
     "target": "es2019",
     "module": "esnext",
@@ -12,7 +11,8 @@
     "allowSyntheticDefaultImports": true,
     "downlevelIteration": true,
     "allowJs": true,
-    "outDir": "fubar",
+    "outDir": "dist",
+    "sourceMap": true,
     "plugins": [
       {
         "name": "typescript-tslint-plugin",
@@ -23,6 +23,7 @@
     ]
   },
   "include": [
-    "./src/**/*"
+    "./src/**/*.ts",
+    "./src/**/*.js"
   ]
 }
