@@ -270,8 +270,9 @@ export function checkControls(machine: IMachine | undefined, cpConfig: ICPConfig
   let controlsDatGame: IControlsDatGame | undefined;
   if (machine) {
     controlsDatGame = controlsDatUtil.getGameByName(machine.name);
+    
     if (!controlsDatGame && machine.cloneof) {
-      controlsDatUtil.getGameByName(machine.cloneof);
+      controlsDatGame = controlsDatUtil.getGameByName(machine.cloneof);
     }
   }
   
