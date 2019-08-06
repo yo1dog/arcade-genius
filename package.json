@@ -13,7 +13,7 @@
     "build": "webpack --config webpack/webpack.prod.js",
     "build-dev": "webpack --config webpack/webpack.dev.js",
     "lint": "tsc -p . --noEmit && eslint . --ext .js,.jsx,.ts,.tsx -f compact",
-    "release": "make wasm && npm run-script build && ssh yo1.dog 'rm -f ~/www/html/mameGenius/*' && scp dist/* yo1.dog:~/www/html/mameGenius/"
+    "release": "make wasm && npm run-script build && ssh yo1.dog 'rm -f /www/mameGenius/dist/*' && scp dist/* yo1.dog:/www/mameGenius/dist/"
   },
   "repository": {
     "type": "git",
