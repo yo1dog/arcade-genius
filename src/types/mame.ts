@@ -12,13 +12,14 @@ export interface IMAMEList {
 }
 
 export interface IMachine {
-  readonly name         : string;
-  readonly description  : string;
-  readonly year?        : string;
-  readonly manufacturer?: string;
-  readonly cloneof?     : string;
-  readonly displays     : IMachineDisplay[];
-  readonly driver       : IMachineDriver;
+  readonly name            : string;
+  readonly description     : string;
+  readonly shortDescription: string;
+  readonly year?           : string;
+  readonly manufacturer?   : string;
+  readonly cloneof?        : string;
+  readonly displays        : IMachineDisplay[];
+  readonly driver          : IMachineDriver;
 }
 
 export interface IMachineDisplay {

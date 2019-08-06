@@ -160,7 +160,7 @@ export default class CompatibilityTable extends EventEmitter {
     selectR(rowBlock, '.comp-table__row__desc__icon').classList.add(rowOverallStatusTrans.iconCSSClass);
     selectR(rowBlock, '.comp-table__row__desc__text').innerText = (
       machine
-      ? this.shortenDescription(machine.description)
+      ? machine.shortDescription
       : machineComp.machineNameInput
     );
     
@@ -229,27 +229,36 @@ export default class CompatibilityTable extends EventEmitter {
       .reduce((p, c) => p + c.colSpan, 0)
     );
     
-    const machineListElem = selectR(detailsRowElem, '.comp-table__details-row__list--machine');
-    const mainContentElem = selectR(detailsRowElem, '.comp-table__details-row__main-content' );
+    const machineContentElem = selectR(detailsRowElem, '.comp-table__details-row__machine-content');
+    const mainContentElem    = selectR(detailsRowElem, '.comp-table__details-row__main-content' );
     
     if (machineComp.machine) {
-      machineListElem.classList.add('hidden');
+      machineContentElem.classList.add('hidden');
     }
     else {
+      mainContentElem.classList.add('hidden');
+      
+      const machineListElem     = selectR(machineContentElem, '.comp-table__details-row__list--machine');
+      const sugMachineTableElem = selectR(machineContentElem, '.comp-table__details-row__machine-suggestion-table', 'table');
+      
       machineListElem.appendChild(this.createDetailsListItem(
-        `ROM not found. Did you mean one of these?:`,
+        `ROM "${machineComp.machineNameInput}" not found. Did you mean one of these?`,
         overallCompatibilityStatusEnum.UNKNOWN
       ));
       
-      const machineNameSuggestions = mameUtil.getMachineNameSuggestions(machineComp.machineNameInput, 5);
+      const sugMachines = mameUtil.getMachineSuggestions(machineComp.machineNameInput, 10);
       
-      for (const machineNameSuggestion of machineNameSuggestions) {
-        const itemElem = this.createDetailsListItem(machineNameSuggestion);
-        itemElem.classList.add('comp-table__details-row__list__item--suggested-machine-names-list');
-        machineListElem.appendChild(itemElem);
+      for (const sugMachine of sugMachines) {
+        const rowElem = sugMachineTableElem.insertRow();
+        
+        const nameCellElem = rowElem.insertCell();
+        nameCellElem.classList.add('comp-table__details-row__machine-suggestion-table__name');
+        nameCellElem.innerText = sugMachine.name;
+        
+        const descCellElem = rowElem.insertCell();
+        descCellElem.classList.add('comp-table__details-row__machine-suggestion-table__desc');
+        descCellElem.innerText = sugMachine.description;
       }
-      
-      mainContentElem.classList.add('hidden');
     }
     
     // populate emulation details
@@ -627,9 +636,5 @@ export default class CompatibilityTable extends EventEmitter {
       iconCSSClass: `comp-table__icon--${cssClassSuffix}`,
       desc
     };
-  }
-  
-  private shortenDescription(description: string): string {
-    return description.replace(/\(.+\)/g, '').trim();
   }
 }

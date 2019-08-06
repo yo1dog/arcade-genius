@@ -24,9 +24,8 @@ import {
 } from '../types/jsonSerializer';
 
 
-let mameList    : IMAMEList             | null = null;
-let machineMap  : Map<string, IMachine> | null = null;
-let machineNames: string[]              | null = null;
+let mameList  : IMAMEList             | null = null;
+let machineMap: Map<string, IMachine> | null = null;
 
 async function _init(): Promise<void> {
   const sMAMEList: TJSONValue = (await import(
@@ -37,11 +36,8 @@ async function _init(): Promise<void> {
   mameList = deserialize(sMAMEList);
   
   machineMap = new Map<string, IMachine>();
-  machineNames = [];
-  
   for (const machine of mameList.machines) {
     machineMap.set(machine.name, machine);
-    machineNames.push(machine.name);
   }
 }
 
@@ -70,39 +66,43 @@ export function getMachineByName(name: string): IMachine | undefined {
   return machineMap.get(name);
 }
 
-export function getMachineNameSuggestions(machineNameInput: string, numSuggestions: number): string[] {
-  if (!machineNames) {
+export function getMachineSuggestions(machineNameInput: string, numSuggestions: number): IMachine[] {
+  if (!mameList) {
     throw new Error(`Attempting to access before initialized.`);
   }
   
   if (numSuggestions < 0) {
     numSuggestions = 0;
   }
-  if (numSuggestions > machineNames.length) {
-    numSuggestions = machineNames.length;
+  if (numSuggestions > mameList.machines.length) {
+    numSuggestions = mameList.machines.length;
   }
   if (numSuggestions === 0) {
     return [];
   }
   
-  machineNameInput = machineNameInput.replace(/\s+/g, '');
+  const nameMatchStr      = machineNameInput.replace(/\s+/g, '').toLowerCase();
+  const shortDescMatchStr = machineNameInput.trim().toLowerCase();
   
-  const suggestions: {name: string; dist: number}[] = Array(numSuggestions).fill({dist: Infinity});
+  const suggestions: {machine: IMachine; dist: number}[] = Array(numSuggestions).fill({dist: Infinity});
   
-  for (const name of machineNames) {
-    const dist = calcLevenshteinDistance(machineNameInput, name);
+  for (const machine of mameList.machines) {
+    const dist1 = calcLevenshteinDistance(nameMatchStr, machine.name);
+    const dist2 = calcLevenshteinDistance(shortDescMatchStr, machine.shortDescription.toLowerCase());
+    const dist = dist1 < dist2? dist1 : dist2;
+    
     for (let i = 0; i < suggestions.length; ++i) {
       if (dist < suggestions[i].dist) {
         for (let j = suggestions.length - 1; j > i; --j) {
           suggestions[j] = suggestions[j - 1];
         }
-        suggestions[i] = {name, dist};
+        suggestions[i] = {machine, dist};
         break;
       }
     }
   }
   
-  return suggestions.map(x => x.name);
+  return suggestions.map(x => x.machine);
 }
 
 
@@ -125,9 +125,14 @@ function deserializeMAMEList(sMAMEList: TJSONValue, propLabel: string): IMAMELis
 
 function deserializeMachine(sMachine: TJSONValue, propLabel: string): IMachine {
   const machineJ = deserializeObject(sMachine, propLabel);
+  
+  const description = deserializeString(machineJ.description, `${propLabel}.description` );
+  const shortDescription = description.replace(/\(.+\)/g, '').trim();
+  
   return {
     name        : deserializeString        (machineJ.name,         `${propLabel}.name`        ),
-    description : deserializeString        (machineJ.description,  `${propLabel}.description` ),
+    description,
+    shortDescription,
     year        : deserializeStringOptional(machineJ.year,         `${propLabel}.year`        ),
     manufacturer: deserializeStringOptional(machineJ.manufacturer, `${propLabel}.manufacturer`),
     cloneof     : deserializeStringOptional(machineJ.cloneof,      `${propLabel}.cloneof`     ),
