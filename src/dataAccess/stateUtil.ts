@@ -74,6 +74,6 @@ export function clear(): void {
 }
 
 function updateURLState(): void {
-  searchParams.set(urlStateSearchParamKey, JSON.stringify(state));
+  searchParams.set(urlStateSearchParamKey, JSON.stringify(Object.fromEntries(state.entries())));
   window.history.replaceState({}, '', `${location.pathname}?${searchParams}${location.hash}`);
 }
