@@ -1,3 +1,4 @@
+import calcLevenshteinDistance from 'lib/levenshtein.js';
 import {TJSONValue} from '../types/json';
 import {
   IMAMEList,
@@ -23,8 +24,9 @@ import {
 } from '../types/jsonSerializer';
 
 
-let mameList: IMAMEList | null = null;
-let machineMap: Map<string, IMachine> | null = null;
+let mameList    : IMAMEList             | null = null;
+let machineMap  : Map<string, IMachine> | null = null;
+let machineNames: string[]              | null = null;
 
 async function _init(): Promise<void> {
   const sMAMEList: TJSONValue = (await import(
@@ -35,8 +37,11 @@ async function _init(): Promise<void> {
   mameList = deserialize(sMAMEList);
   
   machineMap = new Map<string, IMachine>();
+  machineNames = [];
+  
   for (const machine of mameList.machines) {
     machineMap.set(machine.name, machine);
+    machineNames.push(machine.name);
   }
 }
 
@@ -63,6 +68,39 @@ export function getMachineByName(name: string): IMachine | undefined {
   }
   
   return machineMap.get(name);
+}
+
+export function getMachineNameSuggestions(machineNameInput: string, numSuggestions: number): string[] {
+  if (!machineNames) {
+    throw new Error(`Attempting to access before initialized.`);
+  }
+  
+  if (numSuggestions < 0) {
+    numSuggestions = 0;
+  }
+  if (numSuggestions > machineNames.length) {
+    numSuggestions = machineNames.length;
+  }
+  if (numSuggestions === 0) {
+    return [];
+  }
+  
+  const suggestions: {name: string; dist: number}[] = Array(numSuggestions).fill({dist: Infinity});
+  
+  for (const name of machineNames) {
+    const dist = calcLevenshteinDistance(machineNameInput, name);
+    for (let i = 0; i < suggestions.length; ++i) {
+      if (dist < suggestions[i].dist) {
+        for (let j = suggestions.length - 1; j > i; --j) {
+          suggestions[j] = suggestions[j - 1];
+        }
+        suggestions[i] = {name, dist};
+        break;
+      }
+    }
+  }
+  
+  return suggestions.map(x => x.name);
 }
 
 

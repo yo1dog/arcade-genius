@@ -5,6 +5,7 @@ import compTableRowTemplate                         from './compatibilityTableRo
 import compatibilityTableRowDetailsListItemTemplate from './compatibilityTableRowDetailsListItem.html';
 import pluralize                                    from '../../helpers/pluralize';
 import MultidimensionalScore                        from '../../multidimensionalScore';
+import * as mameUtil                                from '../../dataAccess/mameUtil';
 import jsonView from 'lib/jsonview/jsonview.js';
 import {
   htmlToBlock,
@@ -236,9 +237,21 @@ export default class CompatibilityTable extends EventEmitter {
     }
     else {
       machineListElem.appendChild(this.createDetailsListItem(
-        'ROM not found.',
+        `ROM not found. Did you mean one of these?:`,
         overallCompatibilityStatusEnum.UNKNOWN
       ));
+      
+      const machineNameSuggestions = mameUtil.getMachineNameSuggestions(
+        machineComp.machineNameInput.replace(/s+/g, ''),
+        5
+      );
+      
+      for (const machineNameSuggestion of machineNameSuggestions) {
+        const itemElem = this.createDetailsListItem(machineNameSuggestion);
+        itemElem.classList.add('comp-table__details-row__list__item--suggested-machine-names-list');
+        machineListElem.appendChild(itemElem);
+      }
+      
       mainContentElem.classList.add('hidden');
     }
     

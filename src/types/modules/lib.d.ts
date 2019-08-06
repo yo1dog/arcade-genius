@@ -8,6 +8,11 @@ declare module 'lib/jsonview/jsonview.js' {
 }
 
 declare module 'lib/get_uuid.js' {
-  const content:() => string;
-  export default content;
+  function createUUID(): string;
+  export default createUUID;
+}
+
+declare module 'lib/levenshtein.js' {
+  function calcLevenshteinDistance(a: string, b:string): number;
+  export default calcLevenshteinDistance;
 }
