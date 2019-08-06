@@ -241,10 +241,7 @@ export default class CompatibilityTable extends EventEmitter {
         overallCompatibilityStatusEnum.UNKNOWN
       ));
       
-      const machineNameSuggestions = mameUtil.getMachineNameSuggestions(
-        machineComp.machineNameInput.replace(/s+/g, ''),
-        5
-      );
+      const machineNameSuggestions = mameUtil.getMachineNameSuggestions(machineComp.machineNameInput, 5);
       
       for (const machineNameSuggestion of machineNameSuggestions) {
         const itemElem = this.createDetailsListItem(machineNameSuggestion);

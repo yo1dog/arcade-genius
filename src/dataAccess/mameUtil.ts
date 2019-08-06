@@ -85,6 +85,8 @@ export function getMachineNameSuggestions(machineNameInput: string, numSuggestio
     return [];
   }
   
+  machineNameInput = machineNameInput.replace(/\s+/g, '');
+  
   const suggestions: {name: string; dist: number}[] = Array(numSuggestions).fill({dist: Infinity});
   
   for (const name of machineNames) {
