@@ -1,5 +1,5 @@
 
-# mame-genius
+# arcade-genius
 
 ## Setup
 

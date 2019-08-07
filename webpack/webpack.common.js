@@ -39,7 +39,7 @@ module.exports = function makeConfig(mode) {
       // of the JS
       new MiniCssExtractPlugin({
         filename: 'styles.css',
-        chunkFilename: 'styles.[hash].css'
+        chunkFilename: 'styles.[contenthash].css'
       }),
       
       // create index.html using the template and put JS/CSS tags
@@ -103,7 +103,7 @@ module.exports = function makeConfig(mode) {
           use: {
             loader: 'file-loader',
             options: {
-              name: '[name].[hash].[ext]'
+              name: '[name].[contenthash].[ext]'
             }
           }
         },
@@ -115,7 +115,7 @@ module.exports = function makeConfig(mode) {
           use: {
             loader: 'file-loader',
             options: {
-              name: '[name].[hash].[ext]'
+              name: '[name].[contenthash].[ext]'
             }
           }
         }

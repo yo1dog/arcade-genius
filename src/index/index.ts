@@ -114,7 +114,7 @@ async function populateMetadata() {
   const metadataTextElem = selectR(document, '.metadata__text', 'textarea');
   
   const metadata: IJSONObject = {
-    mameGenius: {
+    arcadeGenius: {
       version: npmPackage.version
     }
   };
