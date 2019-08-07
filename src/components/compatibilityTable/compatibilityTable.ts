@@ -4,6 +4,7 @@ import compTableTemplate                            from './compatibilityTable.h
 import compTableRowTemplate                         from './compatibilityTableRow.html';
 import compatibilityTableRowDetailsListItemTemplate from './compatibilityTableRowDetailsListItem.html';
 import pluralize                                    from '../../helpers/pluralize';
+import stringifyEnums                               from '../../helpers/stringifyEnums';
 import MultidimensionalScore                        from '../../multidimensionalScore';
 import * as mameUtil                                from '../../dataAccess/mameUtil';
 import jsonView from 'lib/jsonview/jsonview.js';
@@ -28,8 +29,7 @@ import {
   OverallCompatibilityStatus,
   overallCompatibilityStatusEnum,
   emulationCompatibilityStatusEnum,
-  videoCompatibilityStatusEnum,
-  controlsCompatibilityStatusEnum
+  videoCompatibilityStatusEnum
 } from '../../types/compatibility';
 
 
@@ -510,50 +510,27 @@ export default class CompatibilityTable extends EventEmitter {
   }
   
   private getDetailsData(machineComp: IMachineCompatibility): any { // eslint-disable-line @typescript-eslint/no-explicit-any
-    /*
-    let detailsStr = '';
-    for (let i = 0; i < monitorConfigTitles.length; ++i) {
-      const monitorConfigTitle = monitorConfigTitles[i];
-      const videoComp = machineComp.videoComps[i];
-      
-      if (monitorConfigTitles.length > 1) {
-        detailsStr += `${monitorConfigTitle}:\n`;
-      }
-      
-      if (!videoComp || !videoComp.modelineResult) {
-        detailsStr += '--\n';
-      }
-      else if (videoComp.modelineResult.err) {
-        detailsStr += `${videoComp.modelineResult.err}\n`;
-      }
-      else {
-        detailsStr += `${videoComp.modelineResult.description}\n`;
-        detailsStr += `${videoComp.modelineResult.details}\n`;
-      }
-    }
-    */
-    
-    return {
+    return stringifyEnums({
       machineNameInput: machineComp.machineNameInput,
-      status: overallCompatibilityStatusEnum.getLabel(machineComp.overallStatus),
+      status: machineComp.overallStatus,
       
       emuComp: {
-        status: emulationCompatibilityStatusEnum.getLabel(machineComp.emuComp.status)
+        status: machineComp.emuComp.status
       },
       
       videoComps: machineComp.videoComps.map((videoComp, i) => (
         !videoComp? null : {
-          status: videoCompatibilityStatusEnum.getLabel(videoComp.status),
+          status: videoComp.status,
           modelineConfig: videoComp.modelineConfig,
           modelineResult: videoComp.modelineResult,
         }
       )),
       
       controlsComp: {
-        status: controlsCompatibilityStatusEnum.getLabel(machineComp.controlsComp.status),
+        status: machineComp.controlsComp.status,
         score : !machineComp.controlsComp.bestControlConfigComp? null : formatDetailsScore(machineComp.controlsComp.bestControlConfigComp.score),
         controlSetComps: !machineComp.controlsComp.bestControlConfigComp? [] : machineComp.controlsComp.bestControlConfigComp.controlSetComps.map(controlSetComp => ({
-          status: controlsCompatibilityStatusEnum.getLabel(controlSetComp.status),
+          status: controlSetComp.status,
           score: formatDetailsScore(controlSetComp.score),
           gameControlSet: {
             supportedPlayerNums: controlSetComp.gameControlSet.supportedPlayerNums.join(','),
@@ -561,9 +538,9 @@ export default class CompatibilityTable extends EventEmitter {
             isRequired: controlSetComp.gameControlSet.isRequired
           },
           controlComps: controlSetComp.controlComps.map(controlComp => ({
-            controlStatus: controlsCompatibilityStatusEnum.getLabel(controlComp.controlStatus),
-            buttonsStatus: controlsCompatibilityStatusEnum.getLabel(controlComp.buttonsStatus),
-            status: controlsCompatibilityStatusEnum.getLabel(controlComp.status),
+            controlStatus: controlComp.controlStatus,
+            buttonsStatus: controlComp.buttonsStatus,
+            status: controlComp.status,
             score: formatDetailsScore(controlComp.score),
             gameControl: {
               type: controlComp.gameControl.type,
@@ -577,7 +554,7 @@ export default class CompatibilityTable extends EventEmitter {
             }
           })),
           buttonsComp: {
-            status: controlsCompatibilityStatusEnum.getLabel(controlSetComp.buttonsComp.status),
+            status: controlSetComp.buttonsComp.status,
             score: formatDetailsScore(controlSetComp.buttonsComp.score),
             gameButtons: controlSetComp.buttonsComp.gameButtons.map(gameButton => 
               gameButton.input.label || gameButton.input.posLabel || gameButton.input.negLabel || gameButton.input.mameInputPort
@@ -592,7 +569,7 @@ export default class CompatibilityTable extends EventEmitter {
       controlsDatGame: machineComp.controlsComp.controlsDatGame || null,
       
       machine: machineComp.machine || null,
-    };
+    });
     
     function formatDetailsScore(
       score    : MultidimensionalScore,
