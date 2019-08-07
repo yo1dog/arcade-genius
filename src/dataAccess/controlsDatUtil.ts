@@ -135,7 +135,6 @@ function deserializeGameControl(sControl: TJSONValue, propLabel: string): IGameC
   const controlType = controlTypeEnum.deserialize(controlJ.type, `${propLabel}.type`);
   
   return {
-    type            : controlType,
     controlDef      : controlDefUtil.getByType(controlType),
     descriptor      : coalesceNull(deserializeStringNullable(controlJ.descriptor,       `${propLabel}.descriptor`     ), undefined),
     outputToInputMap: deserializeMap                        (controlJ.outputToInputMap, `${propLabel}.outputToInputMap`, deserializeGameInputNullable),

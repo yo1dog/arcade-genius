@@ -606,7 +606,7 @@ function getControlCompatibilityControlStatus(cpControl: ICPControl, gameControl
   const cpControlDef = cpControl.controlDef;
   const gameControlDef = gameControl.controlDef;
   
-  if (cpControlDef.type === gameControl.type) {
+  if (cpControlDef === gameControl.controlDef) {
     return controlsCompatibilityStatusEnum.NATIVE;
   }
   

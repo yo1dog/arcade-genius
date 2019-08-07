@@ -1,4 +1,4 @@
-import {IControlDef, ControlType} from './controlDef';
+import {IControlDef} from './controlDef';
 import {CabinetType} from './common';
 
 
@@ -36,7 +36,6 @@ export interface IGameControlSet {
 }
 
 export interface IGameControl {
-  readonly type            : ControlType;
   readonly controlDef      : IControlDef;
   readonly descriptor?     : string;
   readonly outputToInputMap: Map<string, IGameInput | null>;
@@ -49,9 +48,9 @@ export interface IGameButton {
 }
 
 export interface IGameInput {
-  readonly isAnalog     : boolean;
-  readonly mameInputPort: string;
-  readonly label?       : string;
-  readonly negLabel?    : string;
-  readonly posLabel?    : string;
+  readonly isAnalog      : boolean;
+  readonly mameInputPort?: string;
+  readonly label?        : string;
+  readonly negLabel?     : string;
+  readonly posLabel?     : string;
 }

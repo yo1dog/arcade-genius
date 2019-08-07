@@ -543,7 +543,7 @@ export default class CompatibilityTable extends EventEmitter {
             status: controlComp.status,
             score: formatDetailsScore(controlComp.score),
             gameControl: {
-              type: controlComp.gameControl.type,
+              type: controlComp.gameControl.controlDef.type,
               buttons: controlComp.gameControl.buttons.map(gameButton => 
                 gameButton.input.label || gameButton.input.posLabel || gameButton.input.negLabel || gameButton.input.mameInputPort
               )
