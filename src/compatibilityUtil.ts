@@ -7,8 +7,7 @@ import {
   machineDriverStatusEnum
 } from './types/mame';
 import {
-  IModelineConfig,
-  IModelineResult,
+  IModelineResult
 } from './types/modeline';
 import {
   IControlsDatGame,
@@ -51,6 +50,9 @@ import {
 import {
   cabinetTypeEnum
 } from './types/common';
+import {
+  IMonitorConfiguration
+} from './types/monitor';
 
 
 export function emuToOverallCompatibilityStatus(status: EmulationCompatibilityStatus): OverallCompatibilityStatus {
@@ -100,8 +102,8 @@ export function getMachineByInput(machineNameInput: string): IMachine | undefine
 
 export async function checkMachineBulk(
   machineNameInputs: string[],
-  modelineConfigs  : IModelineConfig[],
-  cpConfig         : ICPConfiguration
+  monitorConfigs   : IMonitorConfiguration[],
+  cpConfigs        : ICPConfiguration[]
 ): Promise<IMachineCompatibility[]> {
   const machines = machineNameInputs.map(machineNameInput =>
     getMachineByInput(machineNameInput)
@@ -109,29 +111,40 @@ export async function checkMachineBulk(
   
   // check video compatibility in bulk
   const modelineConfigsVideoComps: IVideoCompatibility[][] = [];
-  for (let i = 0; i < modelineConfigs.length; ++i) {
-    modelineConfigsVideoComps[i] = await checkVideoBulk(machines, modelineConfigs[i]);
+  for (let i = 0; i < monitorConfigs.length; ++i) {
+    modelineConfigsVideoComps[i] = await checkVideoBulk(machines, monitorConfigs[i]);
   }
   
   return machines.map((machine, i) => {
     const machineNameInput = machineNameInputs[i];
     
     const videoComps: IVideoCompatibility[] = [];
-    for (let j = 0; j < modelineConfigs.length; ++j) {
+    for (let j = 0; j < monitorConfigs.length; ++j) {
       videoComps[j] = modelineConfigsVideoComps[j][i];
+    }
+    
+    // get controls.dat game
+    let controlsDatGame: IControlsDatGame | undefined;
+    if (machine) {
+      controlsDatGame = controlsDatUtil.getGameByName(machine.name);
+      
+      if (!controlsDatGame && machine.cloneof) {
+        controlsDatGame = controlsDatUtil.getGameByName(machine.cloneof);
+      }
     }
     
     // check emulation compatibility
     const emuComp = checkEmulation(machine);
     
     // check controls compatibility
-    const controlsComp = checkControls(machine, cpConfig);
+    const controlsComps = cpConfigs.map(cpConfig => checkControls(machine, controlsDatGame, cpConfig));
     
     // machine overall compatibility is worst of all compatibilities
-    const bestVideoStatus = videoCompatibilityStatusEnum.max(...videoComps.map(x => x.status));
+    const bestVideoStatus    = videoCompatibilityStatusEnum   .max(...videoComps   .map(x => x.status));
+    const bestControlsStatus = controlsCompatibilityStatusEnum.max(...controlsComps.map(x => x.status));
     const statuses = [
       emuToOverallCompatibilityStatus     (emuComp.status),
-      controlsToOverallCompatibilityStatus(controlsComp.status),
+      controlsToOverallCompatibilityStatus(bestControlsStatus),
       videoToOverallCompatibilityStatus   (bestVideoStatus)
     ];
     const knownStatuses = statuses.filter(x => x !== overallCompatibilityStatusEnum.UNKNOWN);
@@ -146,9 +159,10 @@ export async function checkMachineBulk(
     const machineComp: IMachineCompatibility = {
       machineNameInput,
       machine,
+      controlsDatGame,
       videoComps,
       emuComp,
-      controlsComp,
+      controlsComps,
       overallStatus,
       knownOverallStatus
     };
@@ -158,10 +172,10 @@ export async function checkMachineBulk(
 
 export async function checkMachine(
   machineNameInput: string,
-  modelineConfigs : IModelineConfig[],
-  cpConfig        : ICPConfiguration
+  monitorConfigs  : IMonitorConfiguration[],
+  cpConfigs       : ICPConfiguration[]
 ): Promise<IMachineCompatibility> {
-  return (await checkMachineBulk([machineNameInput], modelineConfigs, cpConfig))[0];
+  return (await checkMachineBulk([machineNameInput], monitorConfigs, cpConfigs))[0];
 }
 
 
@@ -197,18 +211,18 @@ function getEmulationStatus(machine: IMachine|undefined): EmulationCompatibility
 // ----------------------------------
 
 export async function checkVideo(
-  machine       : IMachine,
-  modelineConfig: IModelineConfig
+  machine      : IMachine,
+  monitorConfig: IMonitorConfiguration
 ): Promise<IVideoCompatibility> {
-  return (await checkVideoBulk([machine], modelineConfig))[0];
+  return (await checkVideoBulk([machine], monitorConfig))[0];
 }
 
 export async function checkVideoBulk(
-  machines      : (IMachine | undefined)[],
-  modelineConfig: IModelineConfig
+  machines     : (IMachine | undefined)[],
+  monitorConfig: IMonitorConfiguration
 ): Promise<IVideoCompatibility[]> {
   // calculate modelines
-  const modelineResultMap = await modelineCalculator.calcModelineBulk(modelineConfig, machines);
+  const modelineResultMap = await modelineCalculator.calcModelineBulk(monitorConfig.modelineConfig, machines);
   
   // for each machine... 
   return machines.map(machine => {
@@ -219,7 +233,7 @@ export async function checkVideoBulk(
     
     const videoComp: IVideoCompatibility = {
       machine,
-      modelineConfig,
+      monitorConfig,
       modelineResult,
       status
     };
@@ -265,17 +279,11 @@ function getVideoStatus(modelineResult: IModelineResult | undefined): VideoCompa
 // Controls
 // ----------------------------------
 
-export function checkControls(machine: IMachine | undefined, cpConfig: ICPConfiguration): IControlsCompatibility {
-  // get controls.dat game
-  let controlsDatGame: IControlsDatGame | undefined;
-  if (machine) {
-    controlsDatGame = controlsDatUtil.getGameByName(machine.name);
-    
-    if (!controlsDatGame && machine.cloneof) {
-      controlsDatGame = controlsDatUtil.getGameByName(machine.cloneof);
-    }
-  }
-  
+export function checkControls(
+  machine        : IMachine         | undefined,
+  controlsDatGame: IControlsDatGame | undefined,
+  cpConfig       : ICPConfiguration
+): IControlsCompatibility {
   // get the compatibility of all game control configurations
   const gameControlConfigs = controlsDatGame? controlsDatGame.controlConfigurations : [];
   
@@ -298,12 +306,11 @@ export function checkControls(machine: IMachine | undefined, cpConfig: ICPConfig
     b.score.compare(a.score)
   );
   
-  const bestControlConfigComp = allControlConfigComps[0] || null;
+  const bestControlConfigComp = allControlConfigComps.length > 0? allControlConfigComps[0] : undefined;
   
   const status = bestControlConfigComp? bestControlConfigComp.status : controlsCompatibilityStatusEnum.UNKNOWN;
   
-  /** @type {IControlsCompatibility} */
-  const controlsComp = {
+  const controlsComp: IControlsCompatibility = {
     machine,
     cpConfig,
     controlsDatGame,
@@ -414,10 +421,8 @@ function getControlConfigCompatibility(
     .flatMap(x => x.bestControlSetComp)
   );
   
-  /** @type {IControlSetCompatibility[]} */
-  const requiredControlSetComps = [];
-  /** @type {IControlSetCompatibility[]} */
-  const optionalControlSetComps = [];
+  const requiredControlSetComps: IControlSetCompatibility[] = [];
+  const optionalControlSetComps: IControlSetCompatibility[] = [];
   
   for (const controlSetComp of controlSetComps) {
     if (controlSetComp.gameControlSet.isRequired) {

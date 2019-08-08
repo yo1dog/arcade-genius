@@ -1,6 +1,6 @@
-import {orientationEnum} from './common';
-import {IModelineConfig} from './modeline';
-import {TJSONValue}      from './json';
+import {orientationEnum}        from './common';
+import {IModelineConfiguration} from './modeline';
+import {TJSONValue}             from './json';
 import {
   deserializeString,
   deserializeBoolean,
@@ -9,7 +9,7 @@ import {
 } from './jsonSerializer';
 
 
-export function serializeModelineConfig(modelineConfig: IModelineConfig): TJSONValue {
+export function serializeModelineConfig(modelineConfig: IModelineConfiguration): TJSONValue {
   return {
     __version: 1,
     preset         : modelineConfig.preset,
@@ -20,7 +20,7 @@ export function serializeModelineConfig(modelineConfig: IModelineConfig): TJSONV
   };
 }
 
-export function deserializeModelineConfig(sModelineConfig: TJSONValue, propLabel: string): IModelineConfig {
+export function deserializeModelineConfig(sModelineConfig: TJSONValue, propLabel: string): IModelineConfiguration {
   const modelineConfigJ = deserializeObject(sModelineConfig, propLabel);
   
   return {

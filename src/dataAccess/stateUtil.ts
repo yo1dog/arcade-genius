@@ -4,6 +4,7 @@ import {TJSONValue} from '../types/json';
 const LOCAL_STATE_CUR_VERSION_NUM = 4;
 const LOCAL_STATE_MIN_VERSION_NUM = 4;
 const LOCAL_STATE_VERSION_NUM_KEY = '__stateVersionNum';
+const URL_STATE_SEARCH_PARAM_KEY = 'state';
 
 const localStateVersionNum = parseInt(window.localStorage.getItem(LOCAL_STATE_VERSION_NUM_KEY) || '', 10);
 if (isNaN(localStateVersionNum) || localStateVersionNum < LOCAL_STATE_MIN_VERSION_NUM) {
@@ -13,20 +14,7 @@ if (isNaN(localStateVersionNum) || localStateVersionNum < LOCAL_STATE_MIN_VERSIO
 window.localStorage.setItem(LOCAL_STATE_VERSION_NUM_KEY, LOCAL_STATE_CUR_VERSION_NUM.toString());
 
 const state = new Map<string, TJSONValue>();
-
-const searchParams = new URLSearchParams(location.search);
-const urlStateSearchParamKey = 'state';
-
-
-let sInitURLState: TJSONValue;
-try {
-  sInitURLState = JSON.parse(searchParams.get(urlStateSearchParamKey) || '');
-} catch(err) {/*noop*/}
-const initURLState:  Map<string, TJSONValue> = (
-  sInitURLState && typeof sInitURLState === 'object' && !Array.isArray(sInitURLState)
-  ? new Map<string, TJSONValue>(Object.entries(sInitURLState))
-  : new Map()
-);
+const initURLState = parseInitalURLState();
 
 
 export function set(key: string, val: TJSONValue): TJSONValue {
@@ -50,9 +38,14 @@ export function get(key: string): TJSONValue {
     val = initURLState.get(key);
   }
   else {
-    try {
-      val = JSON.parse(window.localStorage.getItem(key) || '');
-    } catch(err) {/*noop*/}
+    const valStr = window.localStorage.getItem(key);
+    if (valStr !== null) {
+      try {
+        val = JSON.parse(valStr);
+      } catch(err) {
+        console.error(`Local storage item at key '${key}' is not valid JSON: ${valStr}`);
+      }
+    }
   }
   
   state.set(key, val);
@@ -61,9 +54,30 @@ export function get(key: string): TJSONValue {
   return val;
 }
 
-export function remove(key: string): void {
-  state.delete(key);
-  window.localStorage.removeItem(key);
+export function depricate(newKey:string, ...oldKeys:string[]): TJSONValue {
+  const val = get(newKey);
+  if (typeof val !== 'undefined') {
+    remove(...oldKeys);
+    return val;
+  }
+  
+  for (const oldKey of oldKeys) {
+    const val = get(oldKey);
+    if (typeof val !== 'undefined') {
+      remove(...oldKeys);
+      set(newKey, val);
+      return val;
+    }
+  }
+  
+  remove(...oldKeys);
+}
+
+export function remove(...keys: string[]): void {
+  for (const key of keys) {
+    state.delete(key);
+    window.localStorage.removeItem(key);
+  }
   updateURLState();
 }
 
@@ -73,7 +87,32 @@ export function clear(): void {
   updateURLState();
 }
 
+function parseInitalURLState(): Map<string, TJSONValue> {
+  const searchParams = new URLSearchParams(location.search);
+  
+  const initURLStateStr = (searchParams.get(URL_STATE_SEARCH_PARAM_KEY) || '').trim();
+  if (!initURLStateStr) {
+    return new Map();
+  }
+  
+  let sInitURLState: TJSONValue;
+  try {
+    sInitURLState = JSON.parse(initURLStateStr);
+  } catch(err) {
+    console.error(`Inital URL state is not valid JSON: ${initURLStateStr}`);
+    return new Map();
+  }
+  
+  if (typeof sInitURLState !== 'object' || sInitURLState === null || Array.isArray(sInitURLState)) {
+    console.error(`Inital URL state is not an object: ${initURLStateStr}`);
+    return new Map();
+  }
+  
+  return new Map<string, TJSONValue>(Object.entries(sInitURLState));
+}
+
 function updateURLState(): void {
-  searchParams.set(urlStateSearchParamKey, JSON.stringify(Object.fromEntries(state.entries())));
+  const searchParams = new URLSearchParams(location.search);
+  searchParams.set(URL_STATE_SEARCH_PARAM_KEY, JSON.stringify(Object.fromEntries(state.entries())));
   window.history.replaceState({}, '', `${location.pathname}?${searchParams}${location.hash}`);
 }

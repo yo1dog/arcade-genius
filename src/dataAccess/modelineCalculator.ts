@@ -1,7 +1,7 @@
 import * as modelineCache from './modelineCache';
 import {
   IModelineResult,
-  IModelineConfig
+  IModelineConfiguration
 } from '../types/modeline';
 import {
   IMachine,
@@ -54,14 +54,14 @@ export async function init(): Promise<void> {
 }
 
 export async function calcModeline(
-  config : IModelineConfig,
+  config : IModelineConfiguration,
   machine: IMachine
 ): Promise<IModelineResult | undefined> {
   return (await calcModelineBulk(config, [machine])).get(machine.name);
 }
 
 export async function calcModelineBulk(
-  config  : IModelineConfig,
+  config  : IModelineConfiguration,
   machines: (IMachine | undefined)[]
 ): Promise<Map<string, IModelineResult>> {
   if (!emcModule) {

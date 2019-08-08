@@ -47,17 +47,21 @@ export interface IMachineDriver {
   readonly graphic          : MachineDriverStatus;
   readonly drivercocktail?  : MachineDriverStatus;
   readonly driverprotection?: MachineDriverStatus;
-  readonly savestate        : MachineDriverStatus;
+  readonly savestate        : MachineDriverSaveStateStatus;
 }
 
-export class MachineDriverStatus extends StringEnumValue {}
+export class MachineDriverStatus extends StringEnumValue {
+  public readonly __type: 'MachineDriverStatus' = 'MachineDriverStatus';
+}
 export const machineDriverStatusEnum = createStringEnum(MachineDriverStatus, {
   GOOD       : 'good',
   IMPERFECT  : 'imperfect',
   PRELIMINARY: 'preliminary'
 });
 
-export class MachineDriverSaveStateStatus extends StringEnumValue {}
+export class MachineDriverSaveStateStatus extends StringEnumValue {
+  public readonly __type: 'MachineDriverSaveStateStatus' = 'MachineDriverSaveStateStatus';
+}
 export const machineDriverSaveStateStatusEnum = createStringEnum(MachineDriverSaveStateStatus, {
   SUPPORTED  : 'supported',
   UNSUPPORTED: 'unsupported'

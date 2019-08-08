@@ -1,11 +1,11 @@
 import {IMachineDisplay} from '../types/mame';
-import {IModelineResult, IModelineConfig} from '../types/modeline';
+import {IModelineResult, IModelineConfiguration} from '../types/modeline';
 
 
 const cache = new Map<string, IModelineResult>();
 
 export function set(
-  modelineConfig: IModelineConfig,
+  modelineConfig: IModelineConfiguration,
   machineDisplay: IMachineDisplay,
   modelineResult: IModelineResult
 ): IModelineResult {
@@ -16,7 +16,7 @@ export function set(
 }
 
 export function get(
-  modelineConfig: IModelineConfig,
+  modelineConfig: IModelineConfiguration,
   machineDisplay: IMachineDisplay
 ): IModelineResult | undefined {
   const key = createKey(modelineConfig, machineDisplay);
@@ -24,7 +24,7 @@ export function get(
 }
 
 function createKey(
-  modelineConfig: IModelineConfig,
+  modelineConfig: IModelineConfiguration,
   machineDisplay: IMachineDisplay
 ): string {
   return JSON.stringify({modelineConfig,machineDisplay});

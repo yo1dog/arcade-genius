@@ -70,12 +70,13 @@ export function serializeControlSet(controlSet: ICPControlSet): TJSONValue {
 export function deserializeConfiguration(sCPConfig: TJSONValue, propLabel: string): ICPConfiguration {
   const cpConfigJ = deserializeObject(sCPConfig, propLabel);
   
-  const version = deserializeNumberOptional(cpConfigJ.__version, `${propLabel}.__version`);
+  let version = deserializeNumberOptional(cpConfigJ.__version, `${propLabel}.__version`);
   if (typeof version === 'undefined') {
-    return deserializeConfigurationV1(cpConfigJ, `${propLabel}(v1)`);
+    version = 1;
   }
-  if (version === 2) {
-    return deserializeConfigurationV2(cpConfigJ, `${propLabel}(v2)`);
+  switch (version) {
+    case 1: return deserializeConfigurationV1(cpConfigJ, `${propLabel}(v1)`);
+    case 2: return deserializeConfigurationV2(cpConfigJ, `${propLabel}(v2)`);
   }
   
   throw new Error(`${propLabel} invalid version`);
@@ -139,8 +140,7 @@ export function deserializeControlSetV1(
   const controls = deserializeArray(controlSetJ.sControls, `${propLabel}.sControls`, deserializeControlV1);
   const buttonClusterId = deserializeStringOptional(controlSetJ.buttonClusterId, `${propLabel}.buttonClusterId`);
   
-  /** @type {ICPButtonCluster | undefined} */
-  let setButtonCluster;
+  let setButtonCluster: ICPButtonCluster | undefined;
   if (typeof buttonClusterId === 'string') {
     setButtonCluster = buttonClusters.find(x => x.id === buttonClusterId);
     if (!setButtonCluster) throw new Error(`${propLabel}.buttonClusterId is not a valid Button Cluster ID`);

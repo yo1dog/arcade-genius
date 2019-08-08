@@ -46,7 +46,7 @@ export interface IModelineResult {
   readonly modeline   : IModeline;
 }
 
-export interface IModelineConfig {
+export interface IModelineConfiguration {
   readonly preset         : string;
   readonly orientation    : Orientation;
   readonly ranges         : string[];

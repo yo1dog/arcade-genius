@@ -84,16 +84,28 @@
     vertical-align: bottom;
   }
 }
-.comp-table__table--single-monitor-configuration {
-  .comp-table__monitor-configs-header-row {
+
+.comp-table__header-row__controls-status,
+.comp-table__header-row__video-status,
+.comp-table__sub-header-row {
+  text-align: center;
+}
+
+.comp-table__table--single-control-panel-configuration {
+  .comp-table__header-row__controls-status {
+    text-align: inherit;
+  }
+  .comp-table__sub-header-row__title--control-panel-configuration {
     display: none;
   }
 }
-
-
-.comp-table__header-row__video-status,
-.comp-table__monitor-configs-header-row__title {
-  text-align: center;
+.comp-table__table--single-monitor-configuration {
+  .comp-table__header-row__video-status {
+    text-align: inherit;
+  }
+  .comp-table__sub-header-row__title--monitor-configuration {
+    display: none;
+  }
 }
 
 

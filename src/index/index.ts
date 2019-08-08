@@ -5,7 +5,7 @@ import * as controlsDatUtil     from '../dataAccess/controlsDatUtil';
 import * as controlDefUtil      from '../dataAccess/controlDefUtil';
 import * as modelineCaculator   from '../dataAccess/modelineCalculator';
 import MonitorConfiguratorGroup from '../components/monitorConfiguratorGroup/monitorConfiguratorGroup';
-import ControlPanelConfigurator from '../components/controlPanelConfigurator/controlPanelConfigurator';
+import CPConfiguratorGroup      from '../components/controlPanelConfiguratorGroup/controlPanelConfiguratorGroup';
 import MachineNameList          from '../components/machineNameList/machineNameList';
 import CompatibilityTable       from '../components/compatibilityTable/compatibilityTable';
 import * as compUtil            from '../compatibilityUtil';
@@ -36,13 +36,13 @@ async function onLoad(): Promise<void> {
   
   const machineNameList = new MachineNameList();
   const monitorConfiguratorGroup = new MonitorConfiguratorGroup();
-  const controlPanelConfigurator = new ControlPanelConfigurator('__single');
+  const cpConfiguratorGroup = new CPConfiguratorGroup();
   const compTable = new CompatibilityTable();
   
   let refreshIsPending = false;
   compTable.on('refresh', () => void (async () => {
     monitorConfiguratorGroup.saveState();
-    controlPanelConfigurator.saveState();
+    cpConfiguratorGroup.saveState();
     machineNameList.saveState();
     
     if (refreshIsPending) return;
@@ -54,15 +54,10 @@ async function onLoad(): Promise<void> {
       const machineNameInputs = machineNameList.getMachineNameInputs();
       
       // get the modeline configs
-      const monitorConfigTitles = [];
-      const modelineConfigs = [];
-      for (let i = 0; i < monitorConfiguratorGroup.items.length; ++i) {
-        monitorConfigTitles[i] = monitorConfiguratorGroup.items[i].getTitle();
-        modelineConfigs    [i] = monitorConfiguratorGroup.items[i].configurator.getModelineConfig();
-      }
+      const monitorConfigs = monitorConfiguratorGroup.getMonitorConfigs();
       
-      // get the control panel config
-      const cpConfig = controlPanelConfigurator.getControlPanelConfig();
+      // get the control panel configs
+      const cpConfigs = cpConfiguratorGroup.getControlPanelConfigs();
       
       // check the compatibility of each machine name input
       await Promise.all([
@@ -70,10 +65,10 @@ async function onLoad(): Promise<void> {
         controlsDatUtil.init(),
         modelineCaculator.init()
       ]);
-      const machineComps = await compUtil.checkMachineBulk(machineNameInputs, modelineConfigs, cpConfig);
+      const machineComps = await compUtil.checkMachineBulk(machineNameInputs, monitorConfigs, cpConfigs);
       
       // update the compatibility table
-      compTable.update(machineComps, monitorConfigTitles);
+      compTable.update(machineComps, cpConfigs, monitorConfigs);
     }
     finally {
       refreshIsPending = false; // eslint-disable-line require-atomic-updates
@@ -84,7 +79,7 @@ async function onLoad(): Promise<void> {
   await Promise.all([
     machineNameList.init(),
     monitorConfiguratorGroup.init(),
-    controlPanelConfigurator.init(),
+    cpConfiguratorGroup.init(),
     compTable.init()
   ]);
   
@@ -97,8 +92,8 @@ async function onLoad(): Promise<void> {
     monitorConfiguratorGroup.elem
   );
   replaceChildren(
-    document.querySelector('.control-panel-configurator-container'),
-    controlPanelConfigurator.elem
+    document.querySelector('.control-panel-configurator-group-container'),
+    cpConfiguratorGroup.elem
   );
   replaceChildren(
     document.querySelector('.comp-table-container'),

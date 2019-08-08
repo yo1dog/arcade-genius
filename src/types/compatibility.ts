@@ -2,7 +2,6 @@ import {createNumberEnum, NumberEnumValue} from './enum';
 import {IMachine}                          from './mame';
 import MultidimensionalScore               from '../multidimensionalScore';
 import {
-  IModelineConfig,
   IModelineResult
 } from './modeline';
 import {
@@ -17,13 +16,18 @@ import {
   IGameControl,
   IGameButton
 } from './controlsDat';
+import {
+  IMonitorConfiguration
+} from './monitor';
 
 
 // ----------------------------------
 // Overall
 // ----------------------------------
 
-export class OverallCompatibilityStatus extends NumberEnumValue {}
+export class OverallCompatibilityStatus extends NumberEnumValue {
+  public readonly __type: 'OverallCompatibilityStatus' = 'OverallCompatibilityStatus';
+}
 export const overallCompatibilityStatusEnum = createNumberEnum(OverallCompatibilityStatus, [
   -1,
   'UNKNOWN',
@@ -42,9 +46,10 @@ export const overallCompatibilityStatusEnum = createNumberEnum(OverallCompatibil
 export interface IMachineCompatibility {
   readonly machineNameInput  : string;
   readonly machine?          : IMachine;
+  readonly controlsDatGame?  : IControlsDatGame;
   readonly videoComps        : IVideoCompatibility[];
   readonly emuComp           : IEmulationCompatibility;
-  readonly controlsComp      : IControlsCompatibility;
+  readonly controlsComps     : IControlsCompatibility[];
   readonly overallStatus     : OverallCompatibilityStatus;
   readonly knownOverallStatus: OverallCompatibilityStatus;
 }
@@ -54,7 +59,9 @@ export interface IMachineCompatibility {
 // Emulation
 // ----------------------------------
 
-export class EmulationCompatibilityStatus extends NumberEnumValue {}
+export class EmulationCompatibilityStatus extends NumberEnumValue {
+  public readonly __type: 'EmulationCompatibilityStatus' = 'EmulationCompatibilityStatus';
+}
 export const emulationCompatibilityStatusEnum = createNumberEnum(EmulationCompatibilityStatus, [
   -1,
   'UNKNOWN',
@@ -73,7 +80,9 @@ export interface IEmulationCompatibility {
 // Video
 // ----------------------------------
 
-export class VideoCompatibilityStatus extends NumberEnumValue {}
+export class VideoCompatibilityStatus extends NumberEnumValue {
+  public readonly __type: 'VideoCompatibilityStatus' = 'VideoCompatibilityStatus';
+}
 export const videoCompatibilityStatusEnum = createNumberEnum(VideoCompatibilityStatus, [
   -1,
   'UNKNOWN',
@@ -86,7 +95,7 @@ export const videoCompatibilityStatusEnum = createNumberEnum(VideoCompatibilityS
 
 export interface IVideoCompatibility {
   readonly machine?       : IMachine;
-  readonly modelineConfig : IModelineConfig;
+  readonly monitorConfig  : IMonitorConfiguration;
   readonly modelineResult?: IModelineResult;
   readonly status         : VideoCompatibilityStatus;
 }
@@ -96,7 +105,9 @@ export interface IVideoCompatibility {
 // Controls
 // ----------------------------------
 
-export class ControlsCompatibilityStatus extends NumberEnumValue {}
+export class ControlsCompatibilityStatus extends NumberEnumValue {
+  public readonly __type: 'ControlsCompatibilityStatus' = 'ControlsCompatibilityStatus';
+}
 export const controlsCompatibilityStatusEnum = createNumberEnum(ControlsCompatibilityStatus, [
   -1,
   'UNKNOWN',
@@ -108,12 +119,12 @@ export const controlsCompatibilityStatusEnum = createNumberEnum(ControlsCompatib
 ]);
 
 export interface IControlsCompatibility {
-  readonly machine?             : IMachine;
-  readonly cpConfig             : ICPConfiguration;
-  readonly controlsDatGame?     : IControlsDatGame;
-  readonly bestControlConfigComp: IControlConfigurationCompatibility;
-  readonly allControlConfigComps: IControlConfigurationCompatibility[];
-  readonly status               : ControlsCompatibilityStatus;
+  readonly machine?              : IMachine;
+  readonly cpConfig              : ICPConfiguration;
+  readonly controlsDatGame?      : IControlsDatGame;
+  readonly bestControlConfigComp?: IControlConfigurationCompatibility;
+  readonly allControlConfigComps : IControlConfigurationCompatibility[];
+  readonly status                : ControlsCompatibilityStatus;
 }
 
 export interface IControlConfigurationCompatibility {

@@ -1,28 +1,28 @@
-import './monitorConfiguratorGroup.less';
-import {EventEmitter}                       from 'events';
-import monitorConfiguratorGroupTemplate     from './monitorConfiguratorGroup.html';
-import monitorConfiguratorGroupItemTemplate from './monitorConfiguratorGroupItem.html';
-import MonitorConfigurator                  from '../monitorConfigurator/monitorConfigurator';
-import * as stateUtil                       from '../../dataAccess/stateUtil';
-import {IMonitorConfiguration}              from '../../types/monitor';
-import createUUID                           from 'lib/get_uuid.js';
+import './controlPanelConfiguratorGroup.less';
+import {EventEmitter}                  from 'events';
+import cpConfiguratorGroupTemplate     from './controlPanelConfiguratorGroup.html';
+import cpConfiguratorGroupItemTemplate from './controlPanelConfiguratorGroupItem.html';
+import CPConfigurator                  from '../controlPanelConfigurator/controlPanelConfigurator';
+import * as stateUtil                  from '../../dataAccess/stateUtil';
+import {ICPConfiguration}              from '../../types/controlPanel';
+import createUUID                      from 'lib/get_uuid.js';
 import {
   serializeState,
   deserializeState
-} from './monitorConfiguratorGroupSerializer';
+} from './controlPanelConfiguratorGroupSerializer';
 import {
   htmlToBlock,
   selectR,
   firstChildR
 } from '../../helpers/htmlUtil';
 
-export interface IMonitorConfiguratorGroupState {
+export interface ICPConfiguratorGroupState {
   readonly configuratorIds: string[];
 }
 
 
-export default class MonitorConfiguratorGroup {
-  public readonly items: MonitorConfiguratorGroupItem[];
+export default class CPConfiguratorGroup {
+  public readonly items: CPConfiguratorGroupItem[];
   public readonly elem : HTMLElement;
   
   private readonly itemContainerElem: HTMLElement;
@@ -32,9 +32,9 @@ export default class MonitorConfiguratorGroup {
   public constructor() {
     this.items = [];
     
-    this.elem = firstChildR(htmlToBlock(monitorConfiguratorGroupTemplate));
-    this.itemContainerElem = selectR(this.elem, '.monitor-configurator-group__item-container');
-    this.addItemButton     = selectR(this.elem, '.monitor-configurator-group__add-item-button');
+    this.elem = firstChildR(htmlToBlock(cpConfiguratorGroupTemplate));
+    this.itemContainerElem = selectR(this.elem, '.control-panel-configurator-group__item-container');
+    this.addItemButton     = selectR(this.elem, '.control-panel-configurator-group__add-item-button');
     
     this.addItemButton.addEventListener('click', () => {
       this.addConfigurator(); // eslint-disable-line @typescript-eslint/no-floating-promises
@@ -48,25 +48,29 @@ export default class MonitorConfiguratorGroup {
         await this.addConfigurator(configuratorId);
       }
     }
+    else {
+      // legacy single configurator state
+      await this.addConfigurator('__single');
+    }
     
     if (this.items.length === 0) {
       await this.addConfigurator();
     }
   }
   
-  public getMonitorConfigs(): IMonitorConfiguration[] {
-    return this.items.map(item => item.configurator.getMonitorConfig());
+  public getControlPanelConfigs(): ICPConfiguration[] {
+    return this.items.map(item => item.configurator.getControlPanelConfig());
   }
   
   public async addConfigurator(
     configuratorId: string = createUUID()
-  ): Promise<MonitorConfiguratorGroupItem> {
+  ): Promise<CPConfiguratorGroupItem> {
     const itemIndex = this.items.length;
     
-    const configurator = new MonitorConfigurator(configuratorId);
+    const configurator = new CPConfigurator(configuratorId);
     await configurator.init();
     
-    const item = new MonitorConfiguratorGroupItem(configurator);
+    const item = new CPConfiguratorGroupItem(configurator);
     item.setName(this.createNameFromIndex(itemIndex));
     
     if (itemIndex === 0) {
@@ -86,7 +90,7 @@ export default class MonitorConfiguratorGroup {
     return item;
   }
   
-  public removeConfigurator(configuratorId:string): MonitorConfiguratorGroupItem | undefined {
+  public removeConfigurator(configuratorId:string): CPConfiguratorGroupItem | undefined {
     // find the item
     const itemIndex = this.items.findIndex(x => x.configurator.id === configuratorId);
     if (itemIndex === -1) {
@@ -100,7 +104,7 @@ export default class MonitorConfiguratorGroup {
     
     this.items.splice(itemIndex, 1);
     
-    // reset titles
+    // reset names
     for (let i = itemIndex; i < this.items.length; ++i) {
       this.items[i].setName(this.createNameFromIndex(i));
     }
@@ -112,7 +116,7 @@ export default class MonitorConfiguratorGroup {
   
   private updateGroup(): void {
     this.elem.classList.toggle(
-      'monitor-configurator-group--single-item',
+      'control-panel-configurator-group--single-item',
       this.items.length === 1
     );
   }
@@ -131,11 +135,11 @@ export default class MonitorConfiguratorGroup {
   }
   
   private getStateKey(): string {
-    return 'monitorConfiguratorGroup';
+    return 'controlPanelConfiguratorGroup';
   }
   
   public saveState(): void {
-    const state: IMonitorConfiguratorGroupState = {
+    const state: ICPConfiguratorGroupState = {
       configuratorIds: this.items.map(x => x.configurator.id)
     };
     
@@ -147,26 +151,23 @@ export default class MonitorConfiguratorGroup {
     }
   }
   
-  private loadState(): IMonitorConfiguratorGroupState | undefined {
-    const sState = stateUtil.depricate(
-      this.getStateKey(),
-      'monitorConfiguratorGroupItemIds' // depricated keys
-    );
+  private loadState(): ICPConfiguratorGroupState | undefined {
+    const sState = stateUtil.get(this.getStateKey());
     if (!sState) return;
     
     try {
-      return deserializeState(sState, 'sMonitorConfiguratorGroupState');
+      return deserializeState(sState, 'sCPConfiguratorGroupState');
     }
     catch (err) {
-      console.error(`Error deserializing Monitor Configurator Group state:`);
+      console.error(`Error deserializing Control Panel Configurator Group state:`);
       console.error(err);
     }
   }
 }
 
 
-class MonitorConfiguratorGroupItem extends EventEmitter {
-  public readonly configurator: MonitorConfigurator;
+class CPConfiguratorGroupItem extends EventEmitter {
+  public readonly configurator: CPConfigurator;
   public readonly elem        : HTMLElement;
   
   private readonly nameElem                 : HTMLElement;
@@ -174,15 +175,15 @@ class MonitorConfiguratorGroupItem extends EventEmitter {
   private readonly removeButtonElem         : HTMLElement;
   
   
-  public constructor(configurator: MonitorConfigurator) {
+  public constructor(configurator: CPConfigurator) {
     super();
     
     this.configurator = configurator;
     
-    this.elem = firstChildR(htmlToBlock(monitorConfiguratorGroupItemTemplate));
-    this.nameElem                 = selectR(this.elem, '.monitor-configurator-group__item__name');
-    this.configuratorContainerElem = selectR(this.elem, '.monitor-configurator-group__item__configurator-container');
-    this.removeButtonElem          = selectR(this.elem, '.monitor-configurator-group__item__remove-button');
+    this.elem = firstChildR(htmlToBlock(cpConfiguratorGroupItemTemplate));
+    this.nameElem                  = selectR(this.elem, '.control-panel-configurator-group__item__name');
+    this.configuratorContainerElem = selectR(this.elem, '.control-panel-configurator-group__item__configurator-container');
+    this.removeButtonElem          = selectR(this.elem, '.control-panel-configurator-group__item__remove-button');
     
     this.configuratorContainerElem.appendChild(configurator.elem);
     

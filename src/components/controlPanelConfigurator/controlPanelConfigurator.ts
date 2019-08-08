@@ -17,7 +17,8 @@ import {
 } from '../../helpers/htmlUtil';
 import {
   ICPConfiguration,
-  ICPButtonCluster
+  ICPButtonCluster,
+  ICPControlSet
 } from '../../types/controlPanel';
 import {
   IControlDef,
@@ -49,6 +50,7 @@ export interface IControlSetRowDef {
 export default class ControlPanelConfigurator {
   public readonly id  : string;
   public readonly elem: HTMLElement;
+  public name?: string;
   
   private readonly buttonClusterTableBodyElem   : HTMLElement;
   private readonly addButtonClusterTableBodyElem: HTMLElement;
@@ -61,8 +63,9 @@ export default class ControlPanelConfigurator {
   private readonly controlSetRowDefs   : IControlSetRowDef[];
   
   
-  public constructor(id: string) {
+  public constructor(id: string, name?: string) {
     this.id = id;
+    this.name = name;
     
     this.elem = firstChildR(htmlToBlock(cpConfiguratorTemplate));
     this.buttonClusterTableBodyElem    = selectR(this.elem, '.control-panel-configurator__button-cluster-table__body');
@@ -257,6 +260,93 @@ export default class ControlPanelConfigurator {
     return controlSetRowDef;
   }
   
+  public async init() {
+    await controlDefUtil.init();
+    
+    const state = this.loadState();
+    
+    if (state) {
+      const {cpConfig} = state;
+      
+      for (const buttonCluster of cpConfig.buttonClusters) {
+        this.addButtonClusterRow({
+          buttonClusterId: buttonCluster.id,
+          name           : buttonCluster.name,
+          numButtons     : buttonCluster.numButtons
+        });
+      }
+      
+      for (const controlSet of cpConfig.controlSets) {
+        this.addControlSetRow(
+          controlSet.controls[0].controlDef,
+          {
+            controlId        : controlSet.controls[0].id,
+            controlName      : controlSet.controls[0].name,
+            numControlButtons: controlSet.controls[0].numButtons,
+            buttonClusterId  : controlSet.buttonCluster? controlSet.buttonCluster.id : undefined
+          }
+        );
+      }
+    }
+    
+    if (this.buttonClusterRowDefs.length === 0) {
+      this.addButtonClusterRow({numButtons: 3});
+    }
+    
+    this.updateAllButtonClusterSelectElems();
+    
+    if (this.controlSetRowDefs.length === 0) {
+      this.addControlSetRow(
+        controlDefUtil.getByType(controlTypeEnum.JOY_8WAY),
+        {buttonClusterId: this.buttonClusterRowDefs[0].buttonClusterId}
+      );
+    }
+    
+    this.populateControlTypeSelect();
+  }
+  
+  public getControlPanelConfig():ICPConfiguration {
+    const buttonClusters = this.buttonClusterRowDefs.map(buttonClusterRowDef => {
+      const buttonCluster:ICPButtonCluster = {
+        id  : buttonClusterRowDef.buttonClusterId,
+        name: buttonClusterRowDef.nameInputElem.value.trim(),
+        numButtons: parseInt(buttonClusterRowDef.countInputElem.value, 10) || 0,
+        isOnOppositeScreenSide: false
+      };
+      return buttonCluster;
+    });
+    
+    const controlSets = this.controlSetRowDefs.map(controlSetRowDef => {
+      const controlSet: ICPControlSet = {
+        controls: [{
+          id        : controlSetRowDef.controlId,
+          name      : controlSetRowDef.controlNameInputElem.value.trim(),
+          controlDef: controlSetRowDef.controlDef,
+          numButtons: parseInt(controlSetRowDef.controlButtonsCountInputElem.value, 10) || 0,
+          isOnOppositeScreenSide: false
+        }],
+        buttonCluster: buttonClusters.find(x => x.id === controlSetRowDef.buttonClusterSelectElem.value)
+      };
+      return controlSet;
+    });
+    
+    // assume each control set row defines a physical control
+    // 
+    // this may seem backwards as you would assume you define the physical
+    // controls first and then create control sets based on those. However,
+    // we do it this way for now to keep the UI simple
+    
+    const controls = controlSets.flatMap(x => x.controls);
+    
+    const controlPanelConfig: ICPConfiguration = {
+      name: this.name,
+      controls,
+      buttonClusters,
+      controlSets
+    };
+    return controlPanelConfig;
+  }
+  
   private removeControlSetRow(controlId: string): IControlSetRowDef | undefined {
     const index = this.controlSetRowDefs.findIndex(x => x.controlId === controlId);
     if (index === -1) return;
@@ -434,95 +524,6 @@ export default class ControlPanelConfigurator {
     this.controlDescriptionElem.appendChild(document.createTextNode(
       desc.substring(index)
     ));
-  }
-  
-  
-  public async init() {
-    await controlDefUtil.init();
-    
-    const state = this.loadState();
-    
-    if (state) {
-      const {cpConfig} = state;
-      
-      for (const buttonCluster of cpConfig.buttonClusters) {
-        this.addButtonClusterRow({
-          buttonClusterId: buttonCluster.id,
-          name           : buttonCluster.name,
-          numButtons     : buttonCluster.numButtons
-        });
-      }
-      
-      for (const controlSet of cpConfig.controlSets) {
-        this.addControlSetRow(
-          controlSet.controls[0].controlDef,
-          {
-            controlId        : controlSet.controls[0].id,
-            controlName      : controlSet.controls[0].name,
-            numControlButtons: controlSet.controls[0].numButtons,
-            buttonClusterId  : controlSet.buttonCluster? controlSet.buttonCluster.id : undefined
-          }
-        );
-      }
-    }
-    
-    if (this.buttonClusterRowDefs.length === 0) {
-      this.addButtonClusterRow({numButtons: 3});
-    }
-    
-    this.updateAllButtonClusterSelectElems();
-    
-    if (this.controlSetRowDefs.length === 0) {
-      this.addControlSetRow(
-        controlDefUtil.getByType(controlTypeEnum.JOY_8WAY),
-        {buttonClusterId: this.buttonClusterRowDefs[0].buttonClusterId}
-      );
-    }
-    
-    this.populateControlTypeSelect();
-  }
-  
-  public getControlPanelConfig():ICPConfiguration {
-    const buttonClusters = this.buttonClusterRowDefs.map(buttonClusterRowDef => {
-      const buttonCluster:ICPButtonCluster = {
-        id  : buttonClusterRowDef.buttonClusterId,
-        name: buttonClusterRowDef.nameInputElem.value.trim(),
-        numButtons: parseInt(buttonClusterRowDef.countInputElem.value, 10) || 0,
-        isOnOppositeScreenSide: false
-      };
-      return buttonCluster;
-    });
-    
-    const controlSets = this.controlSetRowDefs.map(controlSetRowDef => {
-      /** @type {ICPControlSet} */
-      const controlSet = {
-        controls: [{
-          id        : controlSetRowDef.controlId,
-          name      : controlSetRowDef.controlNameInputElem.value.trim(),
-          controlDef: controlSetRowDef.controlDef,
-          numButtons: parseInt(controlSetRowDef.controlButtonsCountInputElem.value, 10) || 0,
-          isOnOppositeScreenSide: false
-        }],
-        buttonCluster: buttonClusters.find(x => x.id === controlSetRowDef.buttonClusterSelectElem.value)
-      };
-      return controlSet;
-    });
-    
-    // assume each control set row defines a physical control
-    // 
-    // this may seem backwards as you would assume you define the physical
-    // controls first and then create control sets based on those. However,
-    // we do it this way for now to keep the UI simple
-    
-    const controls = controlSets.flatMap(x => x.controls);
-    
-    /** @type {ICPConfiguration} */
-    const controlPanelConfig = {
-      controls,
-      buttonClusters,
-      controlSets
-    };
-    return controlPanelConfig;
   }
   
   private getStateKey():string {

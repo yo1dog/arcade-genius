@@ -2,6 +2,7 @@ import {IControlDef} from './controlDef';
 
 
 export interface ICPConfiguration {
+  readonly name?         : string;
   readonly controls      : ICPControl[];
   readonly buttonClusters: ICPButtonCluster[];
   readonly controlSets   : ICPControlSet[];

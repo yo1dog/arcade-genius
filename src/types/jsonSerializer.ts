@@ -141,8 +141,7 @@ export function deserializeMap<T>(
 ): Map<string, T> {
   const obj = deserializeObject(serializedVal, propLabel);
   
-  /** @type {Map<string, T>} */
-  const map = new Map();
+  const map = new Map<string, T>();
   for (const key in obj) {
     map.set(key, deserializeFn(obj[key], `${propLabel}['${key}']`, key));
   }

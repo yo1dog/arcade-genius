@@ -65,7 +65,7 @@ export default class MachineNameList {
   }
   
   private getStateKey(): string {
-    return 'machineNameListInput';
+    return 'machineNameList';
   }
   
   public saveState() {
@@ -78,7 +78,10 @@ export default class MachineNameList {
   }
   
   private loadState():IMachineNameListState|undefined {
-    const sState = stateUtil.get(this.getStateKey());
+    const sState = stateUtil.depricate(
+      this.getStateKey(),
+      'machineNameListInput' // depricated keys
+    );
     if (!sState) return;
     
     try {

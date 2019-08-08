@@ -25,8 +25,8 @@ export function deserializeState(sState: TJSONValue, propLabel: string): IMachin
   const stateJ = deserializeObject(sState, propLabel);
   
   const version = deserializeNumber(stateJ.__version, `${propLabel}.__version`);
-  if (version === 2) {
-    return deserializeStateV2(stateJ, `${propLabel}(v2)`);
+  switch (version) {
+    case 2: return deserializeStateV2(stateJ, `${propLabel}(v${version})`);
   }
   
   throw new Error(`${propLabel} invalid version`);
