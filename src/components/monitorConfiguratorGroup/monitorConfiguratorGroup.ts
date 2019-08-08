@@ -100,7 +100,7 @@ export default class MonitorConfiguratorGroup {
     
     this.items.splice(itemIndex, 1);
     
-    // reset titles
+    // reset names
     for (let i = itemIndex; i < this.items.length; ++i) {
       this.items[i].setName(this.createNameFromIndex(i));
     }
