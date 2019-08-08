@@ -518,6 +518,17 @@ export default class CompatibilityTable extends EventEmitter {
         for (const controlComp of controlSetComp.controlComps) {
           const showControlButtonsDescs = controlComp.gameControl.buttons.length > 0;
           
+          /*
+          const gameControlLabels = [];
+          for (const gameInput of controlComp.gameControl.outputToInputMap.values()) {
+            if (!gameInput) continue;
+            if (gameInput.label   ) gameControlLabels.push(gameInput.label   );
+            if (gameInput.posLabel) gameControlLabels.push(gameInput.posLabel);
+            if (gameInput.negLabel) gameControlLabels.push(gameInput.negLabel);
+          }
+          const gameControlLabelsStr = gameControlLabels.length > 0? `(${gameControlLabels.join('/')})` : '';
+          */
+          
           const gameControlDesc = controlComp.gameControl.controlDef.name;
           const gameControlButtonsDesc = `with ${pluralize(controlComp.gameControl.buttons.length, 'button', 'buttons', ' ')}`;
           
@@ -527,6 +538,7 @@ export default class CompatibilityTable extends EventEmitter {
           const text = [
             gameControlDesc,
             showControlButtonsDescs? gameControlButtonsDesc : '',
+            //gameControlLabelsStr,
             '→',
             cpControlDesc,
             showControlButtonsDescs? cpControlButtonsDesc : ''
@@ -541,14 +553,29 @@ export default class CompatibilityTable extends EventEmitter {
         // add a list item for the button compatibility
         const {buttonsComp} = controlSetComp;
         if (buttonsComp.gameButtons.length > 0) {
+          /*
+          const gameButtonLabels = (
+            buttonsComp.gameButtons
+            .map(x => x.input.label)
+            .filter(x => x)
+          );
+          const gameButtonLabelsStr = gameButtonLabels.length > 0? `(${gameButtonLabels.join('/')})` : '';
+          */
+          
           const gameButtonsDesc = pluralize(buttonsComp.gameButtons.length, 'button', 'buttons', ' ');
+          
           const cpButtonsDesc = (
             buttonsComp.cpButtonCluster
             ? `${pluralize(buttonsComp.cpButtonCluster.numButtons, 'button', 'buttons', ' ')} (${buttonsComp.cpButtonCluster.name})`
             : '×'
           );
           
-          const text = `${gameButtonsDesc} → ${cpButtonsDesc}`;
+          const text = [
+            gameButtonsDesc,
+            //gameButtonLabelsStr
+            '→',
+            cpButtonsDesc
+          ].join(' ');
           const overallStatus = controlsToOverallCompatibilityStatus(buttonsComp.status);
           
           const itemElem = this.createDetailsListItem(text, overallStatus);
