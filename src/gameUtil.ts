@@ -2,6 +2,7 @@ import * as mameListUtil       from './data/mameListUtil';
 import * as controlsDatUtil    from './data/controlsDatUtil';
 import * as controlDefUtil     from './controlDefUtil';
 import coalesceNull            from './helpers/coalesceNull';
+import shortenDescription      from './helpers/shortenDescription';
 import calcLevenshteinDistance from 'lib/levenshtein.js';
 import {
   IGame,
@@ -75,14 +76,14 @@ export function getGameSuggestions(gameNameInput: string, numSuggestions: number
     return [];
   }
   
-  const nameMatchStr      = gameNameInput.replace(/\s+/g, '').toLowerCase();
-  const shortDescMatchStr = gameNameInput.trim().toLowerCase();
+  const nameMatchStr = gameNameInput.replace(/\s+/g, '').toLowerCase();
+  const descMatchStr = gameNameInput.trim().toLowerCase();
   
   const suggestions: {game: IGame; dist: number}[] = Array(numSuggestions).fill({dist: Infinity});
   
   for (const [, game] of gameMap) {
     const dist1 = calcLevenshteinDistance(nameMatchStr, game.name);
-    const dist2 = calcLevenshteinDistance(shortDescMatchStr, game.shortDescription.toLowerCase());
+    const dist2 = calcLevenshteinDistance(descMatchStr, (game.shortDescription || game.description).toLowerCase());
     const dist = dist1 < dist2? dist1 : dist2;
     
     for (let i = 0; i < suggestions.length; ++i) {
@@ -150,7 +151,7 @@ function createGame(mameMachine: IMAMEMachine, controlsDatGame?: IControlsDatGam
   return {
     name            : mameMachine.name,
     description     : mameMachine.description,
-    shortDescription: mameMachine.description.replace(/\(.+\)/g, '').trim(),
+    shortDescription: shortenDescription(mameMachine.description),
     primaryDisplay  : displays[0],
     displays        : displays,
     controlInfo     : controlsDatGame && createGameControlInfo(controlsDatGame),

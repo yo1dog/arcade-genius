@@ -82,19 +82,20 @@ export function videoToOverallCompatibilityStatus(status: VideoCompatibilityStat
 // Game
 // ----------------------------------
 
-export function getGameByInput(gameNameInput: string): IGame | undefined {
-  return gameUtil.getGameByName(
-    gameNameInput.trim().toLowerCase()
-  );
+export function getGameByInput(gameNameInput: string, gameOverrideMap?: Map<string, IGame>): IGame | undefined {
+  const gameName = gameNameInput.trim().toLowerCase();
+  
+  return (gameOverrideMap && gameOverrideMap.get(gameName)) || gameUtil.getGameByName(gameName);
 }
 
 export async function checkGameBulk(
-  gameNameInputs: string[],
-  monitorConfigs: IMonitorConfiguration[],
-  cpConfigs     : ICPConfiguration[]
+  gameNameInputs : string[],
+  gameOverrideMap: Map<string, IGame>,
+  monitorConfigs : IMonitorConfiguration[],
+  cpConfigs      : ICPConfiguration[]
 ): Promise<IGameCompatibility[]> {
   const games = gameNameInputs.map(gameNameInput =>
-    getGameByInput(gameNameInput)
+    getGameByInput(gameNameInput, gameOverrideMap)
   ).filter((x, i, arr) =>
     arr.indexOf(x) === i // dedupe
   );

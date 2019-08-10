@@ -196,7 +196,7 @@ export default class CompatibilityTable extends EventEmitter {
     selectR(rowBlock, '.comp-table__row__desc__icon').classList.add(rowOverallStatusTrans.iconCSSClass);
     selectR(rowBlock, '.comp-table__row__desc__text').innerText = (
       game
-      ? game.shortDescription
+      ? game.shortDescription || game.description || game.name
       : gameComp.gameNameInput
     );
     
@@ -720,6 +720,8 @@ export default class CompatibilityTable extends EventEmitter {
       obj      : {[key:string]: number} = {},
       keyPrefix: string = ''
     ): {[key:string]: number} {
+      if (!score) return score;
+      
       for (const dim of score.dims) {
         if (typeof dim.val === 'number') {
           obj[keyPrefix + dim.key] = dim.val;

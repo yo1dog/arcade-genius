@@ -19,14 +19,14 @@ import {
 
 
 export interface IGame {
-  readonly name            : string;
-  readonly description     : string;
-  readonly shortDescription: string;
-  readonly cloneOfGame?    : IGame;
-  readonly primaryDisplay? : IGameDisplay;
-  readonly displays        : IGameDisplay[];
-  readonly controlInfo?    : IGameControlInfo;
-  readonly mameMachine?    : IMAMEMachine;
+  readonly name             : string;
+  readonly description      : string;
+  readonly shortDescription?: string;
+  readonly cloneOfGame?     : IGame;
+  readonly primaryDisplay?  : IGameDisplay;
+  readonly displays         : IGameDisplay[];
+  readonly controlInfo?     : IGameControlInfo;
+  readonly mameMachine?     : IMAMEMachine;
 }
 
 export interface IGameDisplay {

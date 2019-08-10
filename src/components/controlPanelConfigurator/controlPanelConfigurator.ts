@@ -2,6 +2,7 @@ import './controlPanelConfigurator.less';
 import cpConfiguratorTemplate              from './controlPanelConfigurator.html';
 import cpConfiguratorButtonClusterTemplate from './controlPanelConfiguratorButtonCluster.html';
 import cpConfiguratorControlSetTemplate    from './controlPanelConfiguratorControlSet.html';
+import ControlTypeSelector                 from '../controlTypeSelector/controlTypeSelector';
 import * as stateUtil                      from '../../stateUtil';
 import * as controlDefUtil                 from '../../controlDefUtil';
 import createUUID                          from 'lib/get_uuid.js';
@@ -22,7 +23,6 @@ import {
 } from '../../types/controlPanel';
 import {
   IControlDef,
-  ControlType,
   controlTypeEnum
 } from '../../types/controlDef';
 
@@ -55,9 +55,9 @@ export default class ControlPanelConfigurator {
   private readonly buttonClusterTableBodyElem   : HTMLElement;
   private readonly addButtonClusterTableBodyElem: HTMLElement;
   private readonly controlSetTableBodyElem      : HTMLElement;
-  private readonly controlTypeSelectElem        : HTMLSelectElement;
   private readonly addControlSetButtonElem      : HTMLElement;
-  private readonly controlDescriptionElem       : HTMLElement;
+  
+  private readonly controlTypeSelector: ControlTypeSelector;
   
   private readonly buttonClusterRowDefs: IButtonClusterRowDef[];
   private readonly controlSetRowDefs   : IControlSetRowDef[];
@@ -72,9 +72,12 @@ export default class ControlPanelConfigurator {
     this.addButtonClusterTableBodyElem = selectR(this.elem, '.control-panel-configurator__add-button-cluster-button');
     
     this.controlSetTableBodyElem = selectR(this.elem, '.control-panel-configurator__control-set-table__body');
-    this.controlTypeSelectElem   = selectR(this.elem, '.control-panel-configurator__control-type-select', 'select');
     this.addControlSetButtonElem = selectR(this.elem, '.control-panel-configurator__add-control-set-button');
-    this.controlDescriptionElem  = selectR(this.elem, '.control-panel-configurator__control-description');
+    
+    this.controlTypeSelector = new ControlTypeSelector(
+      selectR(this.elem, '.control-panel-configurator__control-type-select', 'select'),
+      selectR(this.elem, '.control-panel-configurator__control-description')
+    );
     
     this.buttonClusterRowDefs = [];
     this.controlSetRowDefs = [];
@@ -84,34 +87,57 @@ export default class ControlPanelConfigurator {
       this.updateAllButtonClusterSelectElems();
     });
     
-    this.controlTypeSelectElem.addEventListener('change', () => {
-      const controlTypeInput = this.controlTypeSelectElem.value;
-      if (!controlTypeInput) {
-        this.setControlDescription();
-        return;
-      }
-      
-      const controlType = controlTypeEnum.get(controlTypeInput);
-      if (!controlType) throw new Error(`Invalid control type selected: '${controlTypeInput}'`);
-      
-      const controlDef = controlDefUtil.getByType(controlType);
-      this.setControlDescription(controlDef);
-    });
-    
     this.addControlSetButtonElem.addEventListener('click', () => {
-      const controlTypeInput = this.controlTypeSelectElem.value;
-      if (!controlTypeInput) {
-        return;
-      }
+      const controlDef = this.controlTypeSelector.getControlDef();
+      if (!controlDef) return;
       
-      const controlType = controlTypeEnum.get(controlTypeInput);
-      if (!controlType) {
-        throw new Error(`Invalid control type selected: '${controlTypeInput}'`);
-      }
-      
-      const controlDef = controlDefUtil.getByType(controlType);
       this.addControlSetRow(controlDef);
     });
+  }
+  
+  public async init() {
+    await controlDefUtil.init();
+    
+    this.controlTypeSelector.populateSelect();
+    
+    const state = this.loadState();
+    
+    if (state) {
+      const {cpConfig} = state;
+      
+      for (const buttonCluster of cpConfig.buttonClusters) {
+        this.addButtonClusterRow({
+          buttonClusterId: buttonCluster.id,
+          name           : buttonCluster.name,
+          numButtons     : buttonCluster.numButtons
+        });
+      }
+      
+      for (const controlSet of cpConfig.controlSets) {
+        this.addControlSetRow(
+          controlSet.controls[0].controlDef,
+          {
+            controlId        : controlSet.controls[0].id,
+            controlName      : controlSet.controls[0].name,
+            numControlButtons: controlSet.controls[0].numButtons,
+            buttonClusterId  : controlSet.buttonCluster? controlSet.buttonCluster.id : undefined
+          }
+        );
+      }
+    }
+    
+    if (this.buttonClusterRowDefs.length === 0) {
+      this.addButtonClusterRow({numButtons: 3});
+    }
+    
+    this.updateAllButtonClusterSelectElems();
+    
+    if (this.controlSetRowDefs.length === 0) {
+      this.addControlSetRow(
+        controlDefUtil.getByType(controlTypeEnum.JOY_8WAY),
+        {buttonClusterId: this.buttonClusterRowDefs[0].buttonClusterId}
+      );
+    }
   }
   
   private addButtonClusterRow({
@@ -258,51 +284,6 @@ export default class ControlPanelConfigurator {
     this.controlSetRowDefs.push(controlSetRowDef);
     
     return controlSetRowDef;
-  }
-  
-  public async init() {
-    await controlDefUtil.init();
-    
-    const state = this.loadState();
-    
-    if (state) {
-      const {cpConfig} = state;
-      
-      for (const buttonCluster of cpConfig.buttonClusters) {
-        this.addButtonClusterRow({
-          buttonClusterId: buttonCluster.id,
-          name           : buttonCluster.name,
-          numButtons     : buttonCluster.numButtons
-        });
-      }
-      
-      for (const controlSet of cpConfig.controlSets) {
-        this.addControlSetRow(
-          controlSet.controls[0].controlDef,
-          {
-            controlId        : controlSet.controls[0].id,
-            controlName      : controlSet.controls[0].name,
-            numControlButtons: controlSet.controls[0].numButtons,
-            buttonClusterId  : controlSet.buttonCluster? controlSet.buttonCluster.id : undefined
-          }
-        );
-      }
-    }
-    
-    if (this.buttonClusterRowDefs.length === 0) {
-      this.addButtonClusterRow({numButtons: 3});
-    }
-    
-    this.updateAllButtonClusterSelectElems();
-    
-    if (this.controlSetRowDefs.length === 0) {
-      this.addControlSetRow(
-        controlDefUtil.getByType(controlTypeEnum.JOY_8WAY),
-        {buttonClusterId: this.buttonClusterRowDefs[0].buttonClusterId}
-      );
-    }
-    
-    this.populateControlTypeSelect();
   }
   
   public getControlPanelConfig():ICPConfiguration {
@@ -474,58 +455,6 @@ export default class ControlPanelConfigurator {
     selectElem.value = prevValueExists? prevValue : '';
   }
   
-  private populateControlTypeSelect(): void {
-    for (const [categoryTitle, controlTypes] of this.getCategoryControlTypeMap()) {
-      const optgroupElem = document.createElement('optgroup');
-      optgroupElem.label = categoryTitle;
-      
-      for (const controlType of controlTypes) {
-        const controlDef = controlDefUtil.getByType(controlType);
-        
-        const optionElem = document.createElement('option');
-        optionElem.value = controlDef.type.val;
-        optionElem.innerText = controlDef.name;
-        
-        optgroupElem.appendChild(optionElem);
-      }
-      
-      this.controlTypeSelectElem.appendChild(optgroupElem);
-    }
-  }
-  
-  private setControlDescription(controlDef?: IControlDef): void {
-    replaceChildren(this.controlDescriptionElem);
-    
-    if (!controlDef) {
-      return;
-    }
-    
-    const desc = controlDef.description;
-    
-    const regexp = /https?:\/\/\S+/g;
-    let match:RegExpExecArray|null = null;
-    let index = 0;
-    
-    // tslint:disable-next-line no-conditional-assignment
-    while ((match = regexp.exec(desc))) {
-      this.controlDescriptionElem.appendChild(document.createTextNode(
-        desc.substring(index, match.index)
-      ));
-      
-      const aElem = document.createElement('a');
-      aElem.href = match[0];
-      aElem.innerText = match[0];
-      
-      this.controlDescriptionElem.appendChild(aElem);
-      
-      index = match.index + match[0].length;
-    }
-    
-    this.controlDescriptionElem.appendChild(document.createTextNode(
-      desc.substring(index)
-    ));
-  }
-  
   private getStateKey():string {
     return `controlPanelConfigurator-${this.id}`;
   }
@@ -554,73 +483,5 @@ export default class ControlPanelConfigurator {
   
   public clearState():void {
     stateUtil.remove(this.getStateKey());
-  }
-  
-  private getCategoryControlTypeMap(): Map<string, ControlType[]> {
-    return new Map<string, ControlType[]>(Object.entries({
-      'Popular': [
-        controlTypeEnum.JOY_4WAY,
-        controlTypeEnum.JOY_8WAY,
-        controlTypeEnum.JOY_ANALOG,
-        controlTypeEnum.TRACKBALL,
-        controlTypeEnum.SPINNER,
-        controlTypeEnum.LIGHTGUN,
-      ],
-      'Joysticks': [
-        controlTypeEnum.JOY_2WAY_HORIZONTAL,
-        controlTypeEnum.JOY_2WAY_VERTICAL,
-        //controlTypeEnum.JOY_2WAY_VERTICAL_TRIGGER,
-        controlTypeEnum.JOY_4WAY,
-        controlTypeEnum.JOY_4WAY_DIAGONAL,
-        //controlTypeEnum.JOY_4WAY_TRIGGER,
-        controlTypeEnum.JOY_8WAY,
-        controlTypeEnum.JOY_8WAY_TRIGGER,
-        controlTypeEnum.JOY_8WAY_TOPFIRE,
-        //controlTypeEnum.JOY_8WAY_ROTARY_OPTICAL,
-        //controlTypeEnum.JOY_8WAY_ROTARY_MECHANICAL,
-        controlTypeEnum.JOY_49WAY,
-        controlTypeEnum.JOY_ANALOG,
-        controlTypeEnum.JOY_ANALOG_FLIGHTSTICK,
-      ],
-      'Trackball/Spinner': [
-        controlTypeEnum.TRACKBALL,
-        //controlTypeEnum.ROLLER_HORIZONTAL,
-        //controlTypeEnum.ROLLER_VERTICAL,
-        controlTypeEnum.SPINNER,
-        controlTypeEnum.SPINNER_PUSHPULL,
-        controlTypeEnum.PADDLE,
-      ],
-      'Shooting': [
-        controlTypeEnum.LIGHTGUN,
-        controlTypeEnum.LIGHTGUN_ANALOG,
-      ],
-      'Driving': [
-        controlTypeEnum.STEERINGWHEEL_360,
-        controlTypeEnum.STEERINGWHEEL_270,
-        controlTypeEnum.PEDAL_DIGITAL,
-        controlTypeEnum.PEDAL_ANALOG,
-        controlTypeEnum.SHIFTER_HIGHLOW,
-        controlTypeEnum.SHIFTER_UPDOWN,
-        controlTypeEnum.SHIFTER_4GEAR,
-      ],
-      'Flying': [
-        controlTypeEnum.JOY_ANALOG_FLIGHTSTICK,
-        //controlTypeEnum.JOY_ANALOG_YOKE,
-        //controlTypeEnum.THROTTLE,
-      ],
-      'Other': [
-        controlTypeEnum.DIRECTIONALBUTTONS_2WAY_HORIZONTAL,
-        controlTypeEnum.DIRECTIONALBUTTONS_2WAY_VERTICAL,
-        controlTypeEnum.DIRECTIONALBUTTONS_4WAY,
-        //controlTypeEnum.HANDLEBARS,
-        //controlTypeEnum.TURNTABLE,
-        //controlTypeEnum.BASEBALLPITCHER,
-        //controlTypeEnum.BATTERCONTROL,
-        //controlTypeEnum.FOOTBALLKICKER,
-        //controlTypeEnum.TRIVIABUTTONS,
-        //controlTypeEnum.MAHJONGCP,
-        //controlTypeEnum.MISC,
-      ]
-    }));
   }
 }

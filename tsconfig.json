@@ -12,15 +12,7 @@
     "downlevelIteration": true,
     "allowJs": true,
     "outDir": "dist",
-    "sourceMap": true,
-    "plugins": [
-      {
-        "name": "typescript-tslint-plugin",
-        "jsEnable": true,
-        "ignoreDefinitionFiles": false,
-        "alwaysShowRuleFailuresAsWarnings": false
-      }
-    ]
+    "sourceMap": true
   },
   "include": [
     "./src/**/*.ts",

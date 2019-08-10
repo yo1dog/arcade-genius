@@ -1,0 +1,30 @@
+.game-override-manager {
+  td, th {
+    vertical-align: top;
+  }
+  
+  th {
+    text-align: left;
+    padding-top: 1em;
+  }
+}
+
+.game-override-control-set-manager > table {
+  border: 1px solid black;
+}
+
+.game-override-control-manager__control-buttons-desc__count-input {
+  width: 2em;
+}
+
+.game-override-control-manager__control-buttons-desc__text--singular {
+  display: none;
+}
+.game-override-control-manager__control-buttons-desc--singular {
+  .game-override-control-manager__control-buttons-desc__text--singular {
+    display: inline;
+  }
+  .game-override-control-manager__control-buttons-desc__text--plural {
+    display: none;
+  }
+}

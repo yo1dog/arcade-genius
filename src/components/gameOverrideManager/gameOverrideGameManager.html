@@ -1,0 +1,82 @@
+<div class="game-override-game-manager">
+  <table>
+    <tr>
+      <td colspan="2"><button class="game-override-game-manager__remove-button">Remove Game Override</button></td>
+    </tr>
+    <tr>
+      <td>Name</td>
+      <td><input class="game-override-game-manager__name-input" required /></td>
+    </tr>
+    <tr>
+      <td>Description</td>
+      <td><input class="game-override-game-manager__description-input" /></td>
+    </tr>
+    <tr>
+      <td>Short Description</td>
+      <td><input class="game-override-game-manager__short-description-input" disabled /></td>
+    </tr>
+    <!--
+    <tr>
+      <td>Clone Of</td>
+      <td><input class="game-override-game-manager__clone-of-input" /></td>
+    </tr>
+    -->
+    
+    <tr>
+      <th colspan="2">Display</th>
+    </tr>
+    <tr>
+      <td>Type</td>
+      <td>
+        <select class="game-override-game-manager__display-type-select">
+          <option value="raster" >Raster </option>
+          <option value="vector" >Vector </option>
+          <option value="lcd"    >LCD    </option>
+          <option value="unknown">Unknown</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Rotation</td>
+      <td>
+        <select class="game-override-game-manager__display-rotation-select">
+          <option value=  "0">  0</option>
+          <option value= "90"> 90</option>
+          <option value="180">180</option>
+          <option value="270">270</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Flipped Horizontally</td>
+      <td><input class="game-override-game-manager__display-flipx-checkbox" type="checkbox" /></td>
+    </tr>
+    <tr>
+      <td>Refresh Rate (Hz)</td>
+      <td><input class="game-override-game-manager__display-refresh-input" type="number" step="1" min="0" required /></td>
+    </tr>
+    <tr>
+      <td>Resolution</td>
+      <td><input class="game-override-game-manager__display-resolution-input" title="###x###" /></td>
+    </tr>
+    
+    <tr>
+      <th colspan="2">Controls</th>
+    </tr>
+    <tr>
+      <td>Players Alternate Turns</td>
+      <td><input class="game-override-game-manager__alternates-turns-checkbox" type="checkbox" /></td>
+    </tr>
+    <tr class="game-override-game-manager__num-players-row">
+      <td>Number of Players</td>
+      <td><input class="game-override-game-manager__num-players-input" type="number" step="1" min="1" value="1" /></td>
+    </tr>
+    <tr>
+      <td>Control Configurations</td>
+      <td>
+        <div class="game-override-game-manager__control-config-container"></div>
+        <button class="game-override-game-manager__add-control-config-button hidden"></button>
+      </td>
+    </tr>
+  </table>
+</div>

@@ -8,10 +8,12 @@ import * as controlsDatUtil     from '../data/controlsDatUtil';
 import MonitorConfiguratorGroup from '../components/monitorConfiguratorGroup/monitorConfiguratorGroup';
 import CPConfiguratorGroup      from '../components/controlPanelConfiguratorGroup/controlPanelConfiguratorGroup';
 import GameNameList             from '../components/gameNameList/gameNameList';
+import GameOverrideManager      from '../components/gameOverrideManager/gameOverrideManager';
 import CompatibilityTable       from '../components/compatibilityTable/compatibilityTable';
 import * as compUtil            from '../compatibilityUtil';
 import npmPackage               from '../../package.json';
 import {IJSONObject}            from '../types/json';
+import {IGame}                  from '../types/game';
 import {
   replaceChildren,
   selectR
@@ -35,6 +37,7 @@ async function onLoad(): Promise<void> {
   void (populateMetadata());
   
   const gameNameList = new GameNameList();
+  const gameOverrideManager = new GameOverrideManager();
   const monitorConfiguratorGroup = new MonitorConfiguratorGroup();
   const cpConfiguratorGroup = new CPConfiguratorGroup();
   const compTable = new CompatibilityTable();
@@ -44,14 +47,19 @@ async function onLoad(): Promise<void> {
     monitorConfiguratorGroup.saveState();
     cpConfiguratorGroup.saveState();
     gameNameList.saveState();
+    gameOverrideManager.saveState();
     
     if (refreshIsPending) return;
     try {
       refreshIsPending = true;
       compTable.disableRefresh();
       
-      // get the game name imputs
+      // get the game name inputs
       const gameNameInputs = gameNameList.getGameNameInputs();
+      
+      // get the game overrides
+      const gameOverrides = gameOverrideManager.getGameOverrides() || [];
+      const gameOverrideMap = new Map<string, IGame>(gameOverrides.map(game => [game.name, game]));
       
       // get the modeline configs
       const monitorConfigs = monitorConfiguratorGroup.getMonitorConfigs();
@@ -64,7 +72,7 @@ async function onLoad(): Promise<void> {
         gameUtil.init(),
         modelineCaculator.init()
       ]);
-      const gameComps = await compUtil.checkGameBulk(gameNameInputs, monitorConfigs, cpConfigs);
+      const gameComps = await compUtil.checkGameBulk(gameNameInputs, gameOverrideMap, monitorConfigs, cpConfigs);
       
       // update the compatibility table
       compTable.update(gameComps, cpConfigs, monitorConfigs);
@@ -77,6 +85,7 @@ async function onLoad(): Promise<void> {
   
   await Promise.all([
     gameNameList.init(),
+    gameOverrideManager.init(),
     monitorConfiguratorGroup.init(),
     cpConfiguratorGroup.init(),
     compTable.init()
@@ -85,6 +94,10 @@ async function onLoad(): Promise<void> {
   replaceChildren(
     document.querySelector('.game-name-list-container'),
     gameNameList.elem
+  );
+  replaceChildren(
+    document.querySelector('.game-override-manager-container'),
+    gameOverrideManager.elem
   );
   replaceChildren(
     document.querySelector('.monitor-configurator-group-container'),
