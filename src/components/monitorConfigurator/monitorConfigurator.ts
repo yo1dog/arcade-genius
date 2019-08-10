@@ -1,6 +1,6 @@
 import './monitorConfigurator.less';
 import monitorConfiguratorTemplate from './monitorConfigurator.html';
-import * as stateUtil              from '../../dataAccess/stateUtil';
+import * as stateUtil              from '../../stateUtil';
 import {IMonitorConfiguration}     from '../../types/monitor';
 import {IModelineConfiguration}    from '../../types/modeline';
 import {orientationEnum}           from '../../types/common';

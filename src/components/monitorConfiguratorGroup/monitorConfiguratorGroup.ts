@@ -3,7 +3,7 @@ import {EventEmitter}                       from 'events';
 import monitorConfiguratorGroupTemplate     from './monitorConfiguratorGroup.html';
 import monitorConfiguratorGroupItemTemplate from './monitorConfiguratorGroupItem.html';
 import MonitorConfigurator                  from '../monitorConfigurator/monitorConfigurator';
-import * as stateUtil                       from '../../dataAccess/stateUtil';
+import * as stateUtil                       from '../../stateUtil';
 import {IMonitorConfiguration}              from '../../types/monitor';
 import createUUID                           from 'lib/get_uuid.js';
 import {

@@ -1,5 +1,5 @@
 import {TJSONValue} from '../../types/json';
-import {IMachineNameListState} from './machineNameList';
+import {IGameNameListState} from './gameNameList';
 import {
   deserializeObject,
   deserializeNumber,
@@ -7,7 +7,7 @@ import {
 } from '../../types/jsonSerializer';
 
 
-export function serializeState(state: IMachineNameListState): TJSONValue {
+export function serializeState(state: IGameNameListState): TJSONValue {
   return {
     __version: 2,
     inputStr: state.inputStr
@@ -17,7 +17,7 @@ export function serializeState(state: IMachineNameListState): TJSONValue {
 
 
 
-export function deserializeState(sState: TJSONValue, propLabel: string): IMachineNameListState {
+export function deserializeState(sState: TJSONValue, propLabel: string): IGameNameListState {
   if (typeof sState === 'string') {
     return deserializeStateV1(sState, `${propLabel}(v1)`);
   }
@@ -38,7 +38,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): IMachin
 // v1
 // ========================================
 
-export function deserializeStateV1(sState: TJSONValue, propLabel: string): IMachineNameListState {
+export function deserializeStateV1(sState: TJSONValue, propLabel: string): IGameNameListState {
   const sInputStr = sState;
   return {
     inputStr: deserializeString(sInputStr, propLabel)
@@ -51,7 +51,7 @@ export function deserializeStateV1(sState: TJSONValue, propLabel: string): IMach
 // v2
 // ========================================
 
-export function deserializeStateV2(sState: TJSONValue, propLabel: string): IMachineNameListState {
+export function deserializeStateV2(sState: TJSONValue, propLabel: string): IGameNameListState {
   const stateJ = deserializeObject(sState, propLabel);
   
   return {

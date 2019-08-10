@@ -1,24 +1,19 @@
 import {createNumberEnum, NumberEnumValue} from './enum';
-import {IMachine}                          from './mame';
+import {IGame}                             from './game';
 import MultidimensionalScore               from '../multidimensionalScore';
-import {
-  IModelineResult
-} from './modeline';
+import {IMonitorConfiguration}             from './monitor';
+import {TModelineCalculation}              from './modeline';
 import {
   ICPConfiguration,
   ICPControl,
   ICPButtonCluster
 } from './controlPanel';
 import {
-  IControlsDatGame,
   IGameControlConfiguration,
   IGameControlSet,
   IGameControl,
   IGameButton
-} from './controlsDat';
-import {
-  IMonitorConfiguration
-} from './monitor';
+} from './game';
 
 
 // ----------------------------------
@@ -40,15 +35,14 @@ export const overallCompatibilityStatusEnum = createNumberEnum(OverallCompatibil
 
 
 // ----------------------------------
-// Machine
+// Game
 // ----------------------------------
 
-export interface IMachineCompatibility {
-  readonly machineNameInput  : string;
-  readonly machine?          : IMachine;
-  readonly controlsDatGame?  : IControlsDatGame;
-  readonly videoComps        : IVideoCompatibility[];
+export interface IGameCompatibility {
+  readonly gameNameInput     : string;
+  readonly game?             : IGame;
   readonly emuComp           : IEmulationCompatibility;
+  readonly videoComps        : IVideoCompatibility[];
   readonly controlsComps     : IControlsCompatibility[];
   readonly overallStatus     : OverallCompatibilityStatus;
   readonly knownOverallStatus: OverallCompatibilityStatus;
@@ -71,8 +65,8 @@ export const emulationCompatibilityStatusEnum = createNumberEnum(EmulationCompat
 ]);
 
 export interface IEmulationCompatibility {
-  readonly machine?: IMachine;
-  readonly status  : EmulationCompatibilityStatus;
+  readonly game? : IGame;
+  readonly status: EmulationCompatibilityStatus;
 }
 
 
@@ -94,10 +88,10 @@ export const videoCompatibilityStatusEnum = createNumberEnum(VideoCompatibilityS
 ]);
 
 export interface IVideoCompatibility {
-  readonly machine?       : IMachine;
-  readonly monitorConfig  : IMonitorConfiguration;
-  readonly modelineResult?: IModelineResult;
-  readonly status         : VideoCompatibilityStatus;
+  readonly game?        : IGame;
+  readonly monitorConfig: IMonitorConfiguration;
+  readonly modelineCalc?: TModelineCalculation;
+  readonly status       : VideoCompatibilityStatus;
 }
 
 
@@ -119,9 +113,8 @@ export const controlsCompatibilityStatusEnum = createNumberEnum(ControlsCompatib
 ]);
 
 export interface IControlsCompatibility {
-  readonly machine?              : IMachine;
+  readonly game?                 : IGame;
   readonly cpConfig              : ICPConfiguration;
-  readonly controlsDatGame?      : IControlsDatGame;
   readonly bestControlConfigComp?: IControlConfigurationCompatibility;
   readonly allControlConfigComps : IControlConfigurationCompatibility[];
   readonly status                : ControlsCompatibilityStatus;

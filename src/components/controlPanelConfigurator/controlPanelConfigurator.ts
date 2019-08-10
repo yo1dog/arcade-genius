@@ -2,8 +2,8 @@ import './controlPanelConfigurator.less';
 import cpConfiguratorTemplate              from './controlPanelConfigurator.html';
 import cpConfiguratorButtonClusterTemplate from './controlPanelConfiguratorButtonCluster.html';
 import cpConfiguratorControlSetTemplate    from './controlPanelConfiguratorControlSet.html';
-import * as stateUtil                      from '../../dataAccess/stateUtil';
-import * as controlDefUtil                 from '../../dataAccess/controlDefUtil';
+import * as stateUtil                      from '../../stateUtil';
+import * as controlDefUtil                 from '../../controlDefUtil';
 import createUUID                          from 'lib/get_uuid.js';
 import {
   serializeState,

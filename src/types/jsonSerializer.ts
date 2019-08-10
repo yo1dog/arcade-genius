@@ -17,7 +17,7 @@ export function deserializeOptional<T>(
   propLabel    : string,
   deserializeFn: (serializedVal:TJSONValue, propLabel:string) => T
 ): T | undefined {
-  if (typeof serializedVal === 'undefined') return undefined;
+  if (serializedVal === undefined) return undefined;
   return deserializeFn(serializedVal, propLabel);
 }
 export function deserializeNullableOptional<T>(
@@ -25,16 +25,16 @@ export function deserializeNullableOptional<T>(
   propLabel    : string,
   deserializeFn: (serializedVal:TJSONValue, propLabel:string) => T
 ): T | null | undefined {
-  if (serializedVal === null) return null;
-  if (typeof serializedVal === 'undefined') return undefined;
+  if (serializedVal === null     ) return null;
+  if (serializedVal === undefined) return undefined;
   return deserializeFn(serializedVal, propLabel);
 }
 
 
 export function deserializeString(serializedVal: TJSONValue, propLabel: string): string {
-  if (serializedVal === null              ) throw new Error(`${propLabel} === null`);
-  if (typeof serializedVal === 'undefined') throw new Error(`typeof ${propLabel} === 'undefined'`);
-  if (typeof serializedVal !== 'string'   ) throw new Error(`typeof ${propLabel} !== 'string'`);
+  if (serializedVal === null           ) throw new Error(`${propLabel} === null`);
+  if (serializedVal === undefined      ) throw new Error(`${propLabel} === undefined`);
+  if (typeof serializedVal !== 'string') throw new Error(`typeof ${propLabel} !== 'string'`);
   return serializedVal;
 }
 export function deserializeStringOptional(serializedVal: TJSONValue, propLabel: string): string | undefined {
@@ -48,9 +48,9 @@ export function deserializeStringNullableOptional(serializedVal: TJSONValue, pro
 }
 
 export function deserializeNumber(serializedVal: TJSONValue, propLabel: string): number {
-  if (serializedVal === null              ) throw new Error(`${propLabel} === null`);
-  if (typeof serializedVal === 'undefined') throw new Error(`typeof ${propLabel} === 'undefined'`);
-  if (typeof serializedVal !== 'number'   ) throw new Error(`typeof ${propLabel} !== 'number'`);
+  if (serializedVal === null           ) throw new Error(`${propLabel} === null`);
+  if (serializedVal === undefined      ) throw new Error(`${propLabel} === undefined`);
+  if (typeof serializedVal !== 'number') throw new Error(`typeof ${propLabel} !== 'number'`);
   return serializedVal;
 }
 export function deserializeNumberOptional(serializedVal: TJSONValue, propLabel: string): number | undefined {
@@ -64,9 +64,9 @@ export function deserializeNumberNullableOptional(serializedVal: TJSONValue, pro
 }
 
 export function deserializeBoolean(serializedVal: TJSONValue, propLabel: string): boolean {
-  if (serializedVal === null              ) throw new Error(`${propLabel} === null`);
-  if (typeof serializedVal === 'undefined') throw new Error(`typeof ${propLabel} === 'undefined'`);
-  if (typeof serializedVal !== 'boolean'  ) throw new Error(`typeof ${propLabel} !== 'boolean'`);
+  if (serializedVal === null            ) throw new Error(`${propLabel} === null`);
+  if (serializedVal === undefined       ) throw new Error(`${propLabel} === undefined`);
+  if (typeof serializedVal !== 'boolean') throw new Error(`typeof ${propLabel} !== 'boolean'`);
   return serializedVal;
 }
 export function deserializeBooleanOptional(serializedVal: TJSONValue, propLabel: string): boolean | undefined {
@@ -80,10 +80,10 @@ export function deserializeBooleanNullableOptional(serializedVal: TJSONValue, pr
 }
 
 export function deserializeObject(serializedVal: TJSONValue, propLabel: string): IJSONObject {
-  if (serializedVal === null              ) throw new Error(`${propLabel} === null`);
-  if (typeof serializedVal === 'undefined') throw new Error(`typeof ${propLabel} === 'undefined'`);
-  if (typeof serializedVal !== 'object'   ) throw new Error(`typeof ${propLabel} !== 'object'`);
-  if (Array.isArray(serializedVal)        ) throw new Error(`Array.isArray(${propLabel})`);
+  if (serializedVal === null           ) throw new Error(`${propLabel} === null`);
+  if (serializedVal === undefined      ) throw new Error(`${propLabel} === undefined`);
+  if (typeof serializedVal !== 'object') throw new Error(`typeof ${propLabel} !== 'object'`);
+  if (Array.isArray(serializedVal)     ) throw new Error(`Array.isArray(${propLabel})`);
   
   return serializedVal;
 }
@@ -102,9 +102,9 @@ export function deserializeArray<T>(
   propLabel    : string,
   deserializeFn: (serializedVal:TJSONValue, propLabel:string) => T
 ): T[] {
-  if (serializedVal === null              ) throw new Error(`${propLabel} === null`);
-  if (typeof serializedVal === 'undefined') throw new Error(`typeof ${propLabel} === 'undefined'`);
-  if (!Array.isArray(serializedVal)       ) throw new Error(`!Array.isArray(${propLabel})`);
+  if (serializedVal === null       ) throw new Error(`${propLabel} === null`);
+  if (serializedVal === undefined  ) throw new Error(`${propLabel} === undefined`);
+  if (!Array.isArray(serializedVal)) throw new Error(`!Array.isArray(${propLabel})`);
   
   return serializedVal.map((x, i) => deserializeFn(x, `${propLabel}[${i}]`));
 }
@@ -121,7 +121,7 @@ export function deserializeArrayOptional<T>(
   propLabel    : string,
   deserializeFn: (serializedVal:TJSONValue, propLabel:string) => T
 ): T[] | undefined {
-  if (typeof serializedVal === 'undefined') return undefined;
+  if (serializedVal === undefined) return undefined;
   return deserializeArray(serializedVal, propLabel, deserializeFn);
 }
 export function deserializeArrayNullableOptional<T>(
@@ -129,8 +129,8 @@ export function deserializeArrayNullableOptional<T>(
   propLabel    : string,
   deserializeFn: (serializedVal:TJSONValue, propLabel:string) => T
 ): T[] | null | undefined {
-  if (serializedVal === null) return null;
-  if (typeof serializedVal === 'undefined') return undefined;
+  if (serializedVal === null     ) return null;
+  if (serializedVal === undefined) return undefined;
   return deserializeArray(serializedVal, propLabel, deserializeFn);
 }
 
@@ -160,7 +160,7 @@ export function deserializeMapOptional<T>(
   propLabel    : string,
   deserializeFn: (serializedVal:TJSONValue, propLabel:string, key:string) => T
 ): Map<string, T> | undefined {
-  if (typeof serializedVal === 'undefined') return undefined;
+  if (serializedVal === undefined) return undefined;
   return deserializeMap(serializedVal, propLabel, deserializeFn);
 }
 export function deserializeMapNullableOptional<T>(
@@ -168,7 +168,46 @@ export function deserializeMapNullableOptional<T>(
   propLabel    : string,
   deserializeFn: (serializedVal:TJSONValue, propLabel:string, key:string) => T
 ): Map<string, T> | null | undefined {
-  if (serializedVal === null) return null;
-  if (typeof serializedVal === 'undefined') return undefined;
+  if (serializedVal === null     ) return null;
+  if (serializedVal === undefined) return undefined;
   return deserializeMap(serializedVal, propLabel, deserializeFn);
+}
+
+export function deserializeObjectMap<T>(
+  serializedVal: TJSONValue,
+  propLabel    : string,
+  deserializeFn: (serializedVal:TJSONValue, propLabel:string, key:string) => T
+): {[key: string]: T} {
+  const obj = deserializeObject(serializedVal, propLabel);
+  
+  const newObj: {[key: string]: T} = {};
+  for (const key in obj) {
+    newObj[key] = deserializeFn(obj[key], `${propLabel}['${key}']`, key);
+  }
+  return newObj;
+}
+export function deserializeObjectMapNullable<T>(
+  serializedVal: TJSONValue,
+  propLabel    : string,
+  deserializeFn: (serializedVal:TJSONValue, propLabel:string, key:string) => T
+): {[key: string]: T} | null {
+  if (serializedVal === null) return null;
+  return deserializeObjectMap(serializedVal, propLabel, deserializeFn);
+}
+export function deserializeObjectMapOptional<T>(
+  serializedVal: TJSONValue,
+  propLabel    : string,
+  deserializeFn: (serializedVal:TJSONValue, propLabel:string, key:string) => T
+): {[key: string]: T} | undefined {
+  if (serializedVal === undefined) return undefined;
+  return deserializeObjectMap(serializedVal, propLabel, deserializeFn);
+}
+export function deserializeObjectMapNullableOptional<T>(
+  serializedVal: TJSONValue,
+  propLabel    : string,
+  deserializeFn: (serializedVal:TJSONValue, propLabel:string, key:string) => T
+): {[key: string]: T} | null | undefined {
+  if (serializedVal === null     ) return null;
+  if (serializedVal === undefined) return undefined;
+  return deserializeObjectMap(serializedVal, propLabel, deserializeFn);
 }

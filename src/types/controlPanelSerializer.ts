@@ -1,4 +1,4 @@
-import * as controlDefUtil from '../dataAccess/controlDefUtil';
+import * as controlDefUtil from '../controlDefUtil';
 import {controlTypeEnum}   from './controlDef';
 import createUUID          from 'lib/get_uuid.js';
 import {
@@ -71,7 +71,7 @@ export function deserializeConfiguration(sCPConfig: TJSONValue, propLabel: strin
   const cpConfigJ = deserializeObject(sCPConfig, propLabel);
   
   let version = deserializeNumberOptional(cpConfigJ.__version, `${propLabel}.__version`);
-  if (typeof version === 'undefined') {
+  if (version === undefined) {
     version = 1;
   }
   switch (version) {

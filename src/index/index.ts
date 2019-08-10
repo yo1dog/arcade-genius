@@ -1,12 +1,13 @@
 import './index.less';
 import * as preload             from './preload';
-import * as mameUtil            from '../dataAccess/mameUtil';
-import * as controlsDatUtil     from '../dataAccess/controlsDatUtil';
-import * as controlDefUtil      from '../dataAccess/controlDefUtil';
-import * as modelineCaculator   from '../dataAccess/modelineCalculator';
+import * as modelineCaculator   from '../modelineCalculator';
+import * as controlDefUtil      from '../controlDefUtil';
+import * as gameUtil            from '../gameUtil';
+import * as mameListUtil        from '../data/mameListUtil';
+import * as controlsDatUtil     from '../data/controlsDatUtil';
 import MonitorConfiguratorGroup from '../components/monitorConfiguratorGroup/monitorConfiguratorGroup';
 import CPConfiguratorGroup      from '../components/controlPanelConfiguratorGroup/controlPanelConfiguratorGroup';
-import MachineNameList          from '../components/machineNameList/machineNameList';
+import GameNameList             from '../components/gameNameList/gameNameList';
 import CompatibilityTable       from '../components/compatibilityTable/compatibilityTable';
 import * as compUtil            from '../compatibilityUtil';
 import npmPackage               from '../../package.json';
@@ -26,15 +27,14 @@ else {
 
 async function onLoad(): Promise<void> {
   // pre initialize data
-  void (mameUtil.init());
-  void (controlsDatUtil.init());
+  void (gameUtil.init());
   void (controlDefUtil.init());
   void (modelineCaculator.init());
   
   
   void (populateMetadata());
   
-  const machineNameList = new MachineNameList();
+  const gameNameList = new GameNameList();
   const monitorConfiguratorGroup = new MonitorConfiguratorGroup();
   const cpConfiguratorGroup = new CPConfiguratorGroup();
   const compTable = new CompatibilityTable();
@@ -43,15 +43,15 @@ async function onLoad(): Promise<void> {
   compTable.on('refresh', () => void (async () => {
     monitorConfiguratorGroup.saveState();
     cpConfiguratorGroup.saveState();
-    machineNameList.saveState();
+    gameNameList.saveState();
     
     if (refreshIsPending) return;
     try {
       refreshIsPending = true;
       compTable.disableRefresh();
       
-      // get the machine name imputs
-      const machineNameInputs = machineNameList.getMachineNameInputs();
+      // get the game name imputs
+      const gameNameInputs = gameNameList.getGameNameInputs();
       
       // get the modeline configs
       const monitorConfigs = monitorConfiguratorGroup.getMonitorConfigs();
@@ -59,16 +59,15 @@ async function onLoad(): Promise<void> {
       // get the control panel configs
       const cpConfigs = cpConfiguratorGroup.getControlPanelConfigs();
       
-      // check the compatibility of each machine name input
+      // check the compatibility of each game name input
       await Promise.all([
-        mameUtil.init(),
-        controlsDatUtil.init(),
+        gameUtil.init(),
         modelineCaculator.init()
       ]);
-      const machineComps = await compUtil.checkMachineBulk(machineNameInputs, monitorConfigs, cpConfigs);
+      const gameComps = await compUtil.checkGameBulk(gameNameInputs, monitorConfigs, cpConfigs);
       
       // update the compatibility table
-      compTable.update(machineComps, cpConfigs, monitorConfigs);
+      compTable.update(gameComps, cpConfigs, monitorConfigs);
     }
     finally {
       refreshIsPending = false; // eslint-disable-line require-atomic-updates
@@ -77,15 +76,15 @@ async function onLoad(): Promise<void> {
   })());
   
   await Promise.all([
-    machineNameList.init(),
+    gameNameList.init(),
     monitorConfiguratorGroup.init(),
     cpConfiguratorGroup.init(),
     compTable.init()
   ]);
   
   replaceChildren(
-    document.querySelector('.machine-name-list-container'),
-    machineNameList.elem
+    document.querySelector('.game-name-list-container'),
+    gameNameList.elem
   );
   replaceChildren(
     document.querySelector('.monitor-configurator-group-container'),
@@ -115,12 +114,12 @@ async function populateMetadata() {
   };
   metadataTextElem.value = JSON.stringify(metadata, null, 2);
   
-  await mameUtil.init();
+  await mameListUtil.init();
   await controlsDatUtil.init();
   
   metadata.mame = {
-    build: mameUtil.getList().build,
-    debug: mameUtil.getList().debug
+    build: mameListUtil.get().build,
+    debug: mameListUtil.get().debug
   };
   metadata.controlsDat = {
     ...controlsDatUtil.get().meta

@@ -6,7 +6,7 @@ import compatibilityTableRowDetailsListItemTemplate from './compatibilityTableRo
 import pluralize                                    from '../../helpers/pluralize';
 import stringifyEnums                               from '../../helpers/stringifyEnums';
 import MultidimensionalScore                        from '../../multidimensionalScore';
-import * as mameUtil                                from '../../dataAccess/mameUtil';
+import * as gameUtil                                from '../../gameUtil';
 import {ICPConfiguration}                           from '../../types/controlPanel';
 import {IMonitorConfiguration}                      from '../../types/monitor';
 import jsonView                                     from 'lib/jsonview/jsonview.js';
@@ -24,12 +24,13 @@ import {
   videoToOverallCompatibilityStatus,
 } from '../../compatibilityUtil';
 import {
-  IMachineCompatibility,
+  IGameCompatibility,
   OverallCompatibilityStatus,
   overallCompatibilityStatusEnum,
   emulationCompatibilityStatusEnum,
   videoCompatibilityStatusEnum
 } from '../../types/compatibility';
+import { IGameButton, IGameInput } from '../../types/game';
 
 
 export default class CompatibilityTable extends EventEmitter {
@@ -66,7 +67,7 @@ export default class CompatibilityTable extends EventEmitter {
   }
   
   public update(
-    machineComps  : IMachineCompatibility[],
+    gameComps     : IGameCompatibility[],
     cpConfigs     : ICPConfiguration[],
     monitorConfigs: IMonitorConfiguration[]
   ): void {
@@ -134,8 +135,8 @@ export default class CompatibilityTable extends EventEmitter {
     this.videoStatusHeaderCellElem.rowSpan = monitorConfigs.length === 1? 2: 1;
     
     // create rows
-    for (let i = 0; i < machineComps.length; ++i) {
-      const rowBlock = this.createRowBlock(machineComps[i], i, cpConfigs, monitorConfigs);
+    for (let i = 0; i < gameComps.length; ++i) {
+      const rowBlock = this.createRowBlock(gameComps[i], i, cpConfigs, monitorConfigs);
       this.bodyElem.appendChild(rowBlock);
     }
   }
@@ -148,12 +149,12 @@ export default class CompatibilityTable extends EventEmitter {
   }
   
   private createRowBlock(
-    machineComp   : IMachineCompatibility,
+    gameComp      : IGameCompatibility,
     rowIndex      : number,
     cpConfigs     : ICPConfiguration[],
     monitorConfigs: IMonitorConfiguration[]
   ): DocumentFragment {
-    const {machine} = machineComp;
+    const {game} = gameComp;
     const evenOddClass = `comp-table__row--${rowIndex % 2 === 0? 'odd' : 'even'}`;
     
     const rowBlock = htmlToBlock(compTableRowTemplate);
@@ -163,9 +164,9 @@ export default class CompatibilityTable extends EventEmitter {
     rowElem.classList.add(evenOddClass);
     
     const rowOverallStatus = (
-      machineComp.knownOverallStatus.val <= overallCompatibilityStatusEnum.BAD.val
-      ? machineComp.knownOverallStatus
-      : machineComp.overallStatus
+      gameComp.knownOverallStatus.val <= overallCompatibilityStatusEnum.BAD.val
+      ? gameComp.knownOverallStatus
+      : gameComp.overallStatus
     );
     
     const rowOverallStatusTrans = this.translateOverallStatus(rowOverallStatus);
@@ -175,32 +176,32 @@ export default class CompatibilityTable extends EventEmitter {
       rowElem.classList.add('comp-table__row--unsupported');
     }
     
-    if (!machine) {
-      rowElem.classList.add('comp-table__row--invalid-machine-name');
+    if (!game) {
+      rowElem.classList.add('comp-table__row--invalid-game-name');
     }
     
     /*
-    // machine name
-    selectR(rowBlock, '.comp-table__row__machine-name'      ).classList.add(overallStatusTrans.cssClass);
-    selectR(rowBlock, '.comp-table__row__machine-name__icon').classList.add(overallStatusTrans.iconCSSClass);
-    selectR(rowBlock, '.comp-table__row__machine-name__text').innerText = (
-      machine
-      ? machine.name
-      : machineComp.machineNameInput
+    // game name
+    selectR(rowBlock, '.comp-table__row__game-name'      ).classList.add(overallStatusTrans.cssClass);
+    selectR(rowBlock, '.comp-table__row__game-name__icon').classList.add(overallStatusTrans.iconCSSClass);
+    selectR(rowBlock, '.comp-table__row__game-name__text').innerText = (
+      game
+      ? game.name
+      : gameComp.gameNameInput
     );
     */
    
-    // machine desc
+    // game desc
     selectR(rowBlock, '.comp-table__row__desc'      ).classList.add(rowOverallStatusTrans.cssClass);
     selectR(rowBlock, '.comp-table__row__desc__icon').classList.add(rowOverallStatusTrans.iconCSSClass);
     selectR(rowBlock, '.comp-table__row__desc__text').innerText = (
-      machine
-      ? machine.shortDescription
-      : machineComp.machineNameInput
+      game
+      ? game.shortDescription
+      : gameComp.gameNameInput
     );
     
     // emulation status
-    const emuStatusTrans = this.translateOverallStatus(emuToOverallCompatibilityStatus(machineComp.emuComp.status));
+    const emuStatusTrans = this.translateOverallStatus(emuToOverallCompatibilityStatus(gameComp.emuComp.status));
     selectR(rowBlock, '.comp-table__row__emu-status'      ).classList.add(emuStatusTrans.cssClass);
     selectR(rowBlock, '.comp-table__row__emu-status__icon').classList.add(emuStatusTrans.iconCSSClass);
     selectR(rowBlock, '.comp-table__row__emu-status__text').innerText = emuStatusTrans.desc;
@@ -217,7 +218,7 @@ export default class CompatibilityTable extends EventEmitter {
     }
     
     for (let i = 0; i < cpConfigs.length; ++i) {
-      const controlsComp = machineComp.controlsComps[i];
+      const controlsComp = gameComp.controlsComps[i];
       const controlsStatusElem = controlsStatusCellElems[i];
       
       const controlsStatusTrans = this.translateOverallStatus(controlsToOverallCompatibilityStatus(controlsComp.status));
@@ -238,7 +239,7 @@ export default class CompatibilityTable extends EventEmitter {
     }
     
     for (let i = 0; i < monitorConfigs.length; ++i) {
-      const videoComp = machineComp.videoComps[i];
+      const videoComp = gameComp.videoComps[i];
       const videoStatusElem = videoStatusCellElems[i];
       
       const videoStatusTrans = this.translateOverallStatus(videoToOverallCompatibilityStatus(videoComp.status));
@@ -250,7 +251,7 @@ export default class CompatibilityTable extends EventEmitter {
     // details
     const detailsRowElem = selectR(rowBlock, '.comp-table__details-row', 'tr');
     detailsRowElem.classList.add(evenOddClass);
-    this.populateDetailsRow(detailsRowElem, machineComp);
+    this.populateDetailsRow(detailsRowElem, gameComp);
     
     const spacerRows = Array.from(rowBlock.querySelectorAll('.comp-table__spacer-row'));
     
@@ -269,7 +270,7 @@ export default class CompatibilityTable extends EventEmitter {
   
   private populateDetailsRow(
     detailsRowElem: HTMLTableRowElement,
-    machineComp   : IMachineCompatibility
+    gameComp      : IGameCompatibility
   ):void {
     // expand cell to fill row
     const cellElem = selectR(detailsRowElem, 'td');
@@ -278,46 +279,46 @@ export default class CompatibilityTable extends EventEmitter {
       .reduce((p, c) => p + c.colSpan, 0)
     );
     
-    const machineContentElem = selectR(detailsRowElem, '.comp-table__details-row__machine-content');
-    const mainContentElem    = selectR(detailsRowElem, '.comp-table__details-row__main-content' );
+    const gameContentElem = selectR(detailsRowElem, '.comp-table__details-row__game-content');
+    const mainContentElem = selectR(detailsRowElem, '.comp-table__details-row__main-content' );
     
-    if (machineComp.machine) {
-      machineContentElem.classList.add('hidden');
+    if (gameComp.game) {
+      gameContentElem.classList.add('hidden');
     }
     else {
       mainContentElem.classList.add('hidden');
       
-      const machineListElem     = selectR(machineContentElem, '.comp-table__details-row__list--machine');
-      const sugMachineTableElem = selectR(machineContentElem, '.comp-table__details-row__machine-suggestion-table', 'table');
+      const gameListElem     = selectR(gameContentElem, '.comp-table__details-row__list--game');
+      const sugGameTableElem = selectR(gameContentElem, '.comp-table__details-row__game-suggestion-table', 'table');
       
-      machineListElem.appendChild(this.createDetailsListItem(
-        `ROM "${machineComp.machineNameInput}" not found. Did you mean one of these?`,
+      gameListElem.appendChild(this.createDetailsListItem(
+        `ROM "${gameComp.gameNameInput}" not found. Did you mean one of these?`,
         overallCompatibilityStatusEnum.UNKNOWN
       ));
       
-      const sugMachines = mameUtil.getMachineSuggestions(machineComp.machineNameInput, 10);
+      const gameSuggestions = gameUtil.getGameSuggestions(gameComp.gameNameInput, 10);
       
-      for (const sugMachine of sugMachines) {
-        const rowElem = sugMachineTableElem.insertRow();
+      for (const gameSuggestion of gameSuggestions) {
+        const rowElem = sugGameTableElem.insertRow();
         
         const nameCellElem = rowElem.insertCell();
-        nameCellElem.classList.add('comp-table__details-row__machine-suggestion-table__name');
-        nameCellElem.innerText = sugMachine.name;
+        nameCellElem.classList.add('comp-table__details-row__game-suggestion-table__name');
+        nameCellElem.innerText = gameSuggestion.game.name;
         
         const descCellElem = rowElem.insertCell();
-        descCellElem.classList.add('comp-table__details-row__machine-suggestion-table__desc');
-        descCellElem.innerText = sugMachine.description;
+        descCellElem.classList.add('comp-table__details-row__game-suggestion-table__desc');
+        descCellElem.innerText = gameSuggestion.game.description;
       }
     }
     
     // populate emulation details
-    this.populateEmulationDetails(detailsRowElem, machineComp);
+    this.populateEmulationDetails(detailsRowElem, gameComp);
     
     // populate video details
-    this.populateVideoDetails(detailsRowElem, machineComp);
+    this.populateVideoDetails(detailsRowElem, gameComp);
     
     // populate controls details
-    this.populateControlsDetails(detailsRowElem, machineComp);
+    this.populateControlsDetails(detailsRowElem, gameComp);
     
     // data
     // attach event listener to show data link
@@ -332,7 +333,7 @@ export default class CompatibilityTable extends EventEmitter {
       
       if (isShown) {
         if (!jsonViewInit) {
-          jsonView.format(this.getDetailsData(machineComp), jsonDataElem);
+          jsonView.format(this.getDetailsData(gameComp), jsonDataElem);
           jsonViewInit = true;
         }
       }
@@ -345,9 +346,9 @@ export default class CompatibilityTable extends EventEmitter {
   
   private populateEmulationDetails(
     detailsRowElem: HTMLTableRowElement,
-    machineComp   : IMachineCompatibility
+    gameComp      : IGameCompatibility
   ):void {
-    const emuComp = machineComp.emuComp;
+    const emuComp = gameComp.emuComp;
     const emuListElem = selectR(detailsRowElem, '.comp-table__details-row__list--emu');
     
     let text;
@@ -372,14 +373,14 @@ export default class CompatibilityTable extends EventEmitter {
   
   private populateVideoDetails(
     detailsRowElem: HTMLTableRowElement,
-    machineComp   : IMachineCompatibility
+    gameComp      : IGameCompatibility
   ):void {
-    const videoComps = machineComp.videoComps;
+    const videoComps = gameComp.videoComps;
     const controlsListElem = selectR(detailsRowElem, '.comp-table__details-row__list--video');
     
     for (const videoComp of videoComps) {
-      const monitorConfig  = videoComp.monitorConfig;
-      const modelineResult = videoComp.modelineResult;
+      const monitorConfig = videoComp.monitorConfig;
+      const modelineCalc  = videoComp.modelineCalc;
       
       // create a header item if there are multiple monitor configurations
       if (videoComps.length > 1) {
@@ -393,27 +394,27 @@ export default class CompatibilityTable extends EventEmitter {
       
       let text = 'Unable to check video compatability.';
       
-      if (modelineResult) {
-        if (modelineResult.err) {
+      if (modelineCalc) {
+        if (!modelineCalc.success) {
            text = 'Error checking video compatability.';
         }
-        else if (!modelineResult.inRange) {
-          text = 'Out of Range - This monitor is incapable of displaying this ROM in any way.';
+        else if (!modelineCalc.modelineResult.inRange) {
+          text = 'Out of Range - This monitor is incapable of displaying this game in any way.';
         }
-        else if (modelineResult.modeline.interlace) {
+        else if (modelineCalc.modelineResult.modeline.interlace) {
           text = 'Interlaced - Interlaced video modes flicker and cause other visual issues.';
         }
-        else if (modelineResult.resStretch) {
+        else if (modelineCalc.modelineResult.resStretch) {
           text = 'Fractional Scaling - The image is stretched unevenly and becomes distorted.';
         }
-        else if (modelineResult.vfreqOff) {
-          text = 'Vertical Frequency Off - This monitor is not able to match this ROM\'s refresh rate. This may cause significant tearing, sound issues, and/or the game running faster or slower.';
+        else if (modelineCalc.modelineResult.vfreqOff) {
+          text = 'Vertical Frequency Off - This monitor is not able to match this game\'s refresh rate. This may cause significant tearing, sound issues, and/or the game running faster or slower.';
         }
         else if (
           //modelineResult.vDiff !== 0 ||
           videoComp.status === videoCompatibilityStatusEnum.VFREQ_SLIGHTLY_OFF
         ) {
-          text = 'Vertical Frequency Slightly Off - This monitor is not able to match this ROM\'s refresh rate exactly, but it can get close. This may cause slight tearing, sound issues, and/or the game running faster or slower.';
+          text = 'Vertical Frequency Slightly Off - This monitor is not able to match this game\'s refresh rate exactly, but it can get close. This may cause slight tearing, sound issues, and/or the game running faster or slower.';
         }
         else if (
           //modelineResult.xScale !== 1 ||
@@ -423,13 +424,13 @@ export default class CompatibilityTable extends EventEmitter {
           text = 'Integer Scaling - The image is scaled up evenly (2x, 3x, 4x, ...etc). The image is not distorted but multiple scanlines are present where only 1 was originally.';
         }
         else if (videoComp.status === videoCompatibilityStatusEnum.UNSUPPORTED) {
-          text = 'Unsupported - This monitor is incapable of displaying this ROM in any way.';
+          text = 'Unsupported - This monitor is incapable of displaying this game in any way.';
         }
         else if (videoComp.status === videoCompatibilityStatusEnum.BAD) {
-          text = 'Bad - This monitor has poor support for this ROM.';
+          text = 'Bad - This monitor has poor support for this game.';
         }
         else if (videoComp.status === videoCompatibilityStatusEnum.NATIVE) {
-          text = 'Native - This monitor supports the native resolution and refresh rate of this ROM.';
+          text = 'Native - This monitor supports the native resolution and refresh rate of this game.';
         }
       }
       
@@ -440,15 +441,15 @@ export default class CompatibilityTable extends EventEmitter {
       
       const videoModelinesTableElem = selectR(detailsRowElem, '.comp-table__details-row__data__modelines-table');
       
-      if (modelineResult) {
+      if (modelineCalc && modelineCalc.success) {
         selectR(detailsRowElem, '.comp-table__details-row__data__modelines-table__value--desc').innerText = (
-          (modelineResult.description || '').trim()
+          (modelineCalc.modelineResult.description || '').trim()
         );
         selectR(detailsRowElem, '.comp-table__details-row__data__modelines-table__value--result').innerText = (
-          (modelineResult.details || '').trim()
+          (modelineCalc.modelineResult.details || '').trim()
         );
         selectR(detailsRowElem, '.comp-table__details-row__data__modelines-table__value--modeline').innerText = (
-          (modelineResult.modelineStr || '').trim()
+          (modelineCalc.modelineResult.modelineStr || '').trim()
         );
       }
       else {
@@ -459,15 +460,19 @@ export default class CompatibilityTable extends EventEmitter {
   
   private populateControlsDetails(
     detailsRowElem: HTMLTableRowElement,
-    machineComp   : IMachineCompatibility
+    gameComp      : IGameCompatibility
   ): void {
-    const controlsComps = machineComp.controlsComps;
+    if (!gameComp.game) {
+      return;
+    }
+    
+    const controlsComps = gameComp.controlsComps;
     const controlsListElem = selectR(detailsRowElem, '.comp-table__details-row__list--controls');
     
-    // check if a controls.dat Game was found
-    if (!machineComp.controlsDatGame) {
+    // check we have control information for the game
+    if (!gameComp.game.controlInfo) {
       controlsListElem.appendChild(this.createDetailsListItem(
-        'Unable to find control information for this ROM.',
+        'Unable to find control information for this game.',
         overallCompatibilityStatusEnum.UNKNOWN
       ));
       return;
@@ -596,7 +601,7 @@ export default class CompatibilityTable extends EventEmitter {
     
     textElem.innerText = text;
     
-    if (typeof overallStatus === 'undefined') {
+    if (overallStatus === undefined) {
       iconElem.classList.add('hidden');
     }
     else {
@@ -607,26 +612,26 @@ export default class CompatibilityTable extends EventEmitter {
     return itemElem;
   }
   
-  private getDetailsData(machineComp: IMachineCompatibility): any { // eslint-disable-line @typescript-eslint/no-explicit-any
+  private getDetailsData(gameComp: IGameCompatibility): any { // eslint-disable-line @typescript-eslint/no-explicit-any
     return stringifyEnums({
-      machineNameInput: machineComp.machineNameInput,
-      status: machineComp.overallStatus,
+      gameNameInput: gameComp.gameNameInput,
+      status: gameComp.overallStatus,
       
       emuComp: {
-        status: machineComp.emuComp.status
+        status: gameComp.emuComp.status
       },
       
-      videoComps: machineComp.videoComps.map(videoComp => (
-        !videoComp? null : {
+      videoComps: gameComp.videoComps.map(videoComp => (
+        !videoComp? undefined : {
           status: videoComp.status,
           monitorConfig: videoComp.monitorConfig,
-          modelineResult: videoComp.modelineResult
+          modelineCalc: videoComp.modelineCalc
         }
       )),
       
-      controlsComps: machineComp.controlsComps.map(controlsComp => ({
+      controlsComps: gameComp.controlsComps.map(controlsComp => ({
         status: controlsComp.status,
-        score : !controlsComp.bestControlConfigComp? null : formatDetailsScore(controlsComp.bestControlConfigComp.score),
+        score : !controlsComp.bestControlConfigComp? undefined : formatDetailsScore(controlsComp.bestControlConfigComp.score),
         controlSetComps: !controlsComp.bestControlConfigComp? [] : controlsComp.bestControlConfigComp.controlSetComps.map(controlSetComp => ({
           status: controlSetComp.status,
           score: formatDetailsScore(controlSetComp.score),
@@ -643,10 +648,14 @@ export default class CompatibilityTable extends EventEmitter {
             gameControl: {
               type: controlComp.gameControl.controlDef.type,
               buttons: controlComp.gameControl.buttons.map(gameButton => 
-                gameButton.input.label || gameButton.input.posLabel || gameButton.input.negLabel || gameButton.input.mameInputPort
+                gameButton.input.label    ||
+                gameButton.input.posLabel ||
+                gameButton.input.negLabel ||
+                (gameButton.controlsDatButton && gameButton.controlsDatButton.input.mameInputPort) ||
+                gameButton.descriptor
               )
             },
-            cpControl: !controlComp.cpControl? null : {
+            cpControl: !controlComp.cpControl? undefined : {
               type: controlComp.cpControl.controlDef.type,
               numButtons: controlComp.cpControl.numButtons
             }
@@ -655,18 +664,55 @@ export default class CompatibilityTable extends EventEmitter {
             status: controlSetComp.buttonsComp.status,
             score: formatDetailsScore(controlSetComp.buttonsComp.score),
             gameButtons: controlSetComp.buttonsComp.gameButtons.map(gameButton => 
-              gameButton.input.label || gameButton.input.posLabel || gameButton.input.negLabel || gameButton.input.mameInputPort
+              gameButton.input.label    ||
+              gameButton.input.posLabel ||
+              gameButton.input.negLabel ||
+              (gameButton.controlsDatButton && gameButton.controlsDatButton.input.mameInputPort) ||
+              gameButton.descriptor
             ),
-            cpButtonCluster: !controlSetComp.buttonsComp.cpButtonCluster? null : {
+            cpButtonCluster: !controlSetComp.buttonsComp.cpButtonCluster? undefined : {
               name: controlSetComp.buttonsComp.cpButtonCluster.name,
               numButtons: controlSetComp.buttonsComp.cpButtonCluster.numButtons
             }
           }
         }))
       })),
-      controlsDatGame: machineComp.controlsDatGame || null,
-      
-      machine: machineComp.machine || null,
+      game: gameComp.game? {
+        name            : gameComp.game.name,
+        description     : gameComp.game.description,
+        cloneOfGameName : gameComp.game.cloneOfGame? gameComp.game.cloneOfGame.name : undefined,
+        displays: gameComp.game.displays.map(gameDisplay => ({
+          type    : gameDisplay.type,
+          rotation: gameDisplay.rotation.val,
+          flipx   : gameDisplay.flipx,
+          refresh : gameDisplay.refresh,
+          width   : gameDisplay.width,
+          height  : gameDisplay.height
+        })),
+        controlInfo: gameComp.game.controlInfo? {
+          numPlayers     : gameComp.game.controlInfo.numPlayers,
+          alternatesTurns: gameComp.game.controlInfo.alternatesTurns,
+          controlConfigs : gameComp.game.controlInfo.controlConfigs.map(gameControlConfig => ({
+            targetCabinetType: gameControlConfig.targetCabinetType,
+            menuButtons      : gameControlConfig.menuButtons.map(formatGameButton),
+            controlSets      : gameControlConfig.controlSets.map(gameControlSet => ({
+              supportedPlayerNums   : gameControlSet.supportedPlayerNums.join(','),
+              isRequired            : gameControlSet.isRequired,
+              isOnOppositeScreenSide: gameControlSet.isOnOppositeScreenSide,
+              controlPanelButtons   : gameControlSet.controlPanelButtons.map(formatGameButton),
+              controls              : gameControlSet.controls.map(gameControl => ({
+                controlDef: gameControl.controlDef,
+                descriptor: gameControl.descriptor,
+                buttons   : gameControl.buttons.map(formatGameButton),
+                outputToInputMap: Object.fromEntries(Array.from(gameControl.outputToInputMap.entries()).map(([key, gameInput]) => ([
+                  key,
+                  gameInput? formatGameInput(gameInput): undefined
+                ])))
+              }))
+            }))
+          }))
+        }: undefined
+      }: undefined
     });
     
     function formatDetailsScore(
@@ -684,6 +730,22 @@ export default class CompatibilityTable extends EventEmitter {
       }
       
       return obj;
+    }
+    
+    function formatGameButton(gameButton: IGameButton): object {
+      return {
+        descriptor: gameButton.descriptor,
+        input: formatGameInput(gameButton.input)
+      };
+    }
+    
+    function formatGameInput(gameInput: IGameInput): object {
+      return {
+        isAnalog: gameInput.isAnalog,
+        label   : gameInput.label,
+        negLabel: gameInput.negLabel,
+        posLabel: gameInput.posLabel
+      };
     }
   }
   
@@ -704,7 +766,7 @@ export default class CompatibilityTable extends EventEmitter {
       [overallCompatibilityStatusEnum.OK         .val]: 'OK',
       [overallCompatibilityStatusEnum.GOOD       .val]: 'Good',
       [overallCompatibilityStatusEnum.NATIVE     .val]: 'Native',
-    }[overallStatus.val] || overallCompatibilityStatusEnum.getLabel(overallStatus);
+    }[overallStatus.val] || overallStatus.label;
     
     return {
       cssClass: `comp-table--${cssClassSuffix}`,

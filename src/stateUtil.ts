@@ -1,4 +1,4 @@
-import {TJSONValue} from '../types/json';
+import {TJSONValue} from './types/json';
 
 
 const LOCAL_STATE_CUR_VERSION_NUM = 4;
@@ -56,14 +56,14 @@ export function get(key: string): TJSONValue {
 
 export function depricate(newKey:string, ...oldKeys:string[]): TJSONValue {
   const val = get(newKey);
-  if (typeof val !== 'undefined') {
+  if (val !== undefined) {
     remove(...oldKeys);
     return val;
   }
   
   for (const oldKey of oldKeys) {
     const val = get(oldKey);
-    if (typeof val !== 'undefined') {
+    if (val !== undefined) {
       remove(...oldKeys);
       set(newKey, val);
       return val;

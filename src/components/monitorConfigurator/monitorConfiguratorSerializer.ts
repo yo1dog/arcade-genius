@@ -24,7 +24,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): IMonito
   const stateJ = deserializeObject(sState, propLabel);
   
   let version = deserializeNumberOptional(stateJ.__version, `${propLabel}.__version`);
-  if (typeof version === 'undefined') {
+  if (version === undefined) {
     version = 1;
   }
   

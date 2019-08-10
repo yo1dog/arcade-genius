@@ -68,13 +68,8 @@ export class Enum<R, V extends EnumValue<R>> {
     }
   }
   
-  public getLabel(eVal: V): string {
-    for (const label in this._map) {
-      if (this._map[label].isEqual(eVal.val)) {
-        return label;
-      }
-    }
-    throw new Error(`Invalid value. This should not be possible: ${eVal.getDescription()}`);
+  public values(): V[] {
+    return Object.values(this._map);
   }
   
   public get(val: R): V | undefined {

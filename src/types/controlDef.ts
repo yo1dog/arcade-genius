@@ -5,36 +5,39 @@ export interface IControlDef {
   readonly type             : ControlType;
   readonly name             : string;
   readonly description      : string;
-  readonly outputMap        : Map<string, IControlOutput>;
+  readonly outputMap        : Map<string, IControlDefOutput>;
   readonly descriptors      : string[];
   readonly buttonDescriptors: string[];
-  readonly fallbacks        : IControlFallback[];
+  readonly fallbacks        : IControlDefFallback[];
 }
 
-export interface IControlOutput {
-  readonly name?                     : string;
-  readonly isAnalog                  : boolean;
-  readonly defaultMAMEInputPortSuffix: string;
-  readonly defaultLabel?             : string;
-  readonly negDefaultLabel?          : string;
-  readonly posDefaultLabel?          : string;
+export interface IControlDefOutput {
+  readonly name?           : string;
+  readonly isAnalog        : boolean;
+  readonly defaultLabel?   : string;
+  readonly negDefaultLabel?: string;
+  readonly posDefaultLabel?: string;
 }
 
-export interface IControlFallback {
+export interface IControlDefFallback {
   readonly controlType            : ControlType;
-  readonly level                  : ControlFallbackLevel;
+  readonly level                  : ControlDefFallbackLevel;
   readonly outputMapping          : Map<string, string|string[]>;
   readonly buttonDescriptorMapping: Map<string, string|string[]>;
 }
 
-export class ControlFallbackLevel extends StringEnumValue {}
-export const controlFallbackLevelEnum = createStringEnum(ControlFallbackLevel, {
+export class ControlDefFallbackLevel extends StringEnumValue {
+  public readonly __type: 'ControlDefFallbackLevel' = 'ControlDefFallbackLevel';
+}
+export const controlDefFallbackLevelEnum = createStringEnum(ControlDefFallbackLevel, {
   GOOD: 'good',
   OK  : 'ok',
   BAD : 'bad'
 });
 
-export class ControlType extends StringEnumValue {}
+export class ControlType extends StringEnumValue {
+  public readonly __type: 'ControlType' = 'ControlType';
+}
 export const controlTypeEnum = createStringEnum(ControlType, {
   JOY_2WAY_HORIZONTAL               : 'joy-2way-horizontal',
   JOY_2WAY_VERTICAL                 : 'joy-2way-vertical',

@@ -1,23 +1,23 @@
-import './machineNameList.less';
-import machineNameListTemplate  from './machineNameList.html';
-import defaultMachineNameInputs from './defaultMachineNameInputs.json';
-import * as stateUtil           from '../../dataAccess/stateUtil';
+import './gameNameList.less';
+import gameNameListTemplate  from './gameNameList.html';
+import defaultGameNameInputs from './defaultGameNameInputs.json';
+import * as stateUtil        from '../../stateUtil';
 import {
   serializeState,
   deserializeState
-} from './machineNameListSerializer';
+} from './gameNameListSerializer';
 import {
   htmlToBlock,
   selectR,
   firstChildR
 } from '../../helpers/htmlUtil';
 
-export interface IMachineNameListState {
+export interface IGameNameListState {
   readonly inputStr: string;
 }
 
 
-export default class MachineNameList {
+export default class GameNameList {
   public readonly elem: HTMLElement;
   
   private readonly inputElem       : HTMLTextAreaElement;
@@ -25,29 +25,29 @@ export default class MachineNameList {
   
   
   public constructor() {
-    this.elem = firstChildR(htmlToBlock(machineNameListTemplate));
-    this.inputElem        = selectR(this.elem, '.machine-name-list__input', 'textarea');
-    this.demoListLinkElem = selectR(this.elem, '.machine-name-list__demo-list-link');
+    this.elem = firstChildR(htmlToBlock(gameNameListTemplate));
+    this.inputElem        = selectR(this.elem, '.game-name-list__input', 'textarea');
+    this.demoListLinkElem = selectR(this.elem, '.game-name-list__demo-list-link');
     
     this.demoListLinkElem.addEventListener('click', e => {
       e.preventDefault();
-      this.inputElem.value = this.getDefaultMachineNameInputsStr();
+      this.inputElem.value = this.getDefaultGameNameInputsStr();
     });
   }
   
   public async init():Promise<void> {
     const state = this.loadState();
-    this.inputElem.value = state? state.inputStr : this.getDefaultMachineNameInputsStr();
+    this.inputElem.value = state? state.inputStr : this.getDefaultGameNameInputsStr();
   }
   
-  public getMachineNameInputs(): string[] {
-    // parse input into machine names
+  public getGameNameInputs(): string[] {
+    // parse input into game names
     return this.parseInput(this.inputElem.value);
   }
 
-  private parseInput(machineNameListInput: string): string[] {
+  private parseInput(gameNameListInput: string): string[] {
     return (
-      machineNameListInput
+      gameNameListInput
       .replace(/(\/\/|#).*$/gm, '')          // remove comments (//... or #...)
       .replace(/\/\*+[\s\S]*?(\*\/|$)/g, '') // remove block comments (/*...*/)
       .replace(/,/g, '\n')                   // replace commas with newlines
@@ -60,16 +60,16 @@ export default class MachineNameList {
     );
   }
   
-  private getDefaultMachineNameInputsStr(): string {
-    return defaultMachineNameInputs.join('\n');
+  private getDefaultGameNameInputsStr(): string {
+    return defaultGameNameInputs.join('\n');
   }
   
   private getStateKey(): string {
-    return 'machineNameList';
+    return 'gameNameList';
   }
   
   public saveState() {
-    const state:IMachineNameListState = {
+    const state:IGameNameListState = {
       inputStr: this.inputElem.value
     };
     
@@ -77,18 +77,19 @@ export default class MachineNameList {
     stateUtil.set(this.getStateKey(), sState);
   }
   
-  private loadState():IMachineNameListState|undefined {
+  private loadState():IGameNameListState|undefined {
     const sState = stateUtil.depricate(
       this.getStateKey(),
-      'machineNameListInput' // depricated keys
+      'gameNameList',
+      'gameNameListInput' // depricated keys
     );
     if (!sState) return;
     
     try {
-      return deserializeState(sState, 'sMachineNameListState');
+      return deserializeState(sState, 'sGameNameListState');
     }
     catch (err) {
-      console.error(`Error deserializing Machine Name List state:`);
+      console.error(`Error deserializing Game Name List state:`);
       console.error(err);
     }
   }

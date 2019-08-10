@@ -3,7 +3,7 @@ import {EventEmitter}                  from 'events';
 import cpConfiguratorGroupTemplate     from './controlPanelConfiguratorGroup.html';
 import cpConfiguratorGroupItemTemplate from './controlPanelConfiguratorGroupItem.html';
 import CPConfigurator                  from '../controlPanelConfigurator/controlPanelConfigurator';
-import * as stateUtil                  from '../../dataAccess/stateUtil';
+import * as stateUtil                  from '../../stateUtil';
 import {ICPConfiguration}              from '../../types/controlPanel';
 import createUUID                      from 'lib/get_uuid.js';
 import {
