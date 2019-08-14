@@ -36,7 +36,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): ICPDesi
 // v1
 // ========================================
 
-export function deserializeStateV1(sState: TJSONValue, propLabel: string): ICPDesignerGroupState {
+function deserializeStateV1(sState: TJSONValue, propLabel: string): ICPDesignerGroupState {
   const stateJ = deserializeObject(sState, propLabel);
   
   return {
@@ -50,7 +50,7 @@ export function deserializeStateV1(sState: TJSONValue, propLabel: string): ICPDe
 // v2
 // ========================================
 
-export function deserializeStateV2(sState: TJSONValue, propLabel: string): ICPDesignerGroupState {
+function deserializeStateV2(sState: TJSONValue, propLabel: string): ICPDesignerGroupState {
   const stateJ = deserializeObject(sState, propLabel);
   
   return {

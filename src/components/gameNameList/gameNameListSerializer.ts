@@ -38,7 +38,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): IGameNa
 // v1
 // ========================================
 
-export function deserializeStateV1(sState: TJSONValue, propLabel: string): IGameNameListState {
+function deserializeStateV1(sState: TJSONValue, propLabel: string): IGameNameListState {
   const sInputStr = sState;
   return {
     inputStr: deserializeString(sInputStr, propLabel)
@@ -51,7 +51,7 @@ export function deserializeStateV1(sState: TJSONValue, propLabel: string): IGame
 // v2
 // ========================================
 
-export function deserializeStateV2(sState: TJSONValue, propLabel: string): IGameNameListState {
+function deserializeStateV2(sState: TJSONValue, propLabel: string): IGameNameListState {
   const stateJ = deserializeObject(sState, propLabel);
   
   return {

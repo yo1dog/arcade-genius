@@ -42,7 +42,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): IMonito
 // v1
 // ========================================
 
-export function deserializeStateV1(sState: TJSONValue, propLabel: string): IMonitorDesignerState {
+function deserializeStateV1(sState: TJSONValue, propLabel: string): IMonitorDesignerState {
   const sModelineConfig = sState;
   return {
     modelineConfig: deserializeModelineConfig(sModelineConfig, propLabel)
@@ -55,7 +55,7 @@ export function deserializeStateV1(sState: TJSONValue, propLabel: string): IMoni
 // v2
 // ========================================
 
-export function deserializeStateV2(sState: TJSONValue, propLabel: string): IMonitorDesignerState {
+function deserializeStateV2(sState: TJSONValue, propLabel: string): IMonitorDesignerState {
   const stateJ = deserializeObject(sState, propLabel);
   
   return {

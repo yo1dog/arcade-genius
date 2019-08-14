@@ -42,7 +42,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): ICPDesi
 // v1
 // ========================================
 
-export function deserializeStateV1(sState: TJSONValue, propLabel: string): ICPDesignerState {
+function deserializeStateV1(sState: TJSONValue, propLabel: string): ICPDesignerState {
   const sCPConfig = sState;
   return {
     cpConfig: deserializeConfiguration(sCPConfig, propLabel)
@@ -55,7 +55,7 @@ export function deserializeStateV1(sState: TJSONValue, propLabel: string): ICPDe
 // v2
 // ========================================
 
-export function deserializeStateV2(sState: TJSONValue, propLabel: string): ICPDesignerState {
+function deserializeStateV2(sState: TJSONValue, propLabel: string): ICPDesignerState {
   const stateJ = deserializeObject(sState, propLabel);
   
   return {

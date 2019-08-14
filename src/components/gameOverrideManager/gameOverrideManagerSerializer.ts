@@ -32,7 +32,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): IGameOv
 // v1
 // ========================================
 
-export function deserializeStateV1(sState: TJSONValue, propLabel: string): IGameOverrideManagerState {
+function deserializeStateV1(sState: TJSONValue, propLabel: string): IGameOverrideManagerState {
   const stateJ = deserializeObject(sState, propLabel);
   return {};
 }

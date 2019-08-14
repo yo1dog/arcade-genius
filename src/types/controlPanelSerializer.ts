@@ -88,7 +88,7 @@ export function deserializeConfiguration(sCPConfig: TJSONValue, propLabel: strin
 // v1
 // ========================================
 
-export function deserializeConfigurationV1(sCPConfig: TJSONValue, propLabel: string): ICPConfiguration {
+function deserializeConfigurationV1(sCPConfig: TJSONValue, propLabel: string): ICPConfiguration {
   const cpConfigJ = deserializeObject(sCPConfig, propLabel);
   
   const buttonClusters = deserializeArray(cpConfigJ.buttonClusters, `${propLabel}.sButtonClusters`, deserializeButtonClusterV1);
@@ -107,7 +107,7 @@ export function deserializeConfigurationV1(sCPConfig: TJSONValue, propLabel: str
   };
 }
 
-export function deserializeControlV1(sControl: TJSONValue, propLabel: string): ICPControl {
+function deserializeControlV1(sControl: TJSONValue, propLabel: string): ICPControl {
   const controlJ = deserializeObject(sControl, propLabel);
   
   return {
@@ -119,7 +119,7 @@ export function deserializeControlV1(sControl: TJSONValue, propLabel: string): I
   };
 }
 
-export function deserializeButtonClusterV1(sButtonCluster: TJSONValue, propLabel: string): ICPButtonCluster {
+function deserializeButtonClusterV1(sButtonCluster: TJSONValue, propLabel: string): ICPButtonCluster {
   const buttonClusterJ = deserializeObject(sButtonCluster, propLabel);
   
   return {
@@ -130,7 +130,7 @@ export function deserializeButtonClusterV1(sButtonCluster: TJSONValue, propLabel
   };
 }
 
-export function deserializeControlSetV1(
+function deserializeControlSetV1(
   sControlSet   : TJSONValue,
   buttonClusters: ICPButtonCluster[],
   propLabel     : string
@@ -158,7 +158,7 @@ export function deserializeControlSetV1(
 // v2
 // ========================================
 
-export function deserializeConfigurationV2(sCPConfig: TJSONValue, propLabel: string): ICPConfiguration {
+function deserializeConfigurationV2(sCPConfig: TJSONValue, propLabel: string): ICPConfiguration {
   const cpConfigJ = deserializeObject(sCPConfig, propLabel);
   
   const controls       = deserializeArray(cpConfigJ.sControls,       `${propLabel}.sControls`,       deserializeControlV2      );
@@ -176,7 +176,7 @@ export function deserializeConfigurationV2(sCPConfig: TJSONValue, propLabel: str
   };
 }
 
-export function deserializeControlV2(sControl: TJSONValue, propLabel: string): ICPControl {
+function deserializeControlV2(sControl: TJSONValue, propLabel: string): ICPControl {
   const controlJ = deserializeObject(sControl, propLabel);
   
   return {
@@ -188,7 +188,7 @@ export function deserializeControlV2(sControl: TJSONValue, propLabel: string): I
   };
 }
 
-export function deserializeControlSetV2(
+function deserializeControlSetV2(
   sControlSet   : TJSONValue,
   controls      : ICPControl[],
   buttonClusters: ICPButtonCluster[],
