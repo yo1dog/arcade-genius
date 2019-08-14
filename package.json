@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/yo1dog/arcade-genius#readme",
   "devDependencies": {
+    "@types/node": "12.7.0",
     "@typescript-eslint/eslint-plugin": "^1.13.0",
     "@typescript-eslint/parser": "^1.13.0",
     "clean-webpack-plugin": "^2.0.2",

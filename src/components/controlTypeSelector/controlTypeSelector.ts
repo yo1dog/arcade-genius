@@ -60,6 +60,11 @@ export default class ControlTypeSelector {
     }
   }
   
+  public setValue(controlDef: IControlDef): void {
+    this.selectElem.value = controlDef.type.val;
+    this.setDescription(controlDef);
+  }
+  
   private setDescription(controlDef?: IControlDef): void {
     replaceChildren(this.descriptionElem);
     

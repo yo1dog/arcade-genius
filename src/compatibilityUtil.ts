@@ -151,11 +151,17 @@ export async function checkGameBulk(
 }
 
 export async function checkGame(
-  gameNameInput : string,
-  monitorConfigs: IMonitorConfiguration[],
-  cpConfigs     : ICPConfiguration[]
+  gameNameInput  : string,
+  gameOverrideMap: Map<string, IGame>,
+  monitorConfigs : IMonitorConfiguration[],
+  cpConfigs      : ICPConfiguration[]
 ): Promise<IGameCompatibility> {
-  return (await checkGameBulk([gameNameInput], monitorConfigs, cpConfigs))[0];
+  return (await checkGameBulk(
+    [gameNameInput],
+    gameOverrideMap,
+    monitorConfigs,
+    cpConfigs
+  ))[0];
 }
 
 
