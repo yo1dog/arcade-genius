@@ -1,19 +1,19 @@
 import './index.less';
-import * as preload             from './preload';
-import * as modelineCaculator   from '../modelineCalculator';
-import * as controlDefUtil      from '../controlDefUtil';
-import * as gameUtil            from '../gameUtil';
-import * as mameListUtil        from '../data/mameListUtil';
-import * as controlsDatUtil     from '../data/controlsDatUtil';
-import MonitorConfiguratorGroup from '../components/monitorConfiguratorGroup/monitorConfiguratorGroup';
-import CPConfiguratorGroup      from '../components/controlPanelConfiguratorGroup/controlPanelConfiguratorGroup';
-import GameNameList             from '../components/gameNameList/gameNameList';
-import GameOverrideManager      from '../components/gameOverrideManager/gameOverrideManager';
-import CompatibilityTable       from '../components/compatibilityTable/compatibilityTable';
-import * as compUtil            from '../compatibilityUtil';
-import npmPackage               from '../../package.json';
-import {IJSONObject}            from '../types/json';
-import {IGame}                  from '../types/game';
+import * as preload           from './preload';
+import * as modelineCaculator from '../modelineCalculator';
+import * as controlDefUtil    from '../controlDefUtil';
+import * as gameUtil          from '../gameUtil';
+import * as mameListUtil      from '../data/mameListUtil';
+import * as controlsDatUtil   from '../data/controlsDatUtil';
+import MonitorDesignerGroup   from '../components/monitorDesignerGroup/monitorDesignerGroup';
+import CPDesignerGroup        from '../components/controlPanelDesignerGroup/controlPanelDesignerGroup';
+import GameNameList           from '../components/gameNameList/gameNameList';
+import GameOverrideManager    from '../components/gameOverrideManager/gameOverrideManager';
+import CompatibilityTable     from '../components/compatibilityTable/compatibilityTable';
+import * as compUtil          from '../compatibilityUtil';
+import npmPackage             from '../../package.json';
+import {IJSONObject}          from '../types/json';
+import {IGame}                from '../types/game';
 import {
   replaceChildren,
   selectR
@@ -38,14 +38,14 @@ async function onLoad(): Promise<void> {
   
   const gameNameList = new GameNameList();
   const gameOverrideManager = new GameOverrideManager();
-  const monitorConfiguratorGroup = new MonitorConfiguratorGroup();
-  const cpConfiguratorGroup = new CPConfiguratorGroup();
+  const monitorDesignerGroup = new MonitorDesignerGroup();
+  const cpDesignerGroup = new CPDesignerGroup();
   const compTable = new CompatibilityTable();
   
   let refreshIsPending = false;
   compTable.on('refresh', () => void (async () => {
-    monitorConfiguratorGroup.saveState();
-    cpConfiguratorGroup.saveState();
+    monitorDesignerGroup.saveState();
+    cpDesignerGroup.saveState();
     gameNameList.saveState();
     gameOverrideManager.saveState();
     
@@ -62,10 +62,10 @@ async function onLoad(): Promise<void> {
       const gameOverrideMap = new Map<string, IGame>(gameOverrides.map(game => [game.name, game]));
       
       // get the modeline configs
-      const monitorConfigs = monitorConfiguratorGroup.getMonitorConfigs();
+      const monitorConfigs = monitorDesignerGroup.getMonitorConfigs();
       
       // get the control panel configs
-      const cpConfigs = cpConfiguratorGroup.getControlPanelConfigs();
+      const cpConfigs = cpDesignerGroup.getControlPanelConfigs();
       
       // check the compatibility of each game name input
       await Promise.all([
@@ -86,8 +86,8 @@ async function onLoad(): Promise<void> {
   await Promise.all([
     gameNameList.init(),
     gameOverrideManager.init(),
-    monitorConfiguratorGroup.init(),
-    cpConfiguratorGroup.init(),
+    monitorDesignerGroup.init(),
+    cpDesignerGroup.init(),
     compTable.init()
   ]);
   
@@ -100,12 +100,12 @@ async function onLoad(): Promise<void> {
     gameOverrideManager.elem
   );
   replaceChildren(
-    document.querySelector('.monitor-configurator-group-container'),
-    monitorConfiguratorGroup.elem
+    document.querySelector('.monitor-designer-group-container'),
+    monitorDesignerGroup.elem
   );
   replaceChildren(
-    document.querySelector('.control-panel-configurator-group-container'),
-    cpConfiguratorGroup.elem
+    document.querySelector('.control-panel-designer-group-container'),
+    cpDesignerGroup.elem
   );
   replaceChildren(
     document.querySelector('.comp-table-container'),

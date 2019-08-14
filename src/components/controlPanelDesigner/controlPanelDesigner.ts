@@ -1,15 +1,15 @@
-import './controlPanelConfigurator.less';
-import cpConfiguratorTemplate              from './controlPanelConfigurator.html';
-import cpConfiguratorButtonClusterTemplate from './controlPanelConfiguratorButtonCluster.html';
-import cpConfiguratorControlSetTemplate    from './controlPanelConfiguratorControlSet.html';
-import ControlTypeSelector                 from '../controlTypeSelector/controlTypeSelector';
-import * as stateUtil                      from '../../stateUtil';
-import * as controlDefUtil                 from '../../controlDefUtil';
-import createUUID                          from 'lib/get_uuid.js';
+import './controlPanelDesigner.less';
+import cpDesignerTemplate              from './controlPanelDesigner.html';
+import cpDesignerButtonClusterTemplate from './controlPanelDesignerButtonCluster.html';
+import cpDesignerControlSetTemplate    from './controlPanelDesignerControlSet.html';
+import ControlTypeSelector             from '../controlTypeSelector/controlTypeSelector';
+import * as stateUtil                  from '../../stateUtil';
+import * as controlDefUtil             from '../../controlDefUtil';
+import createUUID                      from 'lib/get_uuid.js';
 import {
   serializeState,
   deserializeState
-} from './controlPanelConfiguratorSerializer';
+} from './controlPanelDesignerSerializer';
 import {
   htmlToBlock,
   selectR,
@@ -26,7 +26,7 @@ import {
   controlTypeEnum
 } from '../../types/controlDef';
 
-export interface ICPConfiguratorState {
+export interface ICPDesignerState {
   readonly cpConfig: ICPConfiguration;
 }
 
@@ -47,7 +47,7 @@ export interface IControlSetRowDef {
 }
 
 
-export default class ControlPanelConfigurator {
+export default class ControlPanelDesigner {
   public readonly id  : string;
   public readonly elem: HTMLElement;
   public name?: string;
@@ -67,16 +67,16 @@ export default class ControlPanelConfigurator {
     this.id = id;
     this.name = name;
     
-    this.elem = firstChildR(htmlToBlock(cpConfiguratorTemplate));
-    this.buttonClusterTableBodyElem    = selectR(this.elem, '.control-panel-configurator__button-cluster-table__body');
-    this.addButtonClusterTableBodyElem = selectR(this.elem, '.control-panel-configurator__add-button-cluster-button');
+    this.elem = firstChildR(htmlToBlock(cpDesignerTemplate));
+    this.buttonClusterTableBodyElem    = selectR(this.elem, '.control-panel-designer__button-cluster-table__body');
+    this.addButtonClusterTableBodyElem = selectR(this.elem, '.control-panel-designer__add-button-cluster-button');
     
-    this.controlSetTableBodyElem = selectR(this.elem, '.control-panel-configurator__control-set-table__body');
-    this.addControlSetButtonElem = selectR(this.elem, '.control-panel-configurator__add-control-set-button');
+    this.controlSetTableBodyElem = selectR(this.elem, '.control-panel-designer__control-set-table__body');
+    this.addControlSetButtonElem = selectR(this.elem, '.control-panel-designer__add-control-set-button');
     
     this.controlTypeSelector = new ControlTypeSelector(
-      selectR(this.elem, '.control-panel-configurator__control-type-select', 'select'),
-      selectR(this.elem, '.control-panel-configurator__control-description')
+      selectR(this.elem, '.control-panel-designer__control-type-select', 'select'),
+      selectR(this.elem, '.control-panel-designer__control-description')
     );
     
     this.buttonClusterRowDefs = [];
@@ -145,10 +145,10 @@ export default class ControlPanelConfigurator {
     name            = this.getAutoButtonClusterName(),
     numButtons      = 1
   } = {}): IButtonClusterRowDef {
-    const rowElem = firstChildR(htmlToBlock(cpConfiguratorButtonClusterTemplate), 'tr');
-    const nameInputElem    = selectR(rowElem, '.control-panel-configurator__button-cluster__name-input', 'input');
-    const countInputElem   = selectR(rowElem, '.control-panel-configurator__button-cluster__count-input', 'input');
-    const removeButtonElem = selectR(rowElem, '.control-panel-configurator__button-cluster__remove-button');
+    const rowElem = firstChildR(htmlToBlock(cpDesignerButtonClusterTemplate), 'tr');
+    const nameInputElem    = selectR(rowElem, '.control-panel-designer__button-cluster__name-input', 'input');
+    const countInputElem   = selectR(rowElem, '.control-panel-designer__button-cluster__count-input', 'input');
+    const removeButtonElem = selectR(rowElem, '.control-panel-designer__button-cluster__remove-button');
     
     rowElem.setAttribute('data-button-cluster-id', buttonClusterId);
     nameInputElem.value = name;
@@ -224,14 +224,14 @@ export default class ControlPanelConfigurator {
       buttonClusterId
     } = options;
     
-    const rowElem = firstChildR(htmlToBlock(cpConfiguratorControlSetTemplate), 'tr');
-    const controlNameInputElem         = selectR(rowElem, '.control-panel-configurator__control-set__control-name-input', 'input');
-    const controlDefNameElem           = selectR(rowElem, '.control-panel-configurator__control-set__control-def-name');
-    const controlButtonsDescElem       = selectR(rowElem, '.control-panel-configurator__control-set__control-buttons-desc');
-    const controlButtonsCountElem      = selectR(rowElem, '.control-panel-configurator__control-set__control-buttons-desc__count');
-    const controlButtonsCountInputElem = selectR(rowElem, '.control-panel-configurator__control-set__control-buttons-desc__count-input', 'input');
-    const buttonClusterSelectElem      = selectR(rowElem, '.control-panel-configurator__control-set__button-cluster-select', 'select');
-    const removeButtonElem             = selectR(rowElem, '.control-panel-configurator__control-set__remove-button');
+    const rowElem = firstChildR(htmlToBlock(cpDesignerControlSetTemplate), 'tr');
+    const controlNameInputElem         = selectR(rowElem, '.control-panel-designer__control-set__control-name-input', 'input');
+    const controlDefNameElem           = selectR(rowElem, '.control-panel-designer__control-set__control-def-name');
+    const controlButtonsDescElem       = selectR(rowElem, '.control-panel-designer__control-set__control-buttons-desc');
+    const controlButtonsCountElem      = selectR(rowElem, '.control-panel-designer__control-set__control-buttons-desc__count');
+    const controlButtonsCountInputElem = selectR(rowElem, '.control-panel-designer__control-set__control-buttons-desc__count-input', 'input');
+    const buttonClusterSelectElem      = selectR(rowElem, '.control-panel-designer__control-set__button-cluster-select', 'select');
+    const removeButtonElem             = selectR(rowElem, '.control-panel-designer__control-set__remove-button');
     
     rowElem.setAttribute('data-control-id', controlId);
     controlNameInputElem.value = controlName;
@@ -419,8 +419,8 @@ export default class ControlPanelConfigurator {
   ): void {
     const isSingular = numControlButtons === 1;
     
-    controlButtonsDescElem.classList.toggle('control-panel-configurator__control-set__control-buttons-desc--singular', isSingular);
-    controlButtonsDescElem.classList.toggle('control-panel-configurator__control-set__control-buttons-desc--plural', !isSingular);
+    controlButtonsDescElem.classList.toggle('control-panel-designer__control-set__control-buttons-desc--singular', isSingular);
+    controlButtonsDescElem.classList.toggle('control-panel-designer__control-set__control-buttons-desc--plural', !isSingular);
   }
   
   private updateAllButtonClusterSelectElems() {
@@ -456,11 +456,11 @@ export default class ControlPanelConfigurator {
   }
   
   private getStateKey():string {
-    return `controlPanelConfigurator-${this.id}`;
+    return `controlPanelDesigner-${this.id}`;
   }
   
   public saveState():void {
-    const state:ICPConfiguratorState = {
+    const state:ICPDesignerState = {
       cpConfig: this.getControlPanelConfig()
     };
     
@@ -468,15 +468,18 @@ export default class ControlPanelConfigurator {
     stateUtil.set(this.getStateKey(), sState);
   }
   
-  private loadState(): ICPConfiguratorState | undefined {
-    const sState = stateUtil.get(this.getStateKey());
+  private loadState(): ICPDesignerState | undefined {
+    const sState = stateUtil.depricate(
+      this.getStateKey(),
+      `controlPanelConfigurator-${this.id}`
+    );
     if (!sState) return;
     
     try {
-      return deserializeState(sState, 'sCPConfiguratorState');
+      return deserializeState(sState, 'sCPDesignerState');
     }
     catch (err) {
-      console.error(`Error deserializing Control Panel Configurator '${this.id}' state:`);
+      console.error(`Error deserializing Control Panel Designer '${this.id}' state:`);
       console.error(err);
     }
   }

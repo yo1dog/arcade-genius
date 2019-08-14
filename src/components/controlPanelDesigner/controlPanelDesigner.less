@@ -1,0 +1,33 @@
+.control-panel-designer {}
+
+.control-panel-designer__button-cluster-table,
+.control-panel-designer__control-set-table {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  
+  th + th, td + td {
+    padding-left: 0.5em;
+  }
+  tr + tr {
+    padding-top: 0.2em;
+  }
+}
+
+.control-panel-designer__button-cluster__count-input {
+  width: 3em
+}
+.control-panel-designer__control-set__control-buttons-desc__count-input {
+  width: 2em;
+}
+
+.control-panel-designer__control-set__control-buttons-desc__text--singular {
+  display: none;
+}
+.control-panel-designer__control-set__control-buttons-desc--singular {
+  .control-panel-designer__control-set__control-buttons-desc__text--singular {
+    display: inline;
+  }
+  .control-panel-designer__control-set__control-buttons-desc__text--plural {
+    display: none;
+  }
+}

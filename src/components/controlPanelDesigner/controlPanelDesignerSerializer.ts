@@ -1,5 +1,5 @@
-import {TJSONValue} from '../../types/json';
-import {ICPConfiguratorState} from './controlPanelConfigurator';
+import {TJSONValue}       from '../../types/json';
+import {ICPDesignerState} from './controlPanelDesigner';
 import {
   serializeCPConfiguration,
   deserializeConfiguration
@@ -10,7 +10,7 @@ import {
 } from '../../types/jsonSerializer';
 
 
-export function serializeState(state: ICPConfiguratorState): TJSONValue {
+export function serializeState(state: ICPDesignerState): TJSONValue {
   return {
     __version: 2,
     sCPConfig: serializeCPConfiguration(state.cpConfig)
@@ -20,7 +20,7 @@ export function serializeState(state: ICPConfiguratorState): TJSONValue {
 
 
 
-export function deserializeState(sState: TJSONValue, propLabel: string): ICPConfiguratorState {
+export function deserializeState(sState: TJSONValue, propLabel: string): ICPDesignerState {
   const stateJ = deserializeObject(sState, propLabel);
   
   let version = deserializeNumberOptional(stateJ.__version, `${propLabel}.__version`);
@@ -42,7 +42,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): ICPConf
 // v1
 // ========================================
 
-export function deserializeStateV1(sState: TJSONValue, propLabel: string): ICPConfiguratorState {
+export function deserializeStateV1(sState: TJSONValue, propLabel: string): ICPDesignerState {
   const sCPConfig = sState;
   return {
     cpConfig: deserializeConfiguration(sCPConfig, propLabel)
@@ -55,7 +55,7 @@ export function deserializeStateV1(sState: TJSONValue, propLabel: string): ICPCo
 // v2
 // ========================================
 
-export function deserializeStateV2(sState: TJSONValue, propLabel: string): ICPConfiguratorState {
+export function deserializeStateV2(sState: TJSONValue, propLabel: string): ICPDesignerState {
   const stateJ = deserializeObject(sState, propLabel);
   
   return {

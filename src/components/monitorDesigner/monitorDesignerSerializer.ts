@@ -1,5 +1,5 @@
-import {TJSONValue} from '../../types/json';
-import {IMonitorConfiguratorState} from './monitorConfigurator';
+import {TJSONValue}            from '../../types/json';
+import {IMonitorDesignerState} from './monitorDesigner';
 import {
   serializeModelineConfig,
   deserializeModelineConfig
@@ -10,7 +10,7 @@ import {
 } from '../../types/jsonSerializer';
 
 
-export function serializeState(state: IMonitorConfiguratorState): TJSONValue {
+export function serializeState(state: IMonitorDesignerState): TJSONValue {
   return {
     __version: 2,
     sModelineConfig: serializeModelineConfig(state.modelineConfig)
@@ -20,7 +20,7 @@ export function serializeState(state: IMonitorConfiguratorState): TJSONValue {
 
 
 
-export function deserializeState(sState: TJSONValue, propLabel: string): IMonitorConfiguratorState {
+export function deserializeState(sState: TJSONValue, propLabel: string): IMonitorDesignerState {
   const stateJ = deserializeObject(sState, propLabel);
   
   let version = deserializeNumberOptional(stateJ.__version, `${propLabel}.__version`);
@@ -42,7 +42,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): IMonito
 // v1
 // ========================================
 
-export function deserializeStateV1(sState: TJSONValue, propLabel: string): IMonitorConfiguratorState {
+export function deserializeStateV1(sState: TJSONValue, propLabel: string): IMonitorDesignerState {
   const sModelineConfig = sState;
   return {
     modelineConfig: deserializeModelineConfig(sModelineConfig, propLabel)
@@ -55,7 +55,7 @@ export function deserializeStateV1(sState: TJSONValue, propLabel: string): IMoni
 // v2
 // ========================================
 
-export function deserializeStateV2(sState: TJSONValue, propLabel: string): IMonitorConfiguratorState {
+export function deserializeStateV2(sState: TJSONValue, propLabel: string): IMonitorDesignerState {
   const stateJ = deserializeObject(sState, propLabel);
   
   return {

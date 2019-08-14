@@ -1,25 +1,25 @@
-import './monitorConfigurator.less';
-import monitorConfiguratorTemplate from './monitorConfigurator.html';
-import * as stateUtil              from '../../stateUtil';
-import {IMonitorConfiguration}     from '../../types/monitor';
-import {IModelineConfiguration}    from '../../types/modeline';
-import {orientationEnum}           from '../../types/common';
+import './monitorDesigner.less';
+import monitorDesignerTemplate  from './monitorDesigner.html';
+import * as stateUtil           from '../../stateUtil';
+import {IMonitorConfiguration}  from '../../types/monitor';
+import {IModelineConfiguration} from '../../types/modeline';
+import {orientationEnum}        from '../../types/common';
 import {
   serializeState,
   deserializeState
-} from './monitorConfiguratorSerializer';
+} from './monitorDesignerSerializer';
 import {
   htmlToBlock,
   selectR,
   firstChildR
 } from '../../helpers/htmlUtil';
 
-export interface IMonitorConfiguratorState {
+export interface IMonitorDesignerState {
   readonly modelineConfig: IModelineConfiguration;
 }
 
 
-export default class MonitorConfigurator {
+export default class MonitorDesigner {
   public readonly id  : string;
   public readonly elem: HTMLElement;
   public name?: string;
@@ -36,13 +36,13 @@ export default class MonitorConfigurator {
     this.id = id;
     this.name = name;
     
-    this.elem = firstChildR(htmlToBlock(monitorConfiguratorTemplate));
-    this.presetInputElem             = selectR(this.elem, '.monitor-configurator__preset-input', 'select');
-    this.orientationInputElem        = selectR(this.elem, '.monitor-configurator__orientation-input', 'select');
-    this.rangesRowElem               = selectR(this.elem, '.monitor-configurator__ranges-row');
-    this.rangesInputElem             = selectR(this.elem, '.monitor-configurator__ranges-input', 'textarea');
-    this.allowInterlacedCheckboxElem = selectR(this.elem, '.monitor-configurator__allow-interlaced-checkbox', 'input');
-    this.allowDoublescanCheckboxElem = selectR(this.elem, '.monitor-configurator__allow-doublescan-checkbox', 'input');
+    this.elem = firstChildR(htmlToBlock(monitorDesignerTemplate));
+    this.presetInputElem             = selectR(this.elem, '.monitor-designer__preset-input', 'select');
+    this.orientationInputElem        = selectR(this.elem, '.monitor-designer__orientation-input', 'select');
+    this.rangesRowElem               = selectR(this.elem, '.monitor-designer__ranges-row');
+    this.rangesInputElem             = selectR(this.elem, '.monitor-designer__ranges-input', 'textarea');
+    this.allowInterlacedCheckboxElem = selectR(this.elem, '.monitor-designer__allow-interlaced-checkbox', 'input');
+    this.allowDoublescanCheckboxElem = selectR(this.elem, '.monitor-designer__allow-doublescan-checkbox', 'input');
     
     this.presetInputElem.addEventListener('change', () => {
       this.updateRangesVisibility();
@@ -100,11 +100,11 @@ export default class MonitorConfigurator {
   }
   
   private getStateKey(): string {
-    return `monitorConfiguratorModelineConfig-${this.id}`;
+    return `monitorDesignerModelineConfig-${this.id}`;
   }
   
   public saveState(): void {
-    const state:IMonitorConfiguratorState = {
+    const state:IMonitorDesignerState = {
       modelineConfig: this.getMonitorConfig().modelineConfig
     };
     
@@ -112,15 +112,18 @@ export default class MonitorConfigurator {
     stateUtil.set(this.getStateKey(), sState);
   }
   
-  private loadState(): IMonitorConfiguratorState | undefined {
-    const sState = stateUtil.get(this.getStateKey());
+  private loadState(): IMonitorDesignerState | undefined {
+    const sState = stateUtil.depricate(
+      this.getStateKey(),
+      `monitorConfiguratorModelineConfig-${this.id}`
+    );
     if (!sState) return;
     
     try {
-      return deserializeState(sState, 'sMonitorConfiguratorState');
+      return deserializeState(sState, 'sMonitorDesignerState');
     }
     catch (err) {
-      console.error(`Error deserializing Monitor Configurator '${this.id}' state:`);
+      console.error(`Error deserializing Monitor Designer '${this.id}' state:`);
       console.error(err);
     }
   }
