@@ -24,6 +24,7 @@ export function deserializeState(sState: TJSONValue, propLabel: string): ICPDesi
   const version = deserializeNumber(stateJ.__version, `${propLabel}.__version`);
   switch (version) {
     case 1: return deserializeStateV1(stateJ, `${propLabel}(v${version})`);
+    case 2: return deserializeStateV2(stateJ, `${propLabel}(v${version})`);
   }
   
   throw new Error(`${propLabel} invalid version`);
