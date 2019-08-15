@@ -13,8 +13,7 @@ if (isNaN(localStateVersionNum) || localStateVersionNum < LOCAL_STATE_MIN_VERSIO
 
 window.localStorage.setItem(LOCAL_STATE_VERSION_NUM_KEY, LOCAL_STATE_CUR_VERSION_NUM.toString());
 
-const state = new Map<string, TJSONValue>();
-const initURLState = parseInitalURLState();
+const state = parseInitalURLState();
 
 
 export function set(key: string, val: TJSONValue): TJSONValue {
@@ -29,24 +28,7 @@ export function set(key: string, val: TJSONValue): TJSONValue {
 }
 
 export function get(key: string): TJSONValue {
-  let val: TJSONValue;
-  
-  if (state.has(key)) {
-    val = state.get(key);
-  }
-  else if (initURLState.has(key)) {
-    val = initURLState.get(key);
-  }
-  else {
-    const valStr = window.localStorage.getItem(key);
-    if (valStr !== null) {
-      try {
-        val = JSON.parse(valStr);
-      } catch(err) {
-        console.error(`Local storage item at key '${key}' is not valid JSON: ${valStr}`);
-      }
-    }
-  }
+  const val = state.has(key)? state.get(key) : getFromLocalStorage(key);
   
   state.set(key, val);
   updateURLState();
@@ -55,18 +37,27 @@ export function get(key: string): TJSONValue {
 }
 
 export function depricate(newKey:string, ...oldKeys:string[]): TJSONValue {
-  const val = get(newKey);
-  if (val !== undefined) {
-    remove(...oldKeys);
-    return val;
-  }
+  // favor the consumed state first, then local storate
+  const getFns: ((key: string) => TJSONValue)[] = [
+    key => state.get(key),
+    key => getFromLocalStorage(key)
+  ];
   
-  for (const oldKey of oldKeys) {
-    const val = get(oldKey);
+  for (const getFn of getFns) {
+    const val = getFn(newKey);
     if (val !== undefined) {
       remove(...oldKeys);
       set(newKey, val);
       return val;
+    }
+    
+    for (const oldKey of oldKeys) {
+      const val = getFn(oldKey);
+      if (val !== undefined) {
+        remove(...oldKeys);
+        set(newKey, val);
+        return val;
+      }
     }
   }
   
@@ -115,4 +106,15 @@ function updateURLState(): void {
   const searchParams = new URLSearchParams(location.search);
   searchParams.set(URL_STATE_SEARCH_PARAM_KEY, JSON.stringify(Object.fromEntries(state.entries())));
   window.history.replaceState({}, '', `${location.pathname}?${searchParams}${location.hash}`);
+}
+
+function getFromLocalStorage(key: string): TJSONValue {
+  const valStr = window.localStorage.getItem(key);
+  if (valStr === null) return;
+  
+  try {
+    return JSON.parse(valStr);
+  } catch(err) {
+    console.error(`Local storage item at key '${key}' is not valid JSON: ${valStr}`);
+  }
 }
