@@ -99,8 +99,8 @@ function deserializeMAMEMachineDriver(sDriver: TJSONValue, propLabel: string): I
     color           : mameMachineDriverStatusEnum.deserialize         (driverJ.color,            `${propLabel}.color`           ),
     sound           : mameMachineDriverStatusEnum.deserialize         (driverJ.sound,            `${propLabel}.sound`           ),
     graphic         : mameMachineDriverStatusEnum.deserialize         (driverJ.graphic,          `${propLabel}.graphic`         ),
-    drivercocktail  : deserializeOptional                             (driverJ.drivercocktail,   `${propLabel}.drivercocktail`,   mameMachineDriverStatusEnum.deserialize),
-    driverprotection: deserializeOptional                             (driverJ.driverprotection, `${propLabel}.driverprotection`, mameMachineDriverStatusEnum.deserialize),
+    drivercocktail  : deserializeOptional                             (driverJ.drivercocktail,   `${propLabel}.drivercocktail`,   (v, p) => mameMachineDriverStatusEnum.deserialize(v, p)),
+    driverprotection: deserializeOptional                             (driverJ.driverprotection, `${propLabel}.driverprotection`, (v, p) => mameMachineDriverStatusEnum.deserialize(v, p)),
     savestate       : mameMachineDriverSaveStateStatusEnum.deserialize(driverJ.savestate,        `${propLabel}.savestate`       ),
   };
 }
