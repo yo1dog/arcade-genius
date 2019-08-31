@@ -116,12 +116,15 @@
 .comp-table__row--odd {}
 .comp-table__row--even {}
 
-.comp-table__row,
-.comp-table__details-row {
+.comp-table__details-row > td {
+  max-width: 50em;
+}
+
+.comp-table__header-row,
+.comp-table__row {
   > th, > td {
     padding-left: 0.5em;
     padding-right: $padding-left;
-    max-width: 50em;
   }
 }
 
