@@ -1,19 +1,17 @@
 {
   "compilerOptions": {
-    "allowJs": true,
+    "maxNodeModuleJsDepth": 0,
     "checkJs": true,
     "alwaysStrict": true,
     "strict": true,
     "noImplicitAny": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
     "module": "esnext",
     "target": "esnext",
     "lib": ["es2020"]
   },
   "include": [
-    "./*.js",
-    "./types/*.ts"
+    "./*.js"
   ]
 }
