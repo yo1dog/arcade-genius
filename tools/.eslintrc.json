@@ -1,6 +1,6 @@
 {
   "extends": "../.node.eslintrc.json",
-  "rules": {
-    "@typescript-eslint/no-var-requires": "off"
+  "parserOptions": {
+    "project": "./tools/tsconfig.json"
   }
 }

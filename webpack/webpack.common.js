@@ -9,6 +9,9 @@ const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const fontRegExp = /\.(woff2?|eot|ttf|otf)$/;
 
 
+/**
+ * @param {'development' | 'production'} mode
+ */
 module.exports = function makeConfig(mode) {
   const isProd = mode === 'production';
   
@@ -57,7 +60,7 @@ module.exports = function makeConfig(mode) {
       new PreloadWebpackPlugin({
         rel: 'preload',
         include: 'allAssets',
-        as: entry => (fontRegExp.test(entry)? 'font' : 'style'),
+        as: (/** @type {any} */entry) => (fontRegExp.test(entry)? 'font' : 'style'),
         fileWhitelist: [
           fontRegExp,
           /\.css$/

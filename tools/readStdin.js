@@ -1,7 +1,7 @@
 /**
  * Reads stdin as a string
  * 
- * @returns {Promise<string>}
+ * @returns {Promise<string | null>}
  */
 module.exports = async function readStdin() {
   if (process.stdin.isTTY) {

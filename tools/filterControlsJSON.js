@@ -60,7 +60,7 @@ cat restructuredControls.json | node filterControlsJSON.js --min | Out-File -Enc
   
   filterControlsDat(controlsDat);
   
-  console.log(JSON.stringify(controlsDat, null, prettyPrint? '  ' : null));
+  console.log(JSON.stringify(controlsDat, null, prettyPrint? 2 : undefined));
 })()
 .then(() => {
   process.exit(0);
@@ -70,6 +70,7 @@ cat restructuredControls.json | node filterControlsJSON.js --min | Out-File -Enc
   process.exit(1);
 });
 
+/** @param {any} controlsDat */
 function filterControlsDat(controlsDat) {
   for (const gameName in controlsDat.gameMap) {
     const game = controlsDat.gameMap[gameName];

@@ -1,5 +1,5 @@
 {
-  "extends": ["./.eslintrc.json"],
+  "extends": ["./.base.eslintrc.json"],
   "parserOptions": {
     "sourceType": "script"
   },
@@ -7,9 +7,5 @@
     "browser": false,
     "node": true,
     "es6": true
-  },
-  "rules": {
-    "@typescript-eslint/no-var-requires": "off",
-    "@typescript-eslint/no-require-imports": "off"
   }
 }

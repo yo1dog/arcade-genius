@@ -60,7 +60,7 @@ cat mameList.json | node filterMAMEListJSON.js --min | Out-File -Encoding utf8 m
   
   filterMAMEList(mameList);
   
-  console.log(JSON.stringify(mameList, null, prettyPrint? '  ' : null));
+  console.log(JSON.stringify(mameList, null, prettyPrint? 2 : undefined));
 })()
 .then(() => {
   process.exit(0);
@@ -70,15 +70,16 @@ cat mameList.json | node filterMAMEListJSON.js --min | Out-File -Encoding utf8 m
   process.exit(1);
 });
 
+/** @param {any} mameList */
 function filterMAMEList(mameList) {
-  mameList.machines = mameList.machines.filter(machine =>
+  mameList.machines = mameList.machines.filter((/** @type {any} */machine) =>
     // remove all machines that are not "games"
     !machine.isbios &&
     !machine.isdevice &&
     !machine.ismechanical
   );
   
-  mameList.machines.forEach(machine => {
+  mameList.machines.forEach((/** @type {any} */machine) => {
     // delete unneeded properties
     delete machine.isbios;
     delete machine.isdevice;

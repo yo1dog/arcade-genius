@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "allowJs": true,
     "checkJs": true,
     "alwaysStrict": true,
     "strict": true,
@@ -8,14 +9,11 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "module": "esnext",
-    "target": "es2019",
-    "downlevelIteration": true,
-    "allowJs": true,
-    "outDir": "dist",
-    "sourceMap": true
+    "target": "esnext",
+    "lib": ["es2020"]
   },
   "include": [
-    "./src/**/*.ts",
-    "./src/**/*.js"
+    "./*.js",
+    "./types/*.ts"
   ]
 }
