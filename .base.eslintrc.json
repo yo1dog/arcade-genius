@@ -11,7 +11,7 @@
     "ecmaVersion": 2020
   },
   "rules": {
-    // #region Base
+    // --- JavaScript ---
     // Possible Errors
     "no-template-curly-in-string": "error",
     
@@ -89,9 +89,8 @@
     "no-var": "error",
     "prefer-arrow-callback": ["error", {"allowNamedFunctions": true}],
     "prefer-const": "error",
-    // #endregion
-    
-    // #region TypeScript Linting
+
+    // --- TypeScript ---
     "@typescript-eslint/indent": "off",
     "@typescript-eslint/no-extraneous-class": "error",
     "@typescript-eslint/no-floating-promises": "error",
@@ -110,7 +109,7 @@
     "@typescript-eslint/unified-signatures": "error",
     "@typescript-eslint/interface-name-prefix": ["error", "always"],
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": ["warn", {"args": "none"}],
+    "@typescript-eslint/no-unused-vars": ["error", {"args": "none"}],
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-empty-interface": "off",
     "@typescript-eslint/no-inferrable-types": "off",
@@ -118,9 +117,8 @@
     "@typescript-eslint/require-await": "off",
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/no-require-imports": "off"
-    // #endregion
-    
-    // #region Project Specific
-    // #endregion
+
+    // --- Project Specific ---
+
   }
 }
